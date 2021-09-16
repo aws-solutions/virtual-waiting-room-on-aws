@@ -1,0 +1,3 @@
+crhelper
+requests
+aws-requests-auth

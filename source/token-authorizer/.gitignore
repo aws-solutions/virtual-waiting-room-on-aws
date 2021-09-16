@@ -1,0 +1,3 @@
+chalice/.chalice/deployments/
+chalice/.chalice/venv/
+chalice/vendor/

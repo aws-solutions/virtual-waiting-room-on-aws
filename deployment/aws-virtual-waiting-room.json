@@ -1,0 +1,5130 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "(SO0166) AWS Virtual Waiting Room %%VERSION%%",
+    "Mappings": {
+        "SourceCode": {
+            "General": {
+                "S3Bucket": "%%BUCKET_NAME%%",
+                "KeyPrefix": "%%SOLUTION_NAME%%/%%VERSION%%"
+            }
+        },
+        "CoreApi": {
+            "Stage": {
+                "Name": "dev"
+            }
+        },
+        "SolutionId": {
+            "UserAgent": {
+                "Extra": "AwsSolution/SO0166/%%VERSION%%"
+            }
+        }
+    },
+    "Resources": {
+        "PublicApiGwRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "Policies": [
+                    {
+                        "PolicyName": "PublicApiGwRolePolicy",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Sid": "PublicApiGwRole",
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "sqs:SendMessage"
+                                    ],
+                                    "Resource": {
+                                        "Fn::GetAtt": [
+                                            "WaitingRoomQueue",
+                                            "Arn"
+                                        ]
+                                    }
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "logs:CreateLogGroup",
+                                        "logs:CreateLogStream",
+                                        "logs:DescribeLogGroups",
+                                        "logs:DescribeLogStreams",
+                                        "logs:PutLogEvents",
+                                        "logs:GetLogEvents",
+                                        "logs:FilterLogEvents"
+                                    ],
+                                    "Resource": {"Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*"}                       
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "apigateway.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "PrivateApiGwRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "Policies": [
+                    {
+                        "PolicyName": "PrivateApiGwRolePolicy",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "logs:CreateLogGroup",
+                                        "logs:CreateLogStream",
+                                        "logs:DescribeLogGroups",
+                                        "logs:DescribeLogStreams",
+                                        "logs:PutLogEvents",
+                                        "logs:GetLogEvents",
+                                        "logs:FilterLogEvents"
+                                    ],
+                                    "Resource": {"Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*"}                       
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "apigateway.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "PublicWaitingRoomApi": {
+            "Type": "AWS::ApiGateway::RestApi",
+            "Properties": {
+                "Body": {
+                    "Fn::Transform": {
+                        "Name": "AWS::Include",
+                        "Parameters": {
+                            "Location": {
+                                "Fn::Sub": "s3://%%BUCKET_NAME%%-${AWS::Region}/%%SOLUTION_NAME%%/%%VERSION%%/aws-virtual-waiting-room-swagger-public-api.json"
+                            }
+                        }
+                    }
+                },
+                "EndpointConfiguration": {
+                    "Types" : [ "REGIONAL" ]
+                }
+            }
+        },
+        "PrivateWaitingRoomApi": {
+            "Type": "AWS::ApiGateway::RestApi",
+            "Properties": {
+                "Body": {
+                    "Fn::Transform": {
+                        "Name": "AWS::Include",
+                        "Parameters": {
+                            "Location": {
+                                "Fn::Sub": "s3://%%BUCKET_NAME%%-${AWS::Region}/%%SOLUTION_NAME%%/%%VERSION%%/aws-virtual-waiting-room-swagger-private-api.json"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "PublicWaitingRoomApiDeployment": {
+            "Type": "AWS::ApiGateway::Deployment",
+            "Properties": {
+                "Description": "Default stage deployment for SWR API",
+                "RestApiId": {
+                    "Ref": "PublicWaitingRoomApi"
+                },
+                "StageDescription": {
+                    "AccessLogSetting": {
+                        "DestinationArn": {
+                            "Fn::GetAtt": [
+                                "ApiAccessLogGroup",
+                                "Arn"
+                            ]
+                        }, 
+                        "Format": "{ \"requestId\":\"$context.requestId\", \"ip\": \"$context.identity.sourceIp\", \"caller\":\"$context.identity.caller\", \"user\":\"$context.identity.user\",\"requestTime\":\"$context.requestTime\", \"httpMethod\":\"$context.httpMethod\",\"resourcePath\":\"$context.resourcePath\", \"status\":\"$context.status\",\"protocol\":\"$context.protocol\", \"responseLength\":\"$context.responseLength\" }"
+                    },
+                    "CacheDataEncrypted": true,
+                    "LoggingLevel": "ERROR"
+                },
+                "StageName": {
+                    "Fn::FindInMap": [
+                        "CoreApi",
+                        "Stage",
+                        "Name"
+                    ]
+                }
+            }
+        },
+        "PrivateWaitingRoomApiDeployment": {
+            "Type": "AWS::ApiGateway::Deployment",
+            "Properties": {
+                "Description": "Default stage deployment for SWR API",
+                "RestApiId": {
+                    "Ref": "PrivateWaitingRoomApi"
+                },
+                "StageDescription": {
+                    "AccessLogSetting": {
+                        "DestinationArn": {
+                            "Fn::GetAtt": [
+                                "ApiAccessLogGroup",
+                                "Arn"
+                            ]
+                        }, 
+                        "Format": "{ \"requestId\":\"$context.requestId\", \"ip\": \"$context.identity.sourceIp\", \"caller\":\"$context.identity.caller\", \"user\":\"$context.identity.user\",\"requestTime\":\"$context.requestTime\", \"httpMethod\":\"$context.httpMethod\",\"resourcePath\":\"$context.resourcePath\", \"status\":\"$context.status\",\"protocol\":\"$context.protocol\", \"responseLength\":\"$context.responseLength\" }"
+                    },
+                    "CacheDataEncrypted": true,
+                    "LoggingLevel": "ERROR"
+                },
+                "StageName": {
+                    "Fn::FindInMap": [
+                        "CoreApi",
+                        "Stage",
+                        "Name"
+                    ]
+                }
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W68",
+                            "reason": "Usage plan not required for this implementation."
+                        }
+                    ]
+                }
+            }
+        },
+        "ApiAccessLogGroup": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+                "RetentionInDays": 30
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W84",
+                            "reason": "Log group data is always encrypted in CloudWatch Logs. Using KMS to encrypt is optional."
+                        }
+                    ]
+                }
+            }
+        },
+        "WaitingRoomQueue": {
+            "Type": "AWS::SQS::Queue",
+            "Properties": {
+                "QueueName": {
+                    "Fn::Sub": "${AWS::StackName}-WaitingRoomQueue"
+                },
+                "KmsMasterKeyId": "alias/aws/sqs",
+                "KmsDataKeyReusePeriodSeconds": 300,
+                "RedrivePolicy": { 
+                    "deadLetterTargetArn" : {"Fn::GetAtt": [ "WaitingRoomDeadLetterQueue", "Arn" ]},
+                    "maxReceiveCount" : 2
+                },
+                "VisibilityTimeout" : 5
+            }
+        },
+        "WaitingRoomDeadLetterQueue": {
+            "Type": "AWS::SQS::Queue",
+            "Properties": {
+                "QueueName": {
+                    "Fn::Sub": "${AWS::StackName}-WaitingRoomDeadLetterQueue"
+                },
+                "KmsMasterKeyId": "alias/aws/sqs",
+                "KmsDataKeyReusePeriodSeconds": 300
+            }
+        },
+        "WaitingRoomQueuePolicy": {
+            "Type" : "AWS::SQS::QueuePolicy",
+            "Properties" : {
+                "PolicyDocument" : {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Sid": "AllowSendThroughSSLOnly",
+                            "Action": "SQS:SendMessage",
+                            "Effect": "Deny",
+                            "Resource": [
+                                {"Fn::GetAtt": [ "WaitingRoomQueue", "Arn" ]}
+                            ],
+                            "Condition": {
+                              "Bool": {
+                                "aws:SecureTransport": "false"
+                              }
+                            },
+                            "Principal": "*"
+                        }
+                    ]
+                },
+                "Queues" : [
+                    {"Ref": "WaitingRoomQueue"}
+                ]
+              }
+        },
+        "WaitingRoomDeadLetterQueuePolicy": {
+            "Type" : "AWS::SQS::QueuePolicy",
+            "Properties" : {
+                "PolicyDocument" : {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Sid": "AllowSendThroughSSLOnly",
+                            "Action": "SQS:SendMessage",
+                            "Effect": "Deny",
+                            "Resource": [
+                                {"Fn::GetAtt": [ "WaitingRoomDeadLetterQueue", "Arn" ]}
+                            ],
+                            "Condition": {
+                              "Bool": {
+                                "aws:SecureTransport": "false"
+                              }
+                            },
+                            "Principal": "*"
+                        }
+                    ]
+                },
+                "Queues" : [
+                    {"Ref": "WaitingRoomDeadLetterQueue"}
+                ]
+              }
+        },
+        "SqsEndpoint": {
+            "Type": "AWS::EC2::VPCEndpoint",
+            "Properties": {
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sqs:SendMessage",
+                                "sqs:DeleteMessage",
+                                "sqs:ReceiveMessage"
+                            ],
+                            "Effect": "Allow",
+                            "Resource": {
+                                "Fn::GetAtt": [
+                                    "WaitingRoomQueue",
+                                    "Arn"
+                                ]
+                            },
+                            "Principal": {
+                                "AWS": "*"
+                            }
+                        }
+                    ]
+                },
+                "PrivateDnsEnabled": true,
+                "SecurityGroupIds": [
+                    {
+                        "Fn::GetAtt": [
+                            "WaitingRoomVpc",
+                            "DefaultSecurityGroup"
+                        ]
+                    }
+                ],
+                "ServiceName": {
+                    "Fn::Sub": "com.amazonaws.${AWS::Region}.sqs"
+                },
+                "SubnetIds": [
+                    {
+                        "Ref": "Subnet1"
+                    },
+                    {
+                        "Ref": "Subnet2"
+                    }
+                ],
+                "VpcEndpointType": "Interface",
+                "VpcId": {
+                    "Ref": "WaitingRoomVpc"
+                }
+            }
+        },
+        "DynamoDbEndpoint": {
+            "Type": "AWS::EC2::VPCEndpoint",
+            "Properties": {
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Action": [
+                                "dynamodb:Query",
+                                "dynamodb:UpdateItem",
+                                "dynamodb:PutItem",
+                                "dynamodb:GetItem",
+                                "dynamodb:Scan",
+                                "dynamodb:DeleteItem"
+                            ],
+                            "Effect": "Allow",
+                            "Resource": {
+                                "Fn::GetAtt": [
+                                    "TokenTable",
+                                    "Arn"
+                                ]
+                            },
+                            "Principal": {
+                                "AWS": "*"
+                            }
+                        }
+                    ]
+                },
+                "RouteTableIds": [
+                    {
+                        "Ref": "RouteTable"
+                    }
+                ],
+                "ServiceName": {
+                    "Fn::Sub": "com.amazonaws.${AWS::Region}.dynamodb"
+                },
+                "VpcEndpointType": "Gateway",
+                "VpcId": {
+                    "Ref": "WaitingRoomVpc"
+                }
+            }
+        },
+        "SecretsManagerEndpoint": {
+            "Type": "AWS::EC2::VPCEndpoint",
+            "Properties": {
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Action": [
+                                "secretsmanager:GetSecretValue",
+                                "secretsmanager:CreateSecret",
+                                "secretsmanager:UpdateSecret",
+                                "secretsmanager:DeleteSecret",
+                                "secretsmanager:PutSecretValue"
+                            ],
+                            "Effect": "Allow",
+                            "Resource": {
+                                "Fn::Sub": "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AWS::StackName}*"
+                            },
+                            "Principal": {
+                                "AWS": "*"
+                            }
+                        }
+                    ]
+                },
+                "PrivateDnsEnabled": true,
+                "SecurityGroupIds": [
+                    {
+                        "Fn::GetAtt": [
+                            "WaitingRoomVpc",
+                            "DefaultSecurityGroup"
+                        ]
+                    }
+                ],
+                "ServiceName": {
+                    "Fn::Sub": "com.amazonaws.${AWS::Region}.secretsmanager"
+                },
+                "SubnetIds": [
+                    {
+                        "Ref": "Subnet1"
+                    },
+                    {
+                        "Ref": "Subnet2"
+                    }
+                ],
+                "VpcEndpointType": "Interface",
+                "VpcId": {
+                    "Ref": "WaitingRoomVpc"
+                }
+            }
+        },
+        "EventsEndpoint": {
+            "Type": "AWS::EC2::VPCEndpoint",
+            "Properties": {
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Action": [
+                                "events:PutEvents"
+                            ],
+                            "Effect": "Allow",
+                            "Resource": {
+                                "Fn::GetAtt": [
+                                    "WaitingRoomEventBus",
+                                    "Arn"
+                                ]
+                            },
+                            "Principal": {
+                                "AWS": "*"
+                            }
+                        }
+                    ]
+                },
+                "PrivateDnsEnabled": true,
+                "SecurityGroupIds": [
+                    {
+                        "Fn::GetAtt": [
+                            "WaitingRoomVpc",
+                            "DefaultSecurityGroup"
+                        ]
+                    }
+                ],
+                "ServiceName": {
+                    "Fn::Sub": "com.amazonaws.${AWS::Region}.events"
+                },
+                "SubnetIds": [
+                    {
+                        "Ref": "Subnet1"
+                    },
+                    {
+                        "Ref": "Subnet2"
+                    }
+                ],
+                "VpcEndpointType": "Interface",
+                "VpcId": {
+                    "Ref": "WaitingRoomVpc"
+                }
+            }
+        },
+        "LambdaEndpoint": {
+            "Type": "AWS::EC2::VPCEndpoint",
+            "Properties": {
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Action": [
+                                "lambda:InvokeFunction"
+                            ],
+                            "Effect": "Allow",
+                            "Resource": {
+                                "Fn::GetAtt": [
+                                    "GetNumActiveTokens",
+                                    "Arn"
+                                ]
+                            },
+                            "Principal": {
+                                "AWS": "*"
+                            }
+                        }
+                    ]
+                },
+                "PrivateDnsEnabled": true,
+                "SecurityGroupIds": [
+                    {
+                        "Fn::GetAtt": [
+                            "WaitingRoomVpc",
+                            "DefaultSecurityGroup"
+                        ]
+                    }
+                ],
+                "ServiceName": {
+                    "Fn::Sub": "com.amazonaws.${AWS::Region}.lambda"
+                },
+                "SubnetIds": [
+                    {
+                        "Ref": "Subnet1"
+                    },
+                    {
+                        "Ref": "Subnet2"
+                    }
+                ],
+                "VpcEndpointType": "Interface",
+                "VpcId": {
+                    "Ref": "WaitingRoomVpc"
+                }
+            }
+        },
+        "WaitingRoomVpc": {
+            "Type": "AWS::EC2::VPC",
+            "Properties": {
+                "CidrBlock": "10.0.0.0/16",
+                "EnableDnsSupport": true,
+                "EnableDnsHostnames": true,
+                "InstanceTenancy": "default"
+            }
+        },
+        "VpcFlowLog": {
+            "DependsOn": "LoggingBucketPolicy",
+            "Type": "AWS::EC2::FlowLog",
+            "Properties": {
+                "LogDestination": {
+                    "Fn::Sub": [
+                        "${BucketArn}/vpc/",
+                        {
+                            "BucketArn": {
+                                "Fn::GetAtt": [
+                                    "LoggingBucket",
+                                    "Arn"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "LogDestinationType": "s3",
+                "MaxAggregationInterval": 600,
+                "ResourceId": {
+                    "Ref": "WaitingRoomVpc"
+                },
+                "ResourceType": "VPC",
+                "TrafficType": "ALL"
+            }
+        },
+        "InternetGateway": {
+            "Type": "AWS::EC2::InternetGateway",
+            "DependsOn": "WaitingRoomVpc"
+        },
+        "VpcGatewayAttachment": {
+            "Type": "AWS::EC2::VPCGatewayAttachment",
+            "Properties": {
+                "InternetGatewayId": {
+                    "Ref": "InternetGateway"
+                },
+                "VpcId": {
+                    "Ref": "WaitingRoomVpc"
+                }
+            }
+        },
+        "RouteTable": {
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "WaitingRoomVpc"
+                }
+            }
+        },
+        "PublicRoute": {
+            "Type": "AWS::EC2::Route",
+            "DependsOn": "VpcGatewayAttachment",
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "RouteTable"
+                },
+                "DestinationCidrBlock": "0.0.0.0/0",
+                "GatewayId": {
+                    "Ref": "InternetGateway"
+                }
+            }
+        },
+        "Subnet1": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "WaitingRoomVpc"
+                },
+                "CidrBlock": "10.0.16.0/20",
+                "AvailabilityZone": {
+                    "Fn::Select": [
+                        "0",
+                        {
+                            "Fn::GetAtt": [
+                                "IntersectAZCustomResource",
+                                "intersect_az"
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "Subnet2": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "WaitingRoomVpc"
+                },
+                "CidrBlock": "10.0.32.0/20",
+                "AvailabilityZone": {
+                    "Fn::Select": [
+                        "1",
+                        {
+                            "Fn::GetAtt": [
+                                "IntersectAZCustomResource",
+                                "intersect_az"
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "Subnet1RouteTableAssociation": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": {
+                    "Ref": "Subnet1"
+                },
+                "RouteTableId": {
+                    "Ref": "RouteTable"
+                }
+            }
+        },
+        "Subnet2RouteTableAssociation": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": {
+                    "Ref": "Subnet2"
+                },
+                "RouteTableId": {
+                    "Ref": "RouteTable"
+                }
+            }
+        },
+        "RedisSecurityGroup": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": "Allows Lambda to connect to Redis",
+                "VpcId": {
+                    "Ref": "WaitingRoomVpc"
+                },
+                "SecurityGroupIngress": [
+                    {
+                        "Description": "Ingress rule for first subnet.",
+                        "IpProtocol": "tcp",
+                        "FromPort": {"Ref": "RedisPort"},
+                        "ToPort": {"Ref": "RedisPort"},
+                        "CidrIp": "10.0.16.0/20"
+                    },
+                    {
+                        "Description": "Ingress rule for second subnet.",
+                        "IpProtocol": "tcp",
+                        "FromPort": {"Ref": "RedisPort"},
+                        "ToPort": {"Ref": "RedisPort"},
+                        "CidrIp": "10.0.32.0/20"
+                    }
+                ],
+                "SecurityGroupEgress": [
+                    {
+                        "Description": "Egress rule for Redis security group",
+                        "IpProtocol": "-1",
+                        "FromPort": -1,
+                        "ToPort": -1,
+                        "CidrIp": "0.0.0.0/0"
+                    }
+                ]
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W40",
+                            "reason": "Egress IP does not need to be restricted."
+                        },
+                        {
+                            "id": "W5",
+                            "reason": "Egress does not need to be restricted."
+                        },
+                        {
+                            "id": "W9",
+                            "reason": "Ingress is restricted to the range of IPs that Lambdas can be in."
+                        }
+                    ]
+                }
+            }
+        },
+        "SubnetGroup": {
+            "Type": "AWS::ElastiCache::SubnetGroup",
+            "Properties": {
+                "Description": "Cache Subnet Group",
+                "SubnetIds": [
+                    {
+                        "Ref": "Subnet1"
+                    },
+                    {
+                        "Ref": "Subnet2"
+                    }
+                ]
+            }
+        },
+        "RedisReplicationGroup": {
+            "Type": "AWS::ElastiCache::ReplicationGroup",
+            "Properties": {
+                "AtRestEncryptionEnabled": true,
+                "AuthToken": {"Fn::Sub": "{{resolve:secretsmanager:${AWS::StackName}/redis-auth:SecretString}}"},
+                "AutomaticFailoverEnabled": true,
+                "CacheNodeType": "cache.r6g.large",
+                "CacheSubnetGroupName": {
+                    "Ref": "SubnetGroup"
+                },
+                "Engine": "redis",
+                "MultiAZEnabled": true,
+                "NumNodeGroups": 1,
+                "Port": {"Ref": "RedisPort"},
+                "ReplicasPerNodeGroup": 1,
+                "ReplicationGroupDescription": "Redis Replication Group",
+                "SecurityGroupIds": [
+                    {
+                        "Fn::GetAtt": [
+                            "RedisSecurityGroup",
+                            "GroupId"
+                        ]
+                    }
+                ],
+                "TransitEncryptionEnabled": true
+            }
+        },
+        "RedisLayer": {
+            "Type": "AWS::Lambda::LayerVersion",
+            "Properties": {
+                "CompatibleRuntimes": [
+                    "python3.8"
+                ],
+                "Content": {
+                    "S3Bucket": {
+                        "Fn::Join": [
+                            "-",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "S3Bucket"
+                                    ]
+                                },
+                                {
+                                    "Ref": "AWS::Region"
+                                }
+                            ]
+                        ]
+                    },
+                    "S3Key": {
+                        "Fn::Join": [
+                            "/",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "KeyPrefix"
+                                    ]
+                                },
+                                "aws-virtual-waiting-room-redis-layer-%%TIMESTAMP%%.zip"
+                            ]
+                        ]
+                    }
+                },
+                "Description": "Redis Layer",
+                "LayerName": {
+                    "Fn::Sub": "${AWS::StackName}-RedisLayer"
+                },
+                "LicenseInfo": "MIT"
+            }
+        },
+        "JwcryptoLayer": {
+            "Type": "AWS::Lambda::LayerVersion",
+            "Properties": {
+                "CompatibleRuntimes": [
+                    "python3.8"
+                ],
+                "Content": {
+                    "S3Bucket": {
+                        "Fn::Join": [
+                            "-",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "S3Bucket"
+                                    ]
+                                },
+                                {
+                                    "Ref": "AWS::Region"
+                                }
+                            ]
+                        ]
+                    },
+                    "S3Key": {
+                        "Fn::Join": [
+                            "/",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "KeyPrefix"
+                                    ]
+                                },
+                                "aws-virtual-waiting-room-jwcrypto-layer-%%TIMESTAMP%%.zip"
+                            ]
+                        ]
+                    }
+                },
+                "Description": "Jwcrypto Layer",
+                "LayerName": {
+                    "Fn::Sub": "${AWS::StackName}-JwcryptoLayer"
+                }
+            }
+        },
+        "AssignQueueNum": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": {
+                        "Fn::Join": [
+                            "-",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "S3Bucket"
+                                    ]
+                                },
+                                {
+                                    "Ref": "AWS::Region"
+                                }
+                            ]
+                        ]
+                    },
+                    "S3Key": {
+                        "Fn::Join": [
+                            "/",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "KeyPrefix"
+                                    ]
+                                },
+                                "aws-virtual-waiting-room-%%TIMESTAMP%%.zip"
+                            ]
+                        ]
+                    }
+                },
+                "Environment": {
+                    "Variables": {
+                        "REDIS_HOST": {
+                            "Fn::GetAtt": [
+                                "RedisReplicationGroup",
+                                "PrimaryEndPoint.Address"
+                            ]
+                        },
+                        "REDIS_PORT": {
+                            "Fn::GetAtt": [
+                                "RedisReplicationGroup",
+                                "PrimaryEndPoint.Port"
+                            ]
+                        },
+                        "QUEUE_URL": {
+                            "Ref": "WaitingRoomQueue"
+                        },
+                        "EVENT_ID": {
+                            "Ref": "EventId"
+                        },
+                        "SOLUTION_ID": {
+                            "Fn::FindInMap": [
+                                "SolutionId",
+                                "UserAgent",
+                                "Extra"
+                            ]
+                        }, 
+                        "STACK_NAME": {"Ref": "AWS::StackName"}
+                    }
+                },
+                "Handler": "assign_queue_num.lambda_handler",
+                "Layers": [
+                    {
+                        "Ref": "RedisLayer"
+                    }
+                ],
+                "MemorySize": 1024,
+                "Role": {
+                    "Fn::GetAtt": [
+                        "AssignQueueRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "python3.8",
+                "Timeout": 30,
+                "VpcConfig": {
+                    "SecurityGroupIds": [
+                        {
+                            "Fn::GetAtt": [
+                                "WaitingRoomVpc",
+                                "DefaultSecurityGroup"
+                            ]
+                        }
+                    ],
+                    "SubnetIds": [
+                        {
+                            "Ref": "Subnet1"
+                        },
+                        {
+                            "Ref": "Subnet2"
+                        }
+                    ]
+                }
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W92",
+                            "reason": "Lambda does not require ReservedConcurrentExecutions."
+                        }
+                    ]
+                }
+            }
+        },
+        "AuthGenerateToken": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": {
+                        "Fn::Join": [
+                            "-",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "S3Bucket"
+                                    ]
+                                },
+                                {
+                                    "Ref": "AWS::Region"
+                                }
+                            ]
+                        ]
+                    },
+                    "S3Key": {
+                        "Fn::Join": [
+                            "/",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "KeyPrefix"
+                                    ]
+                                },
+                                "aws-virtual-waiting-room-%%TIMESTAMP%%.zip"
+                            ]
+                        ]
+                    }
+                },
+                "Environment": {
+                    "Variables": {
+                        "REDIS_HOST": {
+                            "Fn::GetAtt": [
+                                "RedisReplicationGroup",
+                                "PrimaryEndPoint.Address"
+                            ]
+                        },
+                        "REDIS_PORT": {
+                            "Fn::GetAtt": [
+                                "RedisReplicationGroup",
+                                "PrimaryEndPoint.Port"
+                            ]
+                        },
+                        "TOKEN_TABLE": {
+                            "Ref": "TokenTable"
+                        },
+                        "STACK_NAME": {
+                            "Ref": "AWS::StackName"
+                        },
+                        "EVENT_ID": {
+                            "Ref": "EventId"
+                        },
+                        "VALIDITY_PERIOD": {
+                            "Ref": "ValidityPeriod"
+                        },
+                        "EVENT_BUS_NAME": {
+                            "Ref": "WaitingRoomEventBus"
+                        },
+                        "SOLUTION_ID": {
+                            "Fn::FindInMap": [
+                                "SolutionId",
+                                "UserAgent",
+                                "Extra"
+                            ]
+                        }
+                    }
+                },
+                "Handler": "auth_generate_token.lambda_handler",
+                "Layers": [
+                    {
+                        "Ref": "RedisLayer"
+                    },
+                    {
+                        "Ref": "JwcryptoLayer"
+                    }
+                ],
+                "MemorySize": 1024,
+                "Role": {
+                    "Fn::GetAtt": [
+                        "GenerateTokenRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "python3.8",
+                "Timeout": 30,
+                "VpcConfig": {
+                    "SecurityGroupIds": [
+                        {
+                            "Fn::GetAtt": [
+                                "WaitingRoomVpc",
+                                "DefaultSecurityGroup"
+                            ]
+                        }
+                    ],
+                    "SubnetIds": [
+                        {
+                            "Ref": "Subnet1"
+                        },
+                        {
+                            "Ref": "Subnet2"
+                        }
+                    ]
+                }
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W92",
+                            "reason": "Lambda does not require ReservedConcurrentExecutions."
+                        },
+                        {
+                            "id": "W58",
+                            "reason": "Permission to write CloudWatch logs has been associated with IAM policy instead."
+                        }
+                    ]
+                }
+            }
+        },
+        "AuthGenerateTokenPermission": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+                "FunctionName": {
+                    "Fn::GetAtt": [
+                        "AuthGenerateToken",
+                        "Arn"
+                    ]
+                },
+                "Action": "lambda:InvokeFunction",
+                "Principal": "apigateway.amazonaws.com",
+                "SourceArn": {
+                    "Fn::Sub": [
+                        "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApi}/*/POST/generate_token",
+                        {
+                            "RestApi": {
+                                "Ref": "PrivateWaitingRoomApi"
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "GetNumActiveTokens": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": {
+                        "Fn::Join": [
+                            "-",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "S3Bucket"
+                                    ]
+                                },
+                                {
+                                    "Ref": "AWS::Region"
+                                }
+                            ]
+                        ]
+                    },
+                    "S3Key": {
+                        "Fn::Join": [
+                            "/",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "KeyPrefix"
+                                    ]
+                                },
+                                "aws-virtual-waiting-room-%%TIMESTAMP%%.zip"
+                            ]
+                        ]
+                    }
+                },
+                "Environment": {
+                    "Variables": {
+                        "TOKEN_TABLE": {
+                            "Ref": "TokenTable"
+                        },
+                        "EVENT_ID": {
+                            "Ref": "EventId"
+                        },
+                        "SOLUTION_ID": {
+                            "Fn::FindInMap": [
+                                "SolutionId",
+                                "UserAgent",
+                                "Extra"
+                            ]
+                        }
+                    }
+                },
+                "Handler": "get_num_active_tokens.lambda_handler",
+                "MemorySize": 1024,
+                "Role": {
+                    "Fn::GetAtt": [
+                        "GetTokenRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "python3.8",
+                "Timeout": 30
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W89",
+                            "reason": "Lambda does not need to be in the Waiting Room VPC."
+                        },
+                        {
+                            "id": "W92",
+                            "reason": "Lambda does not require ReservedConcurrentExecutions."
+                        },
+                        {
+                            "id": "W58",
+                            "reason": "Permission to write CloudWatch logs has been associated with IAM policy instead."
+                        }
+                    ]
+                }
+            }
+        },
+        "GetNumActiveTokensPermission": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+                "FunctionName": {
+                    "Fn::GetAtt": [
+                        "GetNumActiveTokens",
+                        "Arn"
+                    ]
+                },
+                "Action": "lambda:InvokeFunction",
+                "Principal": "apigateway.amazonaws.com",
+                "SourceArn": {
+                    "Fn::Sub": [
+                        "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApi}/*/GET/num_active_tokens",
+                        {
+                            "RestApi": {
+                                "Ref": "PrivateWaitingRoomApi"
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "GetExpiredTokens": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": {
+                        "Fn::Join": [
+                            "-",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "S3Bucket"
+                                    ]
+                                },
+                                {
+                                    "Ref": "AWS::Region"
+                                }
+                            ]
+                        ]
+                    },
+                    "S3Key": {
+                        "Fn::Join": [
+                            "/",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "KeyPrefix"
+                                    ]
+                                },
+                                "aws-virtual-waiting-room-%%TIMESTAMP%%.zip"
+                            ]
+                        ]
+                    }
+                },
+                "Environment": {
+                    "Variables": {
+                        "TOKEN_TABLE": {
+                            "Ref": "TokenTable"
+                        },
+                        "EVENT_ID": {
+                            "Ref": "EventId"
+                        },
+                        "SOLUTION_ID": {
+                            "Fn::FindInMap": [
+                                "SolutionId",
+                                "UserAgent",
+                                "Extra"
+                            ]
+                        }
+                    }
+                },
+                "Handler": "get_list_expired_tokens.lambda_handler",
+                "MemorySize": 1024,
+                "Role": {
+                    "Fn::GetAtt": [
+                        "GetTokenRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "python3.8",
+                "Timeout": 30
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W89",
+                            "reason": "Lambda does not need to be in the Waiting Room VPC."
+                        },
+                        {
+                            "id": "W92",
+                            "reason": "Lambda does not require ReservedConcurrentExecutions."
+                        },
+                        {
+                            "id": "W58",
+                            "reason": "Permission to write CloudWatch logs has been associated with IAM policy instead."
+                        }
+                    ]
+                }
+            }
+        },
+        "GetExpiredTokensPermission": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+                "FunctionName": {
+                    "Fn::GetAtt": [
+                        "GetExpiredTokens",
+                        "Arn"
+                    ]
+                },
+                "Action": "lambda:InvokeFunction",
+                "Principal": "apigateway.amazonaws.com",
+                "SourceArn": {
+                    "Fn::Sub": [
+                        "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApi}/*/GET/expired_tokens",
+                        {
+                            "RestApi": {
+                                "Ref": "PrivateWaitingRoomApi"
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "GetServingNum": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": {
+                        "Fn::Join": [
+                            "-",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "S3Bucket"
+                                    ]
+                                },
+                                {
+                                    "Ref": "AWS::Region"
+                                }
+                            ]
+                        ]
+                    },
+                    "S3Key": {
+                        "Fn::Join": [
+                            "/",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "KeyPrefix"
+                                    ]
+                                },
+                                "aws-virtual-waiting-room-%%TIMESTAMP%%.zip"
+                            ]
+                        ]
+                    }
+                },
+                "Environment": {
+                    "Variables": {
+                        "REDIS_HOST": {
+                            "Fn::GetAtt": [
+                                "RedisReplicationGroup",
+                                "PrimaryEndPoint.Address"
+                            ]
+                        },
+                        "REDIS_PORT": {
+                            "Fn::GetAtt": [
+                                "RedisReplicationGroup",
+                                "PrimaryEndPoint.Port"
+                            ]
+                        },
+                        "EVENT_ID": {
+                            "Ref": "EventId"
+                        },
+                        "SOLUTION_ID": {
+                            "Fn::FindInMap": [
+                                "SolutionId",
+                                "UserAgent",
+                                "Extra"
+                            ]
+                        }, 
+                        "STACK_NAME": {"Ref": "AWS::StackName"}
+                    }
+                },
+                "Handler": "get_serving_num.lambda_handler",
+                "Layers": [
+                    {
+                        "Ref": "RedisLayer"
+                    }
+                ],
+                "MemorySize": 1024,
+                "Role": {
+                    "Fn::GetAtt": [
+                        "LambdaVpcRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "python3.8",
+                "Timeout": 30,
+                "VpcConfig": {
+                    "SecurityGroupIds": [
+                        {
+                            "Fn::GetAtt": [
+                                "WaitingRoomVpc",
+                                "DefaultSecurityGroup"
+                            ]
+                        }
+                    ],
+                    "SubnetIds": [
+                        {
+                            "Ref": "Subnet1"
+                        },
+                        {
+                            "Ref": "Subnet2"
+                        }
+                    ]
+                }
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W92",
+                            "reason": "Lambda does not require ReservedConcurrentExecutions."
+                        },
+                        {
+                            "id": "W58",
+                            "reason": "Permission to write CloudWatch logs has been associated with IAM policy instead."
+                        }
+                    ]
+                }
+            }
+        },
+        "GetServingNumPermission": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+                "FunctionName": {
+                    "Fn::GetAtt": [
+                        "GetServingNum",
+                        "Arn"
+                    ]
+                },
+                "Action": "lambda:InvokeFunction",
+                "Principal": "apigateway.amazonaws.com",
+                "SourceArn": {
+                    "Fn::Sub": [
+                        "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApi}/*/GET/serving_num",
+                        {
+                            "RestApi": {
+                                "Ref": "PublicWaitingRoomApi"
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "GetWaitingNum": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": {
+                        "Fn::Join": [
+                            "-",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "S3Bucket"
+                                    ]
+                                },
+                                {
+                                    "Ref": "AWS::Region"
+                                }
+                            ]
+                        ]
+                    },
+                    "S3Key": {
+                        "Fn::Join": [
+                            "/",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "KeyPrefix"
+                                    ]
+                                },
+                                "aws-virtual-waiting-room-%%TIMESTAMP%%.zip"
+                            ]
+                        ]
+                    }
+                },
+                "Environment": {
+                    "Variables": {
+                        "REDIS_HOST": {
+                            "Fn::GetAtt": [
+                                "RedisReplicationGroup",
+                                "PrimaryEndPoint.Address"
+                            ]
+                        },
+                        "REDIS_PORT": {
+                            "Fn::GetAtt": [
+                                "RedisReplicationGroup",
+                                "PrimaryEndPoint.Port"
+                            ]
+                        },
+                        "EVENT_ID": {
+                            "Ref": "EventId"
+                        },                        
+                        "SOLUTION_ID": {
+                            "Fn::FindInMap": [
+                                "SolutionId",
+                                "UserAgent",
+                                "Extra"
+                            ]
+                        }, 
+                        "STACK_NAME": {"Ref": "AWS::StackName"}
+
+                    }
+                },
+                "Handler": "get_waiting_num.lambda_handler",
+                "Layers": [
+                    {
+                        "Ref": "RedisLayer"
+                    }
+                ],
+                "MemorySize": 1024,
+                "Role": {
+                    "Fn::GetAtt": [
+                        "LambdaVpcRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "python3.8",
+                "Timeout": 30,
+                "VpcConfig": {
+                    "SecurityGroupIds": [
+                        {
+                            "Fn::GetAtt": [
+                                "WaitingRoomVpc",
+                                "DefaultSecurityGroup"
+                            ]
+                        }
+                    ],
+                    "SubnetIds": [
+                        {
+                            "Ref": "Subnet1"
+                        },
+                        {
+                            "Ref": "Subnet2"
+                        }
+                    ]
+                }
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W92",
+                            "reason": "Lambda does not require ReservedConcurrentExecutions."
+                        },
+                        {
+                            "id": "W58",
+                            "reason": "Permission to write CloudWatch logs has been associated with IAM policy instead."
+                        }
+                    ]
+                }
+            }
+        },
+        "GetWaitingNumPermission": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+                "FunctionName": {
+                    "Fn::GetAtt": [
+                        "GetWaitingNum",
+                        "Arn"
+                    ]
+                },
+                "Action": "lambda:InvokeFunction",
+                "Principal": "apigateway.amazonaws.com",
+                "SourceArn": {
+                    "Fn::Sub": [
+                        "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApi}/*/GET/waiting_num",
+                        {
+                            "RestApi": {
+                                "Ref": "PublicWaitingRoomApi"
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "GenerateEvents": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": {
+                        "Fn::Join": [
+                            "-",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "S3Bucket"
+                                    ]
+                                },
+                                {
+                                    "Ref": "AWS::Region"
+                                }
+                            ]
+                        ]
+                    },
+                    "S3Key": {
+                        "Fn::Join": [
+                            "/",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "KeyPrefix"
+                                    ]
+                                },
+                                "aws-virtual-waiting-room-%%TIMESTAMP%%.zip"
+                            ]
+                        ]
+                    }
+                },
+                "Environment": {
+                    "Variables": {
+                        "REDIS_HOST": {
+                            "Fn::GetAtt": [
+                                "RedisReplicationGroup",
+                                "PrimaryEndPoint.Address"
+                            ]
+                        },
+                        "REDIS_PORT": {
+                            "Fn::GetAtt": [
+                                "RedisReplicationGroup",
+                                "PrimaryEndPoint.Port"
+                            ]
+                        },
+                        "TOKEN_TABLE": {
+                            "Ref": "TokenTable"
+                        },
+                        "EVENT_ID": {
+                            "Ref": "EventId"
+                        },
+                        "EVENT_BUS_NAME": {
+                            "Ref": "WaitingRoomEventBus"
+                        },
+                        "ACTIVE_TOKENS_FN": {
+                            "Fn::GetAtt": [
+                                "GetNumActiveTokens",
+                                "Arn"
+                            ]
+                        },
+                        "SOLUTION_ID": {
+                            "Fn::FindInMap": [
+                                "SolutionId",
+                                "UserAgent",
+                                "Extra"
+                            ]
+                        },
+                        "STACK_NAME": {
+                            "Ref": "AWS::StackName"
+                        }
+                    }
+                },
+                "Handler": "generate_events.lambda_handler",
+                "Layers": [
+                    {
+                        "Ref": "RedisLayer"
+                    },
+                    {
+                        "Ref": "JwcryptoLayer"
+                    }
+                ],
+                "MemorySize": 1024,
+                "Role": {
+                    "Fn::GetAtt": [
+                        "GenerateEventsRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "python3.8",
+                "Timeout": 30,
+                "VpcConfig": {
+                    "SecurityGroupIds": [
+                        {
+                            "Fn::GetAtt": [
+                                "WaitingRoomVpc",
+                                "DefaultSecurityGroup"
+                            ]
+                        }
+                    ],
+                    "SubnetIds": [
+                        {
+                            "Ref": "Subnet1"
+                        },
+                        {
+                            "Ref": "Subnet2"
+                        }
+                    ]
+                }
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W92",
+                            "reason": "Lambda does not require ReservedConcurrentExecutions."
+                        },
+                        {
+                            "id": "W58",
+                            "reason": "Permission to write CloudWatch logs has been associated with IAM policy instead."
+                        }
+                    ]
+                }
+            }
+        },
+        "GenerateToken": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": {
+                        "Fn::Join": [
+                            "-",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "S3Bucket"
+                                    ]
+                                },
+                                {
+                                    "Ref": "AWS::Region"
+                                }
+                            ]
+                        ]
+                    },
+                    "S3Key": {
+                        "Fn::Join": [
+                            "/",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "KeyPrefix"
+                                    ]
+                                },
+                                "aws-virtual-waiting-room-%%TIMESTAMP%%.zip"
+                            ]
+                        ]
+                    }
+                },
+                "Environment": {
+                    "Variables": {
+                        "REDIS_HOST": {
+                            "Fn::GetAtt": [
+                                "RedisReplicationGroup",
+                                "PrimaryEndPoint.Address"
+                            ]
+                        },
+                        "REDIS_PORT": {
+                            "Fn::GetAtt": [
+                                "RedisReplicationGroup",
+                                "PrimaryEndPoint.Port"
+                            ]
+                        },
+                        "TOKEN_TABLE": {
+                            "Ref": "TokenTable"
+                        },
+                        "STACK_NAME": {
+                            "Ref": "AWS::StackName"
+                        },
+                        "EVENT_ID": {
+                            "Ref": "EventId"
+                        },
+                        "VALIDITY_PERIOD": {
+                            "Ref": "ValidityPeriod"
+                        },
+                        "EVENT_BUS_NAME": {
+                            "Ref": "WaitingRoomEventBus"
+                        },
+                        "SOLUTION_ID": {
+                            "Fn::FindInMap": [
+                                "SolutionId",
+                                "UserAgent",
+                                "Extra"
+                            ]
+                        }
+                    }
+                },
+                "Handler": "generate_token.lambda_handler",
+                "Layers": [
+                    {
+                        "Ref": "RedisLayer"
+                    },
+                    {
+                        "Ref": "JwcryptoLayer"
+                    }
+                ],
+                "MemorySize": 1024,
+                "Role": {
+                    "Fn::GetAtt": [
+                        "GenerateTokenRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "python3.8",
+                "Timeout": 30,
+                "VpcConfig": {
+                    "SecurityGroupIds": [
+                        {
+                            "Fn::GetAtt": [
+                                "WaitingRoomVpc",
+                                "DefaultSecurityGroup"
+                            ]
+                        }
+                    ],
+                    "SubnetIds": [
+                        {
+                            "Ref": "Subnet1"
+                        },
+                        {
+                            "Ref": "Subnet2"
+                        }
+                    ]
+                }
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W92",
+                            "reason": "Lambda does not require ReservedConcurrentExecutions."
+                        },
+                        {
+                            "id": "W58",
+                            "reason": "Permission to write CloudWatch logs has been associated with IAM policy instead."
+                        }
+                    ]
+                }
+            }
+        },
+        "GenerateTokenPermission": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+                "FunctionName": {
+                    "Fn::GetAtt": [
+                        "GenerateToken",
+                        "Arn"
+                    ]
+                },
+                "Action": "lambda:InvokeFunction",
+                "Principal": "apigateway.amazonaws.com",
+                "SourceArn": {
+                    "Fn::Sub": [
+                        "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApi}/*/POST/generate_token",
+                        {
+                            "RestApi": {
+                                "Ref": "PublicWaitingRoomApi"
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "GetQueueNum": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": {
+                        "Fn::Join": [
+                            "-",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "S3Bucket"
+                                    ]
+                                },
+                                {
+                                    "Ref": "AWS::Region"
+                                }
+                            ]
+                        ]
+                    },
+                    "S3Key": {
+                        "Fn::Join": [
+                            "/",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "KeyPrefix"
+                                    ]
+                                },
+                                "aws-virtual-waiting-room-%%TIMESTAMP%%.zip"
+                            ]
+                        ]
+                    }
+                },
+                "Environment": {
+                    "Variables": {
+                        "REDIS_HOST": {
+                            "Fn::GetAtt": [
+                                "RedisReplicationGroup",
+                                "PrimaryEndPoint.Address"
+                            ]
+                        },
+                        "REDIS_PORT": {
+                            "Fn::GetAtt": [
+                                "RedisReplicationGroup",
+                                "PrimaryEndPoint.Port"
+                            ]
+                        },
+                        "EVENT_ID": {
+                            "Ref": "EventId"
+                        },
+                        "SOLUTION_ID": {
+                            "Fn::FindInMap": [
+                                "SolutionId",
+                                "UserAgent",
+                                "Extra"
+                            ]
+                        }, 
+                        "STACK_NAME": {"Ref": "AWS::StackName"}
+                    }
+                },
+                "Handler": "get_queue_num.lambda_handler",
+                "Layers": [
+                    {
+                        "Ref": "RedisLayer"
+                    }
+                ],
+                "MemorySize": 1024,
+                "Role": {
+                    "Fn::GetAtt": [
+                        "LambdaVpcRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "python3.8",
+                "Timeout": 30,
+                "VpcConfig": {
+                    "SecurityGroupIds": [
+                        {
+                            "Fn::GetAtt": [
+                                "WaitingRoomVpc",
+                                "DefaultSecurityGroup"
+                            ]
+                        }
+                    ],
+                    "SubnetIds": [
+                        {
+                            "Ref": "Subnet1"
+                        },
+                        {
+                            "Ref": "Subnet2"
+                        }
+                    ]
+                }
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W92",
+                            "reason": "Lambda does not require ReservedConcurrentExecutions."
+                        },
+                        {
+                            "id": "W58",
+                            "reason": "Permission to write CloudWatch logs has been associated with IAM policy instead."
+                        }
+                    ]
+                }
+            }
+        },
+        "GetQueueNumPermission": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+                "FunctionName": {
+                    "Fn::GetAtt": [
+                        "GetQueueNum",
+                        "Arn"
+                    ]
+                },
+                "Action": "lambda:InvokeFunction",
+                "Principal": "apigateway.amazonaws.com",
+                "SourceArn": {
+                    "Fn::Sub": [
+                        "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApi}/*/GET/queue_num",
+                        {
+                            "RestApi": {
+                                "Ref": "PublicWaitingRoomApi"
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "GetPublicKey": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": {
+                        "Fn::Join": [
+                            "-",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "S3Bucket"
+                                    ]
+                                },
+                                {
+                                    "Ref": "AWS::Region"
+                                }
+                            ]
+                        ]
+                    },
+                    "S3Key": {
+                        "Fn::Join": [
+                            "/",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "KeyPrefix"
+                                    ]
+                                },
+                                "aws-virtual-waiting-room-%%TIMESTAMP%%.zip"
+                            ]
+                        ]
+                    }
+                },
+                "Environment": {
+                    "Variables": {
+                        "STACK_NAME": {
+                            "Ref": "AWS::StackName"
+                        },
+                        "SOLUTION_ID": {
+                            "Fn::FindInMap": [
+                                "SolutionId",
+                                "UserAgent",
+                                "Extra"
+                            ]
+                        }
+                    }
+                },
+                "Handler": "get_public_key.lambda_handler",
+                "MemorySize": 1024,
+                "Role": {
+                    "Fn::GetAtt": [
+                        "SecretsManagerReadRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "python3.8",
+                "Timeout": 30
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W89",
+                            "reason": "Lambda does not need to be in the Waiting Room VPC."
+                        },
+                        {
+                            "id": "W92",
+                            "reason": "Lambda does not require ReservedConcurrentExecutions."
+                        },
+                        {
+                            "id": "W58",
+                            "reason": "Permission to write CloudWatch logs has been associated with IAM policy instead."
+                        }
+                    ]
+                }
+            }
+        },
+        "GetPublicKeyPermission": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+                "FunctionName": {
+                    "Fn::GetAtt": [
+                        "GetPublicKey",
+                        "Arn"
+                    ]
+                },
+                "Action": "lambda:InvokeFunction",
+                "Principal": "apigateway.amazonaws.com",
+                "SourceArn": {
+                    "Fn::Sub": [
+                        "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApi}/*/GET/public_key",
+                        {
+                            "RestApi": {
+                                "Ref": "PublicWaitingRoomApi"
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "IncrementServingCounter": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": {
+                        "Fn::Join": [
+                            "-",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "S3Bucket"
+                                    ]
+                                },
+                                {
+                                    "Ref": "AWS::Region"
+                                }
+                            ]
+                        ]
+                    },
+                    "S3Key": {
+                        "Fn::Join": [
+                            "/",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "KeyPrefix"
+                                    ]
+                                },
+                                "aws-virtual-waiting-room-%%TIMESTAMP%%.zip"
+                            ]
+                        ]
+                    }
+                },
+                "Environment": {
+                    "Variables": {
+                        "REDIS_HOST": {
+                            "Fn::GetAtt": [
+                                "RedisReplicationGroup",
+                                "PrimaryEndPoint.Address"
+                            ]
+                        },
+                        "REDIS_PORT": {
+                            "Fn::GetAtt": [
+                                "RedisReplicationGroup",
+                                "PrimaryEndPoint.Port"
+                            ]
+                        },
+                        "EVENT_ID": {
+                            "Ref": "EventId"
+                        },                        
+                        "SOLUTION_ID": {
+                            "Fn::FindInMap": [
+                                "SolutionId",
+                                "UserAgent",
+                                "Extra"
+                            ]
+                        }, 
+                        "STACK_NAME": {"Ref": "AWS::StackName"}
+                    }
+                },
+                "Handler": "increment_serving_counter.lambda_handler",
+                "Layers": [
+                    {
+                        "Ref": "RedisLayer"
+                    }
+                ],
+                "MemorySize": 1024,
+                "Role": {
+                    "Fn::GetAtt": [
+                        "LambdaVpcRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "python3.8",
+                "Timeout": 30,
+                "VpcConfig": {
+                    "SecurityGroupIds": [
+                        {
+                            "Fn::GetAtt": [
+                                "WaitingRoomVpc",
+                                "DefaultSecurityGroup"
+                            ]
+                        }
+                    ],
+                    "SubnetIds": [
+                        {
+                            "Ref": "Subnet1"
+                        },
+                        {
+                            "Ref": "Subnet2"
+                        }
+                    ]
+                }
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W92",
+                            "reason": "Lambda does not require ReservedConcurrentExecutions."
+                        },
+                        {
+                            "id": "W58",
+                            "reason": "Permission to write CloudWatch logs has been associated with IAM policy instead."
+                        }
+                    ]
+                }
+            }
+        },
+        "IncrementServingCountPermission": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+                "FunctionName": {
+                    "Fn::GetAtt": [
+                        "IncrementServingCounter",
+                        "Arn"
+                    ]
+                },
+                "Action": "lambda:InvokeFunction",
+                "Principal": "apigateway.amazonaws.com",
+                "SourceArn": {
+                    "Fn::Sub": [
+                        "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApi}/*/POST/increment_serving_counter",
+                        {
+                            "RestApi": {
+                                "Ref": "PrivateWaitingRoomApi"
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "UpdateSession": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": {
+                        "Fn::Join": [
+                            "-",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "S3Bucket"
+                                    ]
+                                },
+                                {
+                                    "Ref": "AWS::Region"
+                                }
+                            ]
+                        ]
+                    },
+                    "S3Key": {
+                        "Fn::Join": [
+                            "/",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "KeyPrefix"
+                                    ]
+                                },
+                                "aws-virtual-waiting-room-%%TIMESTAMP%%.zip"
+                            ]
+                        ]
+                    }
+                },
+                "Environment": {
+                    "Variables": {
+                        "TOKEN_TABLE": {
+                            "Ref": "TokenTable"
+                        },
+                        "EVENT_ID": {
+                            "Ref": "EventId"
+                        },
+                        "EVENT_BUS_NAME": {
+                            "Ref": "WaitingRoomEventBus"
+                        },
+                        "REDIS_HOST": {
+                            "Fn::GetAtt": [
+                                "RedisReplicationGroup",
+                                "PrimaryEndPoint.Address"
+                            ]
+                        },
+                        "REDIS_PORT": {
+                            "Fn::GetAtt": [
+                                "RedisReplicationGroup",
+                                "PrimaryEndPoint.Port"
+                            ]
+                        },
+                        "SOLUTION_ID": {
+                            "Fn::FindInMap": [
+                                "SolutionId",
+                                "UserAgent",
+                                "Extra"
+                            ]
+                        }, 
+                        "STACK_NAME": {"Ref": "AWS::StackName"}
+                    }
+                },
+                "Handler": "update_session.lambda_handler",
+                "Layers": [
+                    {
+                        "Ref": "RedisLayer"
+                    }
+                ],
+                "MemorySize": 1024,
+                "Role": {
+                    "Fn::GetAtt": [
+                        "UpdateSessionRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "python3.8",
+                "Timeout": 30,
+                "VpcConfig": {
+                    "SecurityGroupIds": [
+                        {
+                            "Fn::GetAtt": [
+                                "WaitingRoomVpc",
+                                "DefaultSecurityGroup"
+                            ]
+                        }
+                    ],
+                    "SubnetIds": [
+                        {
+                            "Ref": "Subnet1"
+                        },
+                        {
+                            "Ref": "Subnet2"
+                        }
+                    ]
+                }
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W92",
+                            "reason": "Lambda does not require ReservedConcurrentExecutions."
+                        },
+                        {
+                            "id": "W58",
+                            "reason": "Permission to write CloudWatch logs has been associated with IAM policy instead."
+                        }
+                    ]
+                }
+            }
+        },
+        "UpdateSessionPermission": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+                "FunctionName": {
+                    "Fn::GetAtt": [
+                        "UpdateSession",
+                        "Arn"
+                    ]
+                },
+                "Action": "lambda:InvokeFunction",
+                "Principal": "apigateway.amazonaws.com",
+                "SourceArn": {
+                    "Fn::Sub": [
+                        "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApi}/*/POST/update_session",
+                        {
+                            "RestApi": {
+                                "Ref": "PrivateWaitingRoomApi"
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "ResetState": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": {
+                        "Fn::Join": [
+                            "-",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "S3Bucket"
+                                    ]
+                                },
+                                {
+                                    "Ref": "AWS::Region"
+                                }
+                            ]
+                        ]
+                    },
+                    "S3Key": {
+                        "Fn::Join": [
+                            "/",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "KeyPrefix"
+                                    ]
+                                },
+                                "aws-virtual-waiting-room-%%TIMESTAMP%%.zip"
+                            ]
+                        ]
+                    }
+                },
+                "Environment": {
+                    "Variables": {
+                        "TOKEN_TABLE": {
+                            "Ref": "TokenTable"
+                        },
+                        "EVENT_ID": {
+                            "Ref": "EventId"
+                        },
+                        "REDIS_HOST": {
+                            "Fn::GetAtt": [
+                                "RedisReplicationGroup",
+                                "PrimaryEndPoint.Address"
+                            ]
+                        },
+                        "REDIS_PORT": {
+                            "Fn::GetAtt": [
+                                "RedisReplicationGroup",
+                                "PrimaryEndPoint.Port"
+                            ]
+                        },
+                        "SOLUTION_ID": {
+                            "Fn::FindInMap": [
+                                "SolutionId",
+                                "UserAgent",
+                                "Extra"
+                            ]
+                        },
+                        "STACK_NAME" : {
+                            "Ref": "AWS::StackName"
+                        }
+                    }
+                },
+                "Handler": "reset_initial_state.lambda_handler",
+                "Layers": [
+                    {
+                        "Ref": "RedisLayer"
+                    }
+                ],
+                "MemorySize": 1024,
+                "Role": {
+                    "Fn::GetAtt": [
+                        "GetTokenRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "python3.8",
+                "Timeout": 30,
+                "VpcConfig": {
+                    "SecurityGroupIds": [
+                        {
+                            "Fn::GetAtt": [
+                                "WaitingRoomVpc",
+                                "DefaultSecurityGroup"
+                            ]
+                        }
+                    ],
+                    "SubnetIds": [
+                        {
+                            "Ref": "Subnet1"
+                        },
+                        {
+                            "Ref": "Subnet2"
+                        }
+                    ]
+                }
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W92",
+                            "reason": "Lambda does not require ReservedConcurrentExecutions."
+                        },
+                        {
+                            "id": "W58",
+                            "reason": "Permission to write CloudWatch logs has been associated with IAM policy instead."
+                        }
+                    ]
+                }
+            }
+        },
+        "ResetStatePermission": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+                "FunctionName": {
+                    "Fn::GetAtt": [
+                        "ResetState",
+                        "Arn"
+                    ]
+                },
+                "Action": "lambda:InvokeFunction",
+                "Principal": "apigateway.amazonaws.com",
+                "SourceArn": {
+                    "Fn::Sub": [
+                        "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApi}/*/POST/reset_initial_state",
+                        {
+                            "RestApi": {
+                                "Ref": "PrivateWaitingRoomApi"
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "LambdaVpcRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "Policies": [
+                    {
+                        "PolicyName": "LambdaVpcRolePolicy",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": "secretsmanager:GetSecretValue",
+                                    "Resource": [
+                                        { "Fn::Sub": "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AWS::StackName}/redis-auth*" }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "AssignQueueRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "Policies": [
+                    {
+                        "PolicyName": "SQSPolicy",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "sqs:ReceiveMessage",
+                                        "sqs:DeleteMessage",
+                                        "sqs:GetQueueAttributes",
+                                        "logs:CreateLogGroup",
+                                        "logs:CreateLogStream",
+                                        "logs:PutLogEvents"
+                                    ],
+                                    "Resource": [
+                                        {"Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*"},
+                                        {"Fn::GetAtt": [ "WaitingRoomQueue", "Arn" ]}
+                                    ]                     
+                                },
+                                {
+                                    "Action": [
+                                        "secretsmanager:GetSecretValue"
+                                    ],
+                                    "Effect": "Allow",
+                                    "Resource": {
+                                        "Fn::Sub": "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AWS::StackName}/redis-auth*"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "GenerateEventsRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "Policies": [
+                    {
+                        "PolicyName": "GenerateEventsPolicy",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": "lambda:InvokeFunction",
+                                    "Resource": {
+                                        "Fn::GetAtt": [
+                                            "GetNumActiveTokens",
+                                            "Arn"
+                                        ]
+                                    },
+                                    "Sid": "LambdaPolicy"
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": "secretsmanager:GetSecretValue",
+                                    "Resource": [
+                                        { "Fn::Sub": "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AWS::StackName}/redis-auth*" }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "UpdateSessionRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "Policies": [
+                    {
+                        "PolicyName": "UpdateSessionPolicy",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": "secretsmanager:GetSecretValue",
+                                    "Resource": [
+                                        { "Fn::Sub": "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AWS::StackName}/redis-auth*" }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "GenerateTokenRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "Policies": [
+                    {
+                        "PolicyName": "GenerateTokenPolicy",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": "secretsmanager:GetSecretValue",
+                                    "Resource": [
+                                        { "Fn::Sub": "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AWS::StackName}/jwk-private*" },
+                                        { "Fn::Sub": "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AWS::StackName}/redis-auth*" }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "GetTokenRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "Policies": [
+                    {
+                        "PolicyName": "GetTokenPolicy",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": "secretsmanager:GetSecretValue",
+                                    "Resource": {
+                                        "Fn::Sub": "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AWS::StackName}/redis-auth*"
+                                    },
+                                    "Sid": "GetPrivateKeyPolicy"
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "SecretsManagerReadRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "LambdaCloudWatchPolicy": {
+            "Type": "AWS::IAM::Policy",
+            "Properties": {
+                "PolicyName": "LambdaCloudWatchPolicy",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "logs:CreateLogGroup",
+                                "logs:CreateLogStream",
+                                "logs:PutLogEvents"
+                            ],
+                            "Resource": {
+                                "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*"
+                            }
+                        }
+                    ]
+                },
+                "Roles": [
+                    {"Ref": "UpdateDistributionRole"},
+                    {"Ref": "SecretsManagerReadRole"},
+                    {"Ref": "InitializeStateRole"}
+                ]
+            }
+        },
+        "LambdaVpcPolicy": {
+            "Type": "AWS::IAM::Policy",
+            "Properties": {
+                "PolicyName": "LambdaVpcPolicy",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "logs:CreateLogGroup",
+                                "logs:CreateLogStream",
+                                "logs:PutLogEvents"
+                            ],
+                            "Resource": {
+                                "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*"
+                            }
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "ec2:CreateNetworkInterface",
+                                "ec2:AssignPrivateIpAddresses",
+                                "ec2:UnassignPrivateIpAddresses"
+                            ],
+                            "Resource": [ 
+                                { "Fn::Sub": "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:network-interface/*" },
+                                { "Fn::Sub": "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/*" },
+                                { "Fn::Sub": "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/*" }
+                            ]
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "ec2:DescribeNetworkInterfaces",
+                                "ec2:DeleteNetworkInterface"
+                            ],
+                            "Resource": "*"
+                        }
+                    ]},
+                "Roles": [
+                    {"Ref": "LambdaVpcRole"},
+                    {"Ref": "AssignQueueRole"},
+                    {"Ref": "GenerateEventsRole"},
+                    {"Ref": "UpdateSessionRole"},
+                    {"Ref": "GenerateTokenRole"},
+                    {"Ref": "GetTokenRole"},
+                    {"Ref": "GenerateKeysRole"},
+                    {"Ref": "IntersectAZRole"}
+                ]
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W12",
+                            "reason": "Certain EC2 actions apply to all resources per IAM."
+                        }
+                    ]}
+            }
+        }, 
+        "SecretsManagerPolicy": {
+            "Type": "AWS::IAM::Policy",
+            "Properties": {
+                "PolicyName": "SecretsManagerPolicy",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "secretsmanager:GetSecretValue"
+                            ],
+                            "Resource": [
+                                {
+                                    "Fn::Sub": "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AWS::StackName}/jwk-public*"
+                                }
+                            ],
+                            "Sid": "SecretsMgrPolicy"
+                        }
+                    ]
+                },
+                "Roles": [
+                    {
+                        "Ref": "GenerateTokenRole"
+                    },
+                    {
+                        "Ref": "SecretsManagerReadRole"
+                    }
+                ]
+            }
+        },
+        "EventsPolicy": {
+            "Type": "AWS::IAM::Policy",
+            "Properties": {
+                "PolicyName": "EventsPolicy",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "events:PutEvents"
+                            ],
+                            "Resource": {
+                                "Fn::GetAtt": [
+                                    "WaitingRoomEventBus",
+                                    "Arn"
+                                ]
+                            },
+                            "Sid": "EventsPolicy"
+                        }
+                    ]
+                },
+                "Roles": [
+                    {
+                        "Ref": "GenerateEventsRole"
+                    },
+                    {
+                        "Ref": "UpdateSessionRole"
+                    },
+                    {
+                        "Ref": "GenerateTokenRole"
+                    }
+                ]
+            }
+        },
+        "DynamoDbPolicy": {
+            "Type": "AWS::IAM::Policy",
+            "Properties": {
+                "PolicyName": "DynamoDbPolicy",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Sid": "DynamoDbPolicy",
+                            "Effect": "Allow",
+                            "Action": [
+                                "dynamodb:Query",
+                                "dynamodb:UpdateItem",
+                                "dynamodb:PutItem",
+                                "dynamodb:GetItem",
+                                "dynamodb:Scan",
+                                "dynamodb:DeleteItem"
+                            ],
+                            "Resource": [
+                                {
+                                    "Fn::GetAtt": [
+                                        "TokenTable",
+                                        "Arn"
+                                    ]
+                                },
+                                {
+                                    "Fn::Sub": [
+                                        "${TableArn}/index/*",
+                                        {
+                                            "TableArn": {
+                                                "Fn::GetAtt": [
+                                                    "TokenTable",
+                                                    "Arn"
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "Roles": [
+                    {
+                        "Ref": "GenerateEventsRole"
+                    },
+                    {
+                        "Ref": "UpdateSessionRole"
+                    },
+                    {
+                        "Ref": "GetTokenRole"
+                    },
+                    {
+                        "Ref": "GenerateTokenRole"
+                    }
+                ]
+            }
+        },
+        "ProtectedApiPolicy": {
+            "Type": "AWS::IAM::Policy",
+            "Properties": {
+                "PolicyName": "ProtectedAPIPolicy",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "execute-api:Invoke"
+                            ],
+                            "Resource": {
+                                "Fn::Sub": [
+                                    "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApi}/*",
+                                    {
+                                        "RestApi": {
+                                            "Ref": "PrivateWaitingRoomApi"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "Groups": [
+                    {
+                        "Ref": "ProtectedApiGroup"
+                    }
+                ]
+            }
+        },
+        "ProtectedApiGroup": {
+            "Type": "AWS::IAM::Group",
+            "Properties": {}
+        },
+        "SqsLambdaTrigger": {
+            "Type": "AWS::Lambda::EventSourceMapping",
+            "Properties": {
+                "BatchSize": 10,
+                "Enabled": true,
+                "EventSourceArn": {
+                    "Fn::GetAtt": [
+                        "WaitingRoomQueue",
+                        "Arn"
+                    ]
+                },
+                "FunctionName": {
+                    "Fn::GetAtt": [
+                        "AssignQueueNum",
+                        "Arn"
+                    ]
+                },
+                "MaximumBatchingWindowInSeconds": 0
+            }
+        },
+        "TokenTable": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+                "BillingMode": "PAY_PER_REQUEST",
+                "AttributeDefinitions": [
+                    {
+                        "AttributeName": "request_id",
+                        "AttributeType": "S"
+                    },
+                    {
+                        "AttributeName": "expires",
+                        "AttributeType": "N"
+                    },
+                    {
+                        "AttributeName": "event_id",
+                        "AttributeType": "S"
+                    }
+                ],
+                "KeySchema": [
+                    {
+                        "AttributeName": "request_id",
+                        "KeyType": "HASH"
+                    }
+                ],
+                "GlobalSecondaryIndexes": [
+                    {
+                        "IndexName": "EventExpiresIndex",
+                        "KeySchema": [
+                            {
+                                "AttributeName": "event_id",
+                                "KeyType": "HASH"
+                            },
+                            {
+                                "AttributeName": "expires",
+                                "KeyType": "RANGE"
+                            }
+                        ],
+                        "Projection": {
+                            "ProjectionType": "ALL"
+                        }
+                    }
+                ],
+                "PointInTimeRecoverySpecification": {
+                    "PointInTimeRecoveryEnabled": true
+                },
+                "SSESpecification": {
+                    "SSEEnabled": true
+                }
+            }
+        },
+        "GenerateKeys": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": {
+                        "Fn::Join": [
+                            "-",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "S3Bucket"
+                                    ]
+                                },
+                                {
+                                    "Ref": "AWS::Region"
+                                }
+                            ]
+                        ]
+                    },
+                    "S3Key": {
+                        "Fn::Join": [
+                            "/",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "KeyPrefix"
+                                    ]
+                                },
+                                "aws-virtual-waiting-room-custom-resources-%%TIMESTAMP%%.zip"
+                            ]
+                        ]
+                    }
+                },
+                "Environment": {
+                    "Variables": {
+                        "STACK_NAME": {
+                            "Ref": "AWS::StackName"
+                        },
+                        "SOLUTION_ID": {
+                            "Fn::FindInMap": [
+                                "SolutionId",
+                                "UserAgent",
+                                "Extra"
+                            ]
+                        }
+                    }
+                },
+                "Handler": "generate_keys.handler",
+                "Layers": [
+                    {
+                        "Ref": "JwcryptoLayer"
+                    }
+                ],
+                "MemorySize": 1024,
+                "Role": {
+                    "Fn::GetAtt": [
+                        "GenerateKeysRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "python3.8",
+                "Timeout": 30
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W89",
+                            "reason": "Lambda does not need to be in the Waiting Room VPC."
+                        },
+                        {
+                            "id": "W92",
+                            "reason": "Lambda does not require ReservedConcurrentExecutions."
+                        },
+                        {
+                            "id": "W58",
+                            "reason": "Permission to write CloudWatch logs has been associated with IAM policy instead."
+                        }
+                    ]
+                }
+            }
+        },
+        "GenerateKeysCustomResource": {
+            "Type": "AWS::CloudFormation::CustomResource",
+            "Properties": {
+                "ServiceToken": {
+                    "Fn::GetAtt": [
+                        "GenerateKeys",
+                        "Arn"
+                    ]
+                }
+            }
+        },
+        "GenerateKeysRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "Policies": [
+                    {
+                        "PolicyName": "GenerateKeysRolePolicy",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "secretsmanager:GetSecretValue",
+                                        "secretsmanager:CreateSecret",
+                                        "secretsmanager:UpdateSecret",
+                                        "secretsmanager:DeleteSecret",
+                                        "secretsmanager:PutSecretValue"
+                                    ],
+                                    "Resource": {
+                                        "Fn::Sub": "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AWS::StackName}*"
+                                    }
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": "secretsmanager:GetRandomPassword",
+                                    "Resource": "*"
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                }
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W11",
+                            "reason": "GetRandomPassword applies to all resources per IAM."
+                        }
+                    ]}
+            }
+        },
+        "IntersectAZFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": {
+                        "Fn::Join": [
+                            "-",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "S3Bucket"
+                                    ]
+                                },
+                                {
+                                    "Ref": "AWS::Region"
+                                }
+                            ]
+                        ]
+                    },
+                    "S3Key": {
+                        "Fn::Join": [
+                            "/",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "KeyPrefix"
+                                    ]
+                                },
+                                "aws-virtual-waiting-room-custom-resources-%%TIMESTAMP%%.zip"
+                            ]
+                        ]
+                    }
+                },
+                "Environment": {
+                    "Variables": {
+                        "STACK_NAME": {
+                            "Ref": "AWS::StackName"
+                        },
+                        "SOLUTION_ID": {
+                            "Fn::FindInMap": [
+                                "SolutionId",
+                                "UserAgent",
+                                "Extra"
+                            ]
+                        }
+                    }
+                },
+                "Handler": "intersect_az.handler",
+                "MemorySize": 1024,
+                "Role": {
+                    "Fn::GetAtt": [
+                        "IntersectAZRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "python3.8",
+                "Timeout": 30
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W89",
+                            "reason": "Lambda does not need to be in the Waiting Room VPC."
+                        },
+                        {
+                            "id": "W92",
+                            "reason": "Lambda does not require ReservedConcurrentExecutions."
+                        },
+                        {
+                            "id": "W58",
+                            "reason": "Permission to write CloudWatch logs has been associated with IAM policy instead."
+                        }
+                    ]
+                }
+            }
+        },
+        "IntersectAZCustomResource": {
+            "Type": "AWS::CloudFormation::CustomResource",
+            "Properties": {
+                "ServiceToken": {
+                    "Fn::GetAtt": [
+                        "IntersectAZFunction",
+                        "Arn"
+                    ]
+                },
+                "ServiceNames": [
+                    {
+                        "Fn::Sub": "com.amazonaws.${AWS::Region}.dynamodb"
+                    },
+                    {
+                        "Fn::Sub": "com.amazonaws.${AWS::Region}.events"
+                    },
+                    {
+                        "Fn::Sub": "com.amazonaws.${AWS::Region}.lambda"
+                    },
+                    {
+                        "Fn::Sub": "com.amazonaws.${AWS::Region}.secretsmanager"
+                    },
+                    {
+                        "Fn::Sub": "com.amazonaws.${AWS::Region}.sqs"
+                    }
+                ]
+            }
+        },
+        "IntersectAZRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "Policies": [
+                    {
+                        "PolicyName": "IntersectAZRolePolicy",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "ec2:DescribeVPCEndpointServices"
+                                    ],
+                                    "Resource": "*"
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                }
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W11",
+                            "reason": "By default DescribeVPCEndpointServices applies to all resources per IAM."
+                        }
+                    ]
+                }
+            }
+        },
+        "UpdateDistribution": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": {
+                        "Fn::Join": [
+                            "-",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "S3Bucket"
+                                    ]
+                                },
+                                {
+                                    "Ref": "AWS::Region"
+                                }
+                            ]
+                        ]
+                    },
+                    "S3Key": {
+                        "Fn::Join": [
+                            "/",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "KeyPrefix"
+                                    ]
+                                },
+                                "aws-virtual-waiting-room-custom-resources-%%TIMESTAMP%%.zip"
+                            ]
+                        ]
+                    }
+                },
+                "Environment": {
+                    "Variables": {
+                        "DISTRIBUTION_ID": {
+                            "Ref": "PublicApiCloudFront"
+                        },
+                        "API_KEY_ID": {
+                            "Ref": "ApiKey"
+                        },
+                        "SOLUTION_ID": {
+                            "Fn::FindInMap": [
+                                "SolutionId",
+                                "UserAgent",
+                                "Extra"
+                            ]
+                        },
+                        "STACK_NAME": {
+                            "Ref": "AWS::StackName"
+                        },
+                        "REPLICATION_GROUP": {"Ref": "RedisReplicationGroup"}
+                    }
+                },
+                "Handler": "update_distribution.handler",
+                "MemorySize": 1024,
+                "Role": {
+                    "Fn::GetAtt": [
+                        "UpdateDistributionRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "python3.8",
+                "Timeout": 30
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W89",
+                            "reason": "Lambda does not need to be in the Waiting Room VPC."
+                        },
+                        {
+                            "id": "W92",
+                            "reason": "Lambda does not require ReservedConcurrentExecutions."
+                        },
+                        {
+                            "id": "W58",
+                            "reason": "Permission to write CloudWatch logs has been associated with IAM policy instead."
+                        }
+                    ]
+                }
+            }
+        },
+        "UpdateDistributionCustomResource": {
+            "Type": "AWS::CloudFormation::CustomResource",
+            "DependsOn": [
+                "PublicApiCloudFront",
+                "ApiKey",
+                "GenerateKeysCustomResource",
+                "RedisReplicationGroup"
+            ],
+            "Properties": {
+                "ServiceToken": {
+                    "Fn::GetAtt": [
+                        "UpdateDistribution",
+                        "Arn"
+                    ]
+                },
+                "Timestamp": "%%TIMESTAMP%%"
+            }
+        },
+        "UpdateDistributionRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "Policies": [
+                    {
+                        "PolicyName": "UpdateDistributionRolePolicy",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Action": [
+                                        "secretsmanager:GetSecretValue"
+                                    ],
+                                    "Effect": "Allow",
+                                    "Resource": {
+                                        "Fn::Sub": "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AWS::StackName}/redis-auth*"
+                                    }
+                                },
+                                {
+                                    "Action": [
+                                        "elasticache:ModifyReplicationGroup"
+                                    ],
+                                    "Effect": "Allow",
+                                    "Resource": {
+                                        "Fn::Sub": "arn:aws:elasticache:${AWS::Region}:${AWS::AccountId}:replicationgroup:${RedisReplicationGroup}"
+                                    }
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "cloudfront:UpdateDistribution",
+                                        "cloudfront:GetDistributionConfig"
+                                    ],
+                                    "Resource": {
+                                        "Fn::Sub": "arn:aws:cloudfront::${AWS::AccountId}:distribution/${PublicApiCloudFront}"
+                                    }
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "apigateway:GET"
+                                    ],
+                                    "Resource": {
+                                        "Fn::Sub": "arn:aws:apigateway:${AWS::Region}::/apikeys/${ApiKey}"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "WaitingRoomEventBus": {
+            "Type": "AWS::Events::EventBus",
+            "Properties": {
+                "Name": {
+                    "Fn::Sub": "${AWS::StackName}-WaitingRoomEventBus"
+                }
+            }
+        },
+        "MetricsEventRule": {
+            "Type": "AWS::Events::Rule",
+            "Properties": {
+                "Description": "Writes metrics related to waiting room.",
+                "ScheduleExpression": "rate(1 minute)",
+                "State": "ENABLED",
+                "Targets": [
+                    {
+                        "Arn": {
+                            "Fn::GetAtt": [
+                                "GenerateEvents",
+                                "Arn"
+                            ]
+                        },
+                        "Id": {
+                            "Fn::Sub": "${AWS::StackName}-WaitingRoomEvents"
+                        }
+                    }
+                ]
+            },
+            "Condition": "GenerateWaitingRoomEvents"
+        },
+        "GenerateEventsRulePermissions": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+                "FunctionName": {
+                    "Fn::GetAtt": [
+                        "GenerateEvents",
+                        "Arn"
+                    ]
+                },
+                "Action": "lambda:InvokeFunction",
+                "Principal": "events.amazonaws.com",
+                "SourceArn": {
+                    "Fn::GetAtt": [
+                        "MetricsEventRule",
+                        "Arn"
+                    ]
+                }
+            },
+            "Condition": "GenerateWaitingRoomEvents"
+        },
+        "InitializeStateCustomResource": {
+            "Type": "AWS::CloudFormation::CustomResource",
+            "DependsOn": ["GenerateKeysCustomResource", "UpdateDistributionCustomResource"],
+            "Properties": {
+                "ServiceToken": {
+                    "Fn::GetAtt": [
+                        "InitializeState",
+                        "Arn"
+                    ]
+                },
+                "Timestamp": "%%TIMESTAMP%%"
+            }
+        },
+        "InitializeState": {
+            "Type": "AWS::Lambda::Function",
+            "DependsOn": [
+                "TokenTable",
+                "RedisReplicationGroup"
+            ],
+            "Properties": {
+                "Code": {
+                    "S3Bucket": {
+                        "Fn::Join": [
+                            "-",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "S3Bucket"
+                                    ]
+                                },
+                                {
+                                    "Ref": "AWS::Region"
+                                }
+                            ]
+                        ]
+                    },
+                    "S3Key": {
+                        "Fn::Join": [
+                            "/",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "KeyPrefix"
+                                    ]
+                                },
+                                "aws-virtual-waiting-room-custom-resources-%%TIMESTAMP%%.zip"
+                            ]
+                        ]
+                    }
+                },
+                "Environment": {
+                    "Variables": {
+                        "EVENT_ID": {
+                            "Ref": "EventId"
+                        },
+                        "CORE_API_ENDPOINT": {
+                            "Fn::Sub": [
+                                "https://${PrivateWaitingRoomApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}",
+                                {
+                                    "ApiStageName": {
+                                        "Fn::FindInMap": [
+                                            "CoreApi",
+                                            "Stage",
+                                            "Name"
+                                        ]
+                                    }
+                                }
+                            ]
+                        },
+                        "PRIVATE_API_ID": {
+                            "Ref": "PrivateWaitingRoomApi"
+                        },
+                        "PUBLIC_API_ID": {
+                            "Ref": "PublicWaitingRoomApi"
+                        },
+                        "SOLUTION_ID": {
+                            "Fn::FindInMap": [
+                                "SolutionId",
+                                "UserAgent",
+                                "Extra"
+                            ]
+                        },
+                        "API_STAGE": {
+                            "Fn::FindInMap": [
+                                "CoreApi",
+                                "Stage",
+                                "Name"
+                            ]
+                        }
+                    }
+                },
+                "Handler": "initialize_state.handler",
+                "MemorySize": 1024,
+                "Role": {
+                    "Fn::GetAtt": [
+                        "InitializeStateRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "python3.8",
+                "Timeout": 30
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W89",
+                            "reason": "Lambda does not need to be in the Waiting Room VPC."
+                        },
+                        {
+                            "id": "W92",
+                            "reason": "Lambda does not require ReservedConcurrentExecutions."
+                        },
+                        {
+                            "id": "W58",
+                            "reason": "Permission to write CloudWatch logs has been associated with IAM policy instead."
+                        }
+                    ]
+                }
+            }
+        },
+        "InitializeStateRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                },
+                "Policies": [
+                    {
+                        "PolicyName": "ApiInvokePolicy",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "execute-api:Invoke"
+                                    ],
+                                    "Resource": "arn:aws:execute-api:*:*:*/*/POST/reset_initial_state"
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": "apigateway:POST",
+                                    "Resource": [
+                                        {
+                                            "Fn::Sub": "arn:aws:apigateway:${AWS::Region}::/restapis/${PublicWaitingRoomApi}/deployments"
+                                        },
+                                        {
+                                            "Fn::Sub": "arn:aws:apigateway:${AWS::Region}::/restapis/${PrivateWaitingRoomApi}/deployments"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "PublicApiCloudFront": {
+            "Type": "AWS::CloudFront::Distribution",
+            "Properties": {
+                "DistributionConfig": {
+                    "Comment": "CDN for Waiting Room Public API",
+                    "CacheBehaviors": [
+                        {
+                            "TargetOriginId": "waiting-room-public-api",
+                            "ViewerProtocolPolicy": "https-only",
+                            "CachePolicyId": {
+                                "Ref": "EventRequestMaxCachePolicy"
+                            },
+                            "OriginRequestPolicyId": {
+                                "Ref": "OriginRequestPolicy"
+                            },
+                            "PathPattern": "/queue_num",
+                            "AllowedMethods": [
+                                "HEAD",
+                                "GET",
+                                "OPTIONS",
+                                "PUT",
+                                "PATCH",
+                                "POST",
+                                "DELETE"
+                            ],
+                            "CachedMethods": [
+                                "HEAD",
+                                "GET",
+                                "OPTIONS"
+                            ],
+                            "Compress": true
+                        },
+                        {
+                            "TargetOriginId": "waiting-room-public-api",
+                            "ViewerProtocolPolicy": "https-only",
+                            "CachePolicyId": {
+                                "Ref": "EventMaxCachePolicy"
+                            },
+                            "OriginRequestPolicyId": {
+                                "Ref": "OriginRequestPolicy"
+                            },
+                            "PathPattern": "/public_key",
+                            "AllowedMethods": [
+                                "HEAD",
+                                "GET",
+                                "OPTIONS",
+                                "PUT",
+                                "PATCH",
+                                "POST",
+                                "DELETE"
+                            ],
+                            "CachedMethods": [
+                                "HEAD",
+                                "GET",
+                                "OPTIONS"
+                            ],
+                            "Compress": true
+                        }
+                    ],
+                    "DefaultCacheBehavior": {
+                        "TargetOriginId": "waiting-room-public-api",
+                        "ViewerProtocolPolicy": "https-only",
+                        "CachePolicyId": {
+                            "Ref": "CachePolicy"
+                        },
+                        "OriginRequestPolicyId": {
+                            "Ref": "OriginRequestPolicy"
+                        },
+                        "AllowedMethods": [
+                            "HEAD",
+                            "GET",
+                            "OPTIONS",
+                            "PUT",
+                            "PATCH",
+                            "POST",
+                            "DELETE"
+                        ],
+                        "CachedMethods": [
+                            "HEAD",
+                            "GET",
+                            "OPTIONS"
+                        ],
+                        "Compress": true
+                    },
+                    "Enabled": true,
+                    "Origins": [
+                        {
+                            "CustomOriginConfig": {
+                                "OriginProtocolPolicy": "https-only",
+                                "OriginSSLProtocols": [
+                                    "TLSv1.2"
+                                ]
+                            },
+                            "OriginCustomHeaders": [
+                                {
+                                    "HeaderName": "x-api-key",
+                                    "HeaderValue": {
+                                        "Ref": "ApiKey"
+                                    }
+                                }
+                            ],
+                            "DomainName": {
+                                "Fn::Sub": "${PublicWaitingRoomApi}.execute-api.${AWS::Region}.amazonaws.com"
+                            },
+                            "Id": "waiting-room-public-api",
+                            "OriginPath": {
+                                "Fn::Sub": [
+                                    "/${ApiStageName}",
+                                    {
+                                        "ApiStageName": {
+                                            "Fn::FindInMap": [
+                                                "CoreApi",
+                                                "Stage",
+                                                "Name"
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    "Logging": {
+                        "Bucket": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "LoggingBucket"
+                                    },
+                                    ".s3.amazonaws.com"
+                                ]
+                            ]
+                        },
+                        "Prefix": "cf/"
+                    }
+                }
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W70",
+                            "reason": "Protocol version TLS 1.2 is already defined in the origin config"
+                        }
+                    ]
+                }
+            }
+        },
+        "LoggingBucket": {
+            "Type": "AWS::S3::Bucket",
+            "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
+            "Properties": {
+                "AccessControl": "LogDeliveryWrite",
+                "BucketEncryption": {
+                    "ServerSideEncryptionConfiguration": [
+                        {
+                            "ServerSideEncryptionByDefault": {
+                                "SSEAlgorithm": "AES256"
+                            }
+                        }
+                    ]
+                },
+                "LifecycleConfiguration": {
+                    "Rules": [
+                        {
+                            "AbortIncompleteMultipartUpload": {
+                                "DaysAfterInitiation": 5
+                            },
+                            "ExpirationInDays": 3650,
+                            "Id": "Expire Objects After 10 Years",
+                            "NoncurrentVersionExpirationInDays": 3650,
+                            "Status": "Enabled"
+                        }
+                    ]
+                }
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W35",
+                            "reason": "This is the logging bucket. No access logging needed."
+                        },
+                        {
+                            "id": "W51",
+                            "reason": "This is the logging bucket.  No bucket policy needed."
+                        }
+                    ]
+                }
+            }
+        },
+        "LoggingBucketPolicy": {
+            "Type": "AWS::S3::BucketPolicy",
+            "Properties": {
+                "Bucket": {
+                    "Ref": "LoggingBucket"
+                },
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Id": "SecureTransportOnly",
+                    "Statement": [
+                        {
+                            "Action": "s3:*",
+                            "Effect": "Deny",
+                            "Principal": "*",
+                            "Resource": [
+                                {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            {
+                                                "Fn::GetAtt": [
+                                                    "LoggingBucket",
+                                                    "Arn"
+                                                ]
+                                            },
+                                            "/*"
+                                        ]
+                                    ]
+                                },
+                                {
+                                    "Fn::GetAtt": [
+                                        "LoggingBucket",
+                                        "Arn"
+                                    ]
+                                }
+                            ],
+                            "Condition": {
+                                "Bool": {
+                                    "aws:SecureTransport": false
+                                }
+                            }
+                        },
+                        {
+                            "Sid": "AWSLogDeliveryWrite",
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "delivery.logs.amazonaws.com"
+                            },
+                            "Action": "s3:PutObject",
+                            "Resource": {"Fn::Sub": "arn:aws:s3:::${LoggingBucket}/vpc/AWSLogs/${AWS::AccountId}/*"},
+                            "Condition": {
+                                "StringEquals": {
+                                    "s3:x-amz-acl": "bucket-owner-full-control"
+                                }
+                            }
+                        },
+                        {
+                            "Sid": "AWSLogDeliveryAclCheck",
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "delivery.logs.amazonaws.com"
+                            },
+                            "Action": "s3:GetBucketAcl",
+                            "Resource": {"Fn::Sub": "arn:aws:s3:::${LoggingBucket}"}
+                        }
+                    ]
+                }
+            }
+        },
+        "OriginRequestPolicy": {
+            "Type": "AWS::CloudFront::OriginRequestPolicy",
+            "Properties": {
+                "OriginRequestPolicyConfig": {
+                    "CookiesConfig": {
+                        "CookieBehavior": "none"
+                    },
+                    "HeadersConfig": {
+                        "HeaderBehavior": "none"
+                    },
+                    "Name": {
+                        "Fn::Sub": "${AWS::StackName}-OriginRequestPolicy"
+                    },
+                    "QueryStringsConfig": {
+                        "QueryStringBehavior": "all"
+                    }
+                }
+            }
+        },
+        "CachePolicy": {
+            "Type": "AWS::CloudFront::CachePolicy",
+            "Properties": {
+                "CachePolicyConfig": {
+                    "DefaultTTL": 5,
+                    "MaxTTL": 5,
+                    "MinTTL": 0,
+                    "Name": {
+                        "Fn::Sub": "${AWS::StackName}-CachePolicy"
+                    },
+                    "ParametersInCacheKeyAndForwardedToOrigin": {
+                        "CookiesConfig": {
+                            "CookieBehavior": "none"
+                        },
+                        "EnableAcceptEncodingBrotli": true,
+                        "EnableAcceptEncodingGzip": true,
+                        "HeadersConfig": {
+                            "HeaderBehavior": "none"
+                        },
+                        "QueryStringsConfig": {
+                            "QueryStringBehavior": "whitelist",
+                            "QueryStrings": ["event_id"]
+                        }
+                    }
+                }
+            }
+        },
+        "EventMaxCachePolicy": {
+            "Type": "AWS::CloudFront::CachePolicy",
+            "Properties": {
+                "CachePolicyConfig": {
+                    "DefaultTTL": 86400,
+                    "MaxTTL": 31536000,
+                    "MinTTL": 1,
+                    "Name": {
+                        "Fn::Sub": "${AWS::StackName}-EventMaxCachePolicy"
+                    },
+                    "ParametersInCacheKeyAndForwardedToOrigin": {
+                        "CookiesConfig": {
+                            "CookieBehavior": "none"
+                        },
+                        "EnableAcceptEncodingBrotli": true,
+                        "EnableAcceptEncodingGzip": true,
+                        "HeadersConfig": {
+                            "HeaderBehavior": "none"
+                        },
+                        "QueryStringsConfig": {
+                            "QueryStringBehavior": "whitelist",
+                            "QueryStrings": ["event_id"]
+                        }
+                    }
+                }
+            }
+        },
+        "EventRequestMaxCachePolicy": {
+            "Type": "AWS::CloudFront::CachePolicy",
+            "Properties": {
+                "CachePolicyConfig": {
+                    "DefaultTTL": 86400,
+                    "MaxTTL": 31536000,
+                    "MinTTL": 1,
+                    "Name": {
+                        "Fn::Sub": "${AWS::StackName}-EventRequestMaxCachePolicy"
+                    },
+                    "ParametersInCacheKeyAndForwardedToOrigin": {
+                        "CookiesConfig": {
+                            "CookieBehavior": "none"
+                        },
+                        "EnableAcceptEncodingBrotli": true,
+                        "EnableAcceptEncodingGzip": true,
+                        "HeadersConfig": {
+                            "HeaderBehavior": "none"
+                        },
+                        "QueryStringsConfig": {
+                            "QueryStringBehavior": "whitelist",
+                            "QueryStrings": ["event_id", "request_id"]
+                        }
+                    }
+                }
+            }
+        },
+        "ApiKey": {
+            "Type": "AWS::ApiGateway::ApiKey",
+            "DependsOn": [
+                "PublicWaitingRoomApiDeployment"
+            ],
+            "Properties": {
+                "Description": "Public Waiting Room API Key",
+                "Enabled": true,
+                "StageKeys": [
+                    {
+                        "RestApiId": {
+                            "Ref": "PublicWaitingRoomApi"
+                        },
+                        "StageName": {
+                            "Fn::FindInMap": [
+                                "CoreApi",
+                                "Stage",
+                                "Name"
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "UsagePlan": {
+            "Type": "AWS::ApiGateway::UsagePlan",
+            "DependsOn": [
+                "PublicWaitingRoomApiDeployment"
+            ],
+            "Properties": {
+                "ApiStages": [
+                    {
+                        "ApiId": {
+                            "Ref": "PublicWaitingRoomApi"
+                        },
+                        "Stage": {
+                            "Fn::FindInMap": [
+                                "CoreApi",
+                                "Stage",
+                                "Name"
+                            ]
+                        }
+                    }
+                ],
+                "Description": "Public API key usage plan"
+            }
+        },
+        "UsagePlanKey": {
+            "Type": "AWS::ApiGateway::UsagePlanKey",
+            "Properties": {
+                "KeyId": {
+                    "Ref": "ApiKey"
+                },
+                "KeyType": "API_KEY",
+                "UsagePlanId": {
+                    "Ref": "UsagePlan"
+                }
+            }
+        },
+        "RedisAuth": {
+            "Type" : "AWS::SecretsManager::Secret",
+            "Properties" : {
+                "Description" : "Auth for Redis",
+                "GenerateSecretString" : {
+                    "PasswordLength": 128,
+                    "ExcludeCharacters": "\"%'()*+,./:;=?@[\\]_`{|}~",
+                    "IncludeSpace": false
+                },
+                "KmsKeyId" : "alias/aws/secretsmanager",
+                "Name": {"Fn::Sub": "${AWS::StackName}/redis-auth"}
+            }          
+        },
+        "4XXErrorPrivateApiAlarm" : {
+            "Type" : "AWS::CloudWatch::Alarm",
+            "Properties" : {
+                "AlarmDescription": "4xx errors > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "4XXError",
+                "Namespace": "AWS/ApiGateway",
+                "Dimensions": [
+                    {
+                        "Name": "ApiName",
+                        "Value": {
+                            "Fn::Sub": "${AWS::StackName}-private-waiting-room-api"
+                          }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+              }
+        },
+        "5XXErrorPrivateApiAlarm" : {
+            "Type" : "AWS::CloudWatch::Alarm",
+            "Properties" : {
+                "AlarmDescription": "5xx errors > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "5XXError",
+                "Namespace": "AWS/ApiGateway",
+                "Dimensions": [
+                    {
+                        "Name": "ApiName",
+                        "Value": {
+                            "Fn::Sub": "${AWS::StackName}-private-waiting-room-api"
+                          }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+              }
+        },
+        "4XXErrorPublicApiAlarm" : {
+            "Type" : "AWS::CloudWatch::Alarm",
+            "Properties" : {
+                "AlarmDescription": "4xx errors > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "4XXError",
+                "Namespace": "AWS/ApiGateway",
+                "Dimensions": [
+                    {
+                        "Name": "ApiName",
+                        "Value": {
+                            "Fn::Sub": "${AWS::StackName}-public-waiting-room-api"
+                          }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+              }
+        },
+        "5XXErrorPublicApiAlarm" : {
+            "Type" : "AWS::CloudWatch::Alarm",
+            "Properties" : {
+                "AlarmDescription": "5xx errors > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "5XXError",
+                "Namespace": "AWS/ApiGateway",
+                "Dimensions": [
+                    {
+                        "Name": "ApiName",
+                        "Value": {
+                            "Fn::Sub": "${AWS::StackName}-public-waiting-room-api"
+                          }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+              }
+        },
+        "DLQMessagesVisibleAlarm" : {
+            "Type" : "AWS::CloudWatch::Alarm",
+            "Properties" : {
+                "AlarmDescription": "DLQ messages visible > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "ApproximateNumberOfMessagesVisible",
+                "Namespace": "AWS/SQS",
+                "Dimensions": [
+                    {
+                        "Name": "QueueName",
+                        "Value": { "Fn::GetAtt" : ["WaitingRoomDeadLetterQueue", "QueueName"] }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+              }
+        },
+        "AssignQueueNumErrorsAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Errors > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Errors",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "AssignQueueNum"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "AssignQueueNumThrottlesAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Throttles > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Throttles",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "AssignQueueNum"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "AuthGenerateTokenErrorsAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Errors > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Errors",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "AuthGenerateToken"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "AuthGenerateTokenThrottlesAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Throttles > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Throttles",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "AuthGenerateToken"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "GetNumActiveTokensErrorsAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Errors > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Errors",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "GetNumActiveTokens"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "GetNumActiveTokensThrottlesAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Throttles > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Throttles",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "GetNumActiveTokens"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "GetExpiredTokensErrorsAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Errors > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Errors",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "GetExpiredTokens"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "GetExpiredTokensThrottlesAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Throttles > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Throttles",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "GetExpiredTokens"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "GetServingNumErrorsAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Errors > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Errors",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "GetServingNum"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "GetServingNumThrottlesAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Throttles > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Throttles",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "GetServingNum"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "GetWaitingNumErrorsAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Errors > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Errors",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "GetWaitingNum"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "GetWaitingNumThrottlesAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Throttles > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Throttles",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "GetWaitingNum"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "GenerateEventsErrorsAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Errors > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Errors",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "GenerateEvents"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "GenerateEventsThrottlesAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Throttles > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Throttles",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "GenerateEvents"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "GenerateTokenErrorsAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Errors > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Errors",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "GenerateToken"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "GenerateTokenThrottlesAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Throttles > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Throttles",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "GenerateToken"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "GetQueueNumErrorsAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Errors > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Errors",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "GetQueueNum"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "GetQueueNumThrottlesAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Throttles > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Throttles",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "GetQueueNum"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "GetPublicKeyErrorsAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Errors > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Errors",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "GetPublicKey"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "GetPublicKeyThrottlesAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Throttles > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Throttles",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "GetPublicKey"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "IncrementServingCounterErrorsAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Errors > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Errors",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "IncrementServingCounter"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "IncrementServingCounterThrottlesAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Throttles > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Throttles",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "IncrementServingCounter"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "UpdateSessionErrorsAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Errors > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Errors",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "UpdateSession"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "UpdateSessionThrottlesAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Throttles > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Throttles",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "UpdateSession"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "ResetStateErrorsAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Errors > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Errors",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "ResetState"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "ResetStateThrottlesAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Throttles > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Throttles",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "ResetState"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        }
+    },
+    "Conditions": {
+        "GenerateWaitingRoomEvents": {
+            "Fn::Equals": [
+                {
+                    "Ref": "EnableEventsGeneration"
+                },
+                "true"
+            ]
+        }
+    },
+    "Parameters": {
+        "EventId": {
+            "Description": "Unique ID for this instance of the waiting room",
+            "Type": "String",
+            "MinLength": 1,
+            "ConstraintDescription": "Please enter a value for this field.",
+            "Default": "abc123"
+        },
+        "ValidityPeriod": {
+            "Description": "Token validity period in seconds",
+            "Type": "Number",
+            "ConstraintDescription": "Please enter a value for this field.",
+            "Default": 3600
+        },
+        "EnableEventsGeneration": {
+            "Description": "If set to true, metrics related to the Waiting Room will be written to its event bus every minute",
+            "Type": "String",
+            "AllowedValues": [
+                "true",
+                "false"
+            ],
+            "Default": "false"
+        },
+        "RedisPort": {
+            "Description": "Port to use when connecting to Redis",
+            "Type": "Number",
+            "ConstraintDescription": "Please enter a value for this field.",
+            "Default": "1785"
+        }
+    },
+    "Outputs": {
+        "PublicApiInvokeURL": {
+            "Value": {
+                "Fn::Sub": [
+                    "https://${CloudFrontDomainName}",
+                    {
+                        "CloudFrontDomainName": {
+                            "Fn::GetAtt": [
+                                "PublicApiCloudFront",
+                                "DomainName"
+                            ]
+                        }
+                    }
+                ]
+            },
+            "Description": "Public API Invoke URL"
+        },
+        "PrivateApiInvokeURL": {
+            "Value": {
+                "Fn::Sub": [
+                    "https://${PrivateWaitingRoomApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}",
+                    {
+                        "ApiStageName": {
+                            "Fn::FindInMap": [
+                                "CoreApi",
+                                "Stage",
+                                "Name"
+                            ]
+                        }
+                    }
+                ]
+            },
+            "Description": "Private API Invoke URL"
+        },
+        "PublicTokenIssuer": {
+            "Value": {
+                "Fn::Sub": [
+                    "https://${PublicWaitingRoomApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}",
+                    {
+                        "ApiStageName": {
+                            "Fn::FindInMap": [
+                                "CoreApi",
+                                "Stage",
+                                "Name"
+                            ]
+                        }
+                    }
+                ]
+            },
+            "Description": "Public Token Issuer"
+        },
+        "PrivateTokenIssuer": {
+            "Value": {
+                "Fn::Sub": [
+                    "https://${PrivateWaitingRoomApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}",
+                    {
+                        "ApiStageName": {
+                            "Fn::FindInMap": [
+                                "CoreApi",
+                                "Stage",
+                                "Name"
+                            ]
+                        }
+                    }
+                ]
+            },
+            "Description": "Private Token Issuer"
+        }
+    }
+}

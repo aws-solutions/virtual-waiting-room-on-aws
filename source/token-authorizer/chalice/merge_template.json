@@ -1,0 +1,119 @@
+{
+    "Description": "AWS Virtual Waiting Room API Gateway Authorizers %%VERSION%%",
+    "Parameters": {
+        "PublicAPIEndpoint": {
+            "Description": "Public endpoint for the virtual waiting room APIs",
+            "Type": "String"
+        },
+        "WaitingRoomEventID": {
+            "Description": "Event ID of waiting room",
+            "Type": "String"
+        },
+        "IssuerURI": {
+            "Description": "Issuer URI of the public keys and tokens",
+            "Type": "String"
+        }
+    },
+    "Mappings": {
+        "SourceCode": {
+            "General": {
+                "S3Bucket": "%%BUCKET_NAME%%",
+                "KeyPrefix": "%%SOLUTION_NAME%%/%%VERSION%%"
+            }
+        }
+    },
+    "Resources": {
+        "JWCryptoLayer": {
+            "Type": "AWS::Serverless::LayerVersion",
+            "Properties": {
+                "CompatibleRuntimes": [
+                    "python3.8"
+                ],
+                "ContentUri": {
+                    "Bucket": {
+                        "Fn::Join": [
+                            "-", [{
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "S3Bucket"
+                                    ]
+                                },
+                                {
+                                    "Ref": "AWS::Region"
+                                }
+                            ]
+                        ]
+                    },
+                    "Key": {
+                        "Fn::Join": [
+                            "/", [{
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "KeyPrefix"
+                                    ]
+                                },
+                                "aws-virtual-waiting-room-jwcrypto-layer-%%TIMESTAMP%%.zip"
+                            ]
+                        ]
+                    }
+                },
+                "Description": "JWCrypto Layer for Authorizers"
+            }
+        },
+        "ApiGatewayAuthorizer": {
+            "Properties": {
+                "CodeUri": {
+                    "Bucket": {
+                        "Fn::Join": [
+                            "-", [{
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "S3Bucket"
+                                    ]
+                                },
+                                {
+                                    "Ref": "AWS::Region"
+                                }
+                            ]
+                        ]
+                    },
+                    "Key": {
+                        "Fn::Join": [
+                            "/", [{
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "KeyPrefix"
+                                    ]
+                                },
+                                "aws-virtual-waiting-room-authorizers-%%TIMESTAMP%%.zip"
+                            ]
+                        ]
+                    }
+                },
+                "Environment": {
+                    "Variables": {
+                        "PUBLIC_API_ENDPOINT": { "Fn::Sub": "${PublicAPIEndpoint}" },
+                        "WAITING_ROOM_EVENT_ID": { "Fn::Sub": "${WaitingRoomEventID}" },
+                        "ISSUER": { "Fn::Sub": "${IssuerURI}" }
+                    }
+                },
+                "Layers": [{ "Fn::Sub": "${JWCryptoLayer}" }]
+            }
+        }
+    },
+    "Outputs": {
+        "ApiGatewayAuthorizerArn": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "ApiGatewayAuthorizer",
+                    "Arn"
+                ]
+            }
+        }
+        
+    }
+}

@@ -1,0 +1,480 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "AWS Virtual Waiting Room Inlet Strategies %%VERSION%%",
+    "Mappings": {
+        "SourceCode": {
+            "General": {
+                "S3Bucket": "%%BUCKET_NAME%%",
+                "KeyPrefix": "%%SOLUTION_NAME%%/%%VERSION%%"
+            }
+        }
+    },
+    "Resources": {
+        "PeriodicInlet": {
+            "Type": "AWS::Lambda::Function",
+            "Condition": "Periodic",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": {
+                        "Fn::Join": [
+                            "-",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "S3Bucket"
+                                    ]
+                                },
+                                {
+                                    "Ref": "AWS::Region"
+                                }
+                            ]
+                        ]
+                    },
+                    "S3Key": {
+                        "Fn::Join": [
+                            "/",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "KeyPrefix"
+                                    ]
+                                },
+                                "aws-virtual-waiting-room-sample-inlet-strategies-%%TIMESTAMP%%.zip"
+                            ]
+                        ]
+                    }
+                },
+                "Environment": {
+                    "Variables": {
+                        "EVENT_ID": {
+                            "Ref": "EventId"
+                        },
+                        "INCREMENT_BY": {
+                            "Ref": "IncrementBy"
+                        },
+                        "START_TIME": {
+                            "Ref": "StartTime"
+                        },
+                        "END_TIME": {
+                            "Ref": "EndTime"
+                        },
+                        "CORE_API_ENDPOINT": {
+                            "Ref": "PrivateCoreApiEndpoint"
+                        },
+                        "CORE_API_REGION": {
+                            "Ref": "CoreApiRegion"
+                        }
+                    }
+                },
+                "Handler": "periodic_inlet.lambda_handler",
+                "MemorySize": 1024,
+                "Role": {
+                    "Fn::GetAtt": [
+                        "InletRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "python3.8",
+                "Timeout": 30
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W92",
+                            "reason": "Lambda does not require ReservedConcurrentExecutions."
+                        },
+                        {
+                            "id": "W89",
+                            "reason": "Lambda does not need to be in a VPC."
+                        }
+                    ]
+                }
+            }
+        },
+        "InletRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+                ],
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                },
+                "Policies": [
+                    {
+                        "PolicyName": "ApiInvokePolicy",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "execute-api:Invoke"
+                                    ],
+                                    "Resource": [
+                                        "arn:aws:execute-api:*:*:*/*/POST/increment_serving_counter",
+                                        "arn:aws:execute-api:*:*:*/*/POST/update_session",
+                                        "arn:aws:execute-api:*:*:*/*/GET/num_active_tokens"
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "PeriodicInletRule": {
+            "Type": "AWS::Events::Rule",
+            "Condition": "Periodic",
+            "Properties": {
+                "Description": "Increments the waiting room service counter every minute",
+                "ScheduleExpression": "rate(1 minute)",
+                "State": "ENABLED",
+                "Targets": [
+                    {
+                        "Arn": {
+                            "Fn::GetAtt": [
+                                "PeriodicInlet",
+                                "Arn"
+                            ]
+                        },
+                        "Id": {
+                            "Fn::Sub": "${AWS::StackName}-PeriodicInlet"
+                        }
+                    }
+                ]
+            }
+        },
+        "PeriodicInletRulePermissions": {
+            "Type": "AWS::Lambda::Permission",
+            "Condition": "Periodic",
+            "Properties": {
+                "FunctionName": {
+                    "Fn::GetAtt": [
+                        "PeriodicInlet",
+                        "Arn"
+                    ]
+                },
+                "Action": "lambda:InvokeFunction",
+                "Principal": "events.amazonaws.com",
+                "SourceArn": {
+                    "Fn::GetAtt": [
+                        "PeriodicInletRule",
+                        "Arn"
+                    ]
+                }
+            }
+        },
+        "MaxSizeInlet": {
+            "Type": "AWS::Lambda::Function",
+            "Condition": "MaxSize",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": {
+                        "Fn::Join": [
+                            "-",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "S3Bucket"
+                                    ]
+                                },
+                                {
+                                    "Ref": "AWS::Region"
+                                }
+                            ]
+                        ]
+                    },
+                    "S3Key": {
+                        "Fn::Join": [
+                            "/",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "KeyPrefix"
+                                    ]
+                                },
+                                "aws-virtual-waiting-room-sample-inlet-strategies-%%TIMESTAMP%%.zip"
+                            ]
+                        ]
+                    }
+                },
+                "Environment": {
+                    "Variables": {
+                        "EVENT_ID": {
+                            "Ref": "EventId"
+                        },
+                        "MAX_SIZE": {
+                            "Ref": "MaxSize"
+                        },
+                        "CORE_API_ENDPOINT": {
+                            "Ref": "PrivateCoreApiEndpoint"
+                        },
+                        "CORE_API_REGION": {
+                            "Ref": "CoreApiRegion"
+                        }
+                    }
+                },
+                "Handler": "max_size_inlet.lambda_handler",
+                "MemorySize": 1024,
+                "Role": {
+                    "Fn::GetAtt": [
+                        "InletRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "python3.8",
+                "Timeout": 30
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W92",
+                            "reason": "Lambda does not require ReservedConcurrentExecutions."
+                        },
+                        {
+                            "id": "W89",
+                            "reason": "Lambda does not need to be in a VPC."
+                        }
+                    ]
+                }
+            }
+        },
+        "MaxSizeInletPermissions": {
+            "Type": "AWS::Lambda::Permission",
+            "Condition": "MaxSize",
+            "Properties": {
+                "FunctionName": {
+                    "Fn::GetAtt": [
+                        "MaxSizeInlet",
+                        "Arn"
+                    ]
+                },
+                "Action": "lambda:InvokeFunction",
+                "Principal": "sns.amazonaws.com",
+                "SourceArn": {
+                    "Ref": "MaxSizeInletSns"
+                }
+            }
+        },
+        "MaxSizeInletSns": {
+            "Type": "AWS::SNS::Topic",
+            "Condition": "MaxSize",
+            "Properties": {
+                "DisplayName": {
+                    "Fn::Sub": "${AWS::StackName}-MaxSizeNotification"
+                },
+                "Subscription": [
+                    {
+                        "Endpoint": {
+                            "Fn::GetAtt": [
+                                "MaxSizeInlet",
+                                "Arn"
+                            ]
+                        },
+                        "Protocol": "lambda"
+                    }
+                ],
+                "KmsMasterKeyId": "alias/aws/sns"
+            }
+        },
+        "SnsPolicy": {
+            "Condition": "MaxSize",
+            "Type": "AWS::SNS::TopicPolicy",
+            "Properties": {
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Sid": "AllowPublishThroughSSLOnly",
+                            "Action": "SNS:Publish",
+                            "Effect": "Deny",
+                            "Resource": [
+                              { "Ref": "MaxSizeInletSns" }
+                            ],
+                            "Condition": {
+                              "Bool": {
+                                "aws:SecureTransport": "false"
+                              }
+                            },
+                            "Principal": "*"
+                        },
+                        {
+                        "Effect": "Allow",
+                        "Principal": "*",
+                        "Action": [
+                            "SNS:GetTopicAttributes",
+                            "SNS:SetTopicAttributes",
+                            "SNS:AddPermission",
+                            "SNS:RemovePermission",
+                            "SNS:DeleteTopic",
+                            "SNS:Subscribe",
+                            "SNS:ListSubscriptionsByTopic",
+                            "SNS:Publish",
+                            "SNS:Receive"
+                        ],
+                        "Resource": {"Ref": "MaxSizeInletSns"},
+                        "Condition": {
+                            "StringEquals": {
+                                "AWS:SourceOwner": {"Fn::Sub": "${AWS::AccountId}"}
+                            }
+                        }
+                    }]
+                },
+                "Topics": [{ "Ref": "MaxSizeInletSns" }]
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "F18",
+                            "reason": "This topic can be published to by resources outside of the source account."
+                        }
+                    ]
+                }
+            }
+        }
+    },
+    "Conditions": {
+        "Periodic": {
+            "Fn::Equals": [
+                {
+                    "Ref": "InletStrategy"
+                },
+                "Periodic"
+            ]
+        },
+        "MaxSize": {
+            "Fn::Equals": [
+                {
+                    "Ref": "InletStrategy"
+                },
+                "MaxSize"
+            ]
+        }
+    },
+    "Parameters": {
+        "EventId": {
+            "Description": "Unique ID for this instance of the waiting room",
+            "Type": "String",
+            "MinLength": 1,
+            "ConstraintDescription": "Please enter a value for this field.",
+            "Default": "abc123"
+        },
+        "PrivateCoreApiEndpoint": {
+            "Description": "The private core API endpoint",
+            "Type": "String",
+            "ConstraintDescription": "Please enter a value for this field.",
+            "Default": "https://svb3ke9gk8.execute-api.us-west-2.amazonaws.com/dev"
+        },
+        "CoreApiRegion": {
+            "Description": "AWS Region where the core API is installed",
+            "Type": "String",
+            "ConstraintDescription": "Please enter a value for this field.",
+            "Default": "us-west-2"
+        },
+        "InletStrategy": {
+            "Description": "Inlet strategy to be deployed. Periodic will increment the serving number every minute. MaxSize will increment serving number based on the maximum number of transactions that the downstream commerce site can handle at a given time.",
+            "Type": "String",
+            "Default": "Periodic",
+            "AllowedValues": [
+                "Periodic",
+                "MaxSize"
+            ]
+        },
+        "IncrementBy": {
+            "Description": "How much the serving counter should be incremented every minute",
+            "Type": "Number",
+            "ConstraintDescription": "Please enter a value for this field.",
+            "Default": 10
+        },
+        "StartTime": {
+            "Description": "Timestamp on when to start incrementing the serving number (epoch time in seconds)",
+            "Type": "Number",
+            "ConstraintDescription": "Please enter a value for this field.",
+            "Default": 1626336061
+        },
+        "EndTime": {
+            "Description": "Timestamp on when to stop incrementing the serving number (epoch time in seconds). If left 0, serving number is incremented indefinitely.",
+            "Type": "Number",
+            "ConstraintDescription": "Please enter a value for this field.",
+            "Default": 0
+        },
+        "MaxSize": {
+            "Description": "The maximum number of transactions that the downstream commerce site can process at a time",
+            "Type": "Number",
+            "ConstraintDescription": "Please enter a value for this field.",
+            "Default": 100
+        }
+    },
+    "Metadata": {
+        "AWS::CloudFormation::Interface": {
+            "ParameterGroups": [
+                {
+                    "Label": {
+                        "default": "REQUIRED PARAMETERS"
+                    },
+                    "Parameters": [
+                        "EventId",
+                        "PrivateCoreApiEndpoint",
+                        "CoreApiRegion",
+                        "InletStrategy"
+                    ]
+                },
+                {
+                    "Label": {
+                        "default": "PERIODIC INLET STRATEGY REQUIRED PARAMETERS"
+                    },
+                    "Parameters": [
+                        "IncrementBy",
+                        "StartTime",
+                        "EndTime"
+                    ]
+                },
+                {
+                    "Label": {
+                        "default": "MAXSIZE INLET STRATEGY REQUIRED PARAMETERS"
+                    },
+                    "Parameters": [
+                        "MaxSize"
+                    ]
+                }
+            ],
+            "ParameterLabels": {
+                "InletStrategy": {
+                    "default": "Which inlet strategy would you like to deploy?"
+                }
+            }
+        }
+    },
+    "Outputs": {
+        "InletTopicARN": {
+            "Condition": "MaxSize",
+            "Description": "ARN of topic subscribed by inlet Lambda function",
+            "Value": { "Ref" : "MaxSizeInletSns" }
+        }
+    }
+}

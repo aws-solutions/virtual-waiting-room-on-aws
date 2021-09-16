@@ -1,0 +1,17 @@
+__pycache__/
+.DS_Store
+.vscode/
+*~
+*tmp
+~*
+error.txt
+package/
+tmp/
+global-s3-assets/
+regional-s3-assets/
+deployment/aws-virtual-waiting-room-authorizers.json
+deployment/aws-virtual-waiting-room-openid.json
+deployment/aws-virtual-waiting-room-sample.json
+*egg-info/
+aws_virtual_waiting_room_common*
+deployment/pkg/

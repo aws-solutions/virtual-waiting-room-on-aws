@@ -1,0 +1,644 @@
+{
+    "Description": "AWS Virtual Waiting Room API Sample %%VERSION%%",
+    "Parameters": {
+        "AuthorizerARN": {
+            "Description": "ARN of the API Gateway Lambda Authorizer",
+            "Type": "String"
+        },
+        "InletTopicARN": {
+            "Description": "ARN of topic subscribed by inlet Lambda function",
+            "Type": "String"
+        },
+        "APIGatewayRegion": {
+            "Description": "AWS Region name of the API Gateway",
+            "Type": "String"
+        },
+        "PublicAPIEndpoint": {
+            "Description": "Public endpoint URL for the virtual waiting room APIs",
+            "Type": "String"
+        },
+        "PrivateAPIEndpoint": {
+            "Description": "Private endpoint URL for the virtual waiting room APIs",
+            "Type": "String"
+        },
+        "EventID": {
+            "Description": "Event ID of waiting room",
+            "Type": "String"
+        },
+        "CheckoutUserCount": {
+            "Description": "Number of current users to report after each checkout",
+            "Type": "String",
+            "Default": "99"
+        }
+    },
+    "Mappings": {
+        "SourceCode": {
+            "General": {
+                "S3Bucket": "%%BUCKET_NAME%%",
+                "KeyPrefix": "%%SOLUTION_NAME%%/%%VERSION%%"
+            }
+        },
+        "SolutionId": {
+            "UserAgent": {
+                "Extra": "AwsSolution/SO0166/%%VERSION%%"
+            }
+        }
+    },
+    "Outputs": {
+        "WaitingRoomURL": {
+            "Value": {
+                "Fn::Sub": [
+                    "https://${CloudFrontDomainName}/index.html?event_id=${EventID}",
+                    {
+                        "CloudFrontDomainName": {
+                            "Fn::GetAtt": [
+                                "SampleWebContentCloudFront",
+                                "DomainName"
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    "Resources": {
+        "AuthorizerInvokePermission": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+                "FunctionName": {
+                    "Ref": "AuthorizerARN"
+                },
+                "Action": "lambda:InvokeFunction",
+                "Principal": "apigateway.amazonaws.com",
+                "SourceArn": {
+                    "Fn::Sub": [
+                        "arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${RestAPIId}/*",
+                        {
+                            "RestAPIId": {
+                                "Ref": "RestAPI"
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "RestAPI": {
+            "Properties": {
+                "DefinitionBody": {
+                    "info": {
+                        "description": "Waiting Room Sample Protected API",
+                        "title": {
+                            "Fn::Sub": "${AWS::StackName}-sample-protected-api"
+                        }
+                    },
+                    "securityDefinitions": {
+                        "WaitingRoomAuthorizer": {
+                            "x-amazon-apigateway-authorizer": {
+                                "authorizerUri": {
+                                    "Fn::Sub": "arn:aws:apigateway:${APIGatewayRegion}:lambda:path/2015-03-31/functions/${AuthorizerARN}/invocations"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "DefaultRole": {
+            "Properties": {
+                "Policies": [
+                    {
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Sid": "e74c1fd6fae1d4af2dc0c7b3f7d87f5d051e8fe5",
+                                    "Action": "s3:*",
+                                    "Effect": "Deny",
+                                    "Resource": "arn:aws:s3:::*",
+                                    "Condition": {
+                                        "StringNotEquals": {
+                                            "s3:ResourceAccount": {
+                                                "Fn::Sub": "${AWS::AccountId}"
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "s3:PutObject",
+                                        "s3:ListBucket",
+                                        "s3:DeleteObject"
+                                    ],
+                                    "Resource": [
+                                        {
+                                            "Fn::GetAtt": [
+                                                "SampleWebContentBucket",
+                                                "Arn"
+                                            ]
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                "/",
+                                                [
+                                                    {
+                                                        "Fn::GetAtt": [
+                                                            "SampleWebContentBucket",
+                                                            "Arn"
+                                                        ]
+                                                    },
+                                                    "*"
+                                                ]
+                                            ]
+                                        }
+                                    ],
+                                    "Sid": "1a85431c16a6568990f6dceb8c964199d651fa8c"
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "logs:CreateLogGroup",
+                                        "logs:CreateLogStream",
+                                        "logs:DescribeLogGroups",
+                                        "logs:DescribeLogStreams",
+                                        "logs:PutLogEvents",
+                                        "logs:GetLogEvents",
+                                        "logs:FilterLogEvents"
+                                    ],
+                                    "Resource": {"Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*"}                       
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "sns:Publish"
+                                    ],
+                                    "Resource": {
+                                        "Fn::Sub": "${InletTopicARN}"
+                                    },
+                                    "Sid": "3f565d4d5621425b3a29c4fb08122991f9f0f35d"
+                                }
+                            ]
+                        },
+                        "PolicyName": "DefaultRolePolicy"
+                    }
+                ]
+            }
+        },
+        "APIHandler": {
+            "Properties": {
+                "CodeUri": {
+                    "Bucket": {
+                        "Fn::Join": [
+                            "-",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "S3Bucket"
+                                    ]
+                                },
+                                {
+                                    "Ref": "AWS::Region"
+                                }
+                            ]
+                        ]
+                    },
+                    "Key": {
+                        "Fn::Join": [
+                            "/",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "KeyPrefix"
+                                    ]
+                                },
+                                "aws-virtual-waiting-room-sample-%%TIMESTAMP%%.zip"
+                            ]
+                        ]
+                    }
+                },
+                "Environment": {
+                    "Variables": {
+                        "AUTHORIZER_ARN": {
+                            "Fn::Sub": "${AuthorizerARN}"
+                        },
+                        "API_GATEWAY_REGION": {
+                            "Fn::Sub": "${APIGatewayRegion}"
+                        },
+                        "INLET_TOPIC_ARN": {
+                            "Fn::Sub": "${InletTopicARN}"
+                        },
+                        "PUBLIC_API_ENDPOINT": {
+                            "Fn::Sub": "${PublicAPIEndpoint}"
+                        },
+                        "PRIVATE_API_ENDPOINT": {
+                            "Fn::Sub": "${PrivateAPIEndpoint}"
+                        },
+                        "SOLUTION_ID": {
+                            "Fn::FindInMap": [
+                                "SolutionId",
+                                "UserAgent",
+                                "Extra"
+                            ]
+                        },
+                        "CHECKOUT_USER_COUNT": {
+                            "Fn::Sub": "${CheckoutUserCount}"
+                        }
+                    }
+                }
+            }
+        },
+        "BucketLoaderFunction": {
+            "Type": "AWS::Serverless::Function",
+            "Properties": {
+                "Runtime": "python3.8",
+                "Handler": "cfn_bucket_loader.handler",
+                "CodeUri": {
+                    "Bucket": {
+                        "Fn::Join": [
+                            "-",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "S3Bucket"
+                                    ]
+                                },
+                                {
+                                    "Ref": "AWS::Region"
+                                }
+                            ]
+                        ]
+                    },
+                    "Key": {
+                        "Fn::Join": [
+                            "/",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "KeyPrefix"
+                                    ]
+                                },
+                                "aws-virtual-waiting-room-sample-custom-resources-%%TIMESTAMP%%.zip"
+                            ]
+                        ]
+                    }
+                },
+                "Tracing": "PassThrough",
+                "Timeout": 60,
+                "MemorySize": 1024,
+                "Role": {
+                    "Fn::GetAtt": [
+                        "DefaultRole",
+                        "Arn"
+                    ]
+                },
+                "Environment": {
+                    "Variables": {
+                        "SOLUTION_ID": {
+                            "Fn::FindInMap": [
+                                "SolutionId",
+                                "UserAgent",
+                                "Extra"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "BucketLoaderResource": {
+            "Type": "AWS::CloudFormation::CustomResource",
+            "Properties": {
+                "ServiceToken": {
+                    "Fn::GetAtt": [
+                        "BucketLoaderFunction",
+                        "Arn"
+                    ]
+                },
+                "BucketName": {
+                    "Ref": "SampleWebContentBucket"
+                },
+                "APIs": {
+                    "public_api": {
+                        "Fn::Sub": "${PublicAPIEndpoint}"
+                    },
+                    "private_api": {
+                        "Fn::Sub": "${PrivateAPIEndpoint}"
+                    },
+                    "sample_api": {
+                        "Fn::Sub": "https://${RestAPI}.execute-api.${AWS::Region}.${AWS::URLSuffix}/store"
+                    }
+                },
+                "Timestamp": "%%TIMESTAMP%%"
+            }
+        },
+        "SampleWebContentBucketOAI": {
+            "Type": "AWS::CloudFront::CloudFrontOriginAccessIdentity",
+            "Properties": {
+                "CloudFrontOriginAccessIdentityConfig": {
+                    "Comment": "OAI for sample web content"
+                }
+            }
+        },
+        "SampleWebContentCloudFront": {
+            "Type": "AWS::CloudFront::Distribution",
+            "Properties": {
+                "DistributionConfig": {
+                    "Comment": "CDN for Virtual Waiting Room sample web content",
+                    "DefaultRootObject": "index.html",
+                    "DefaultCacheBehavior": {
+                        "TargetOriginId": "origin-www-bucket",
+                        "ForwardedValues": {
+                            "QueryString": false,
+                            "Cookies": {
+                                "Forward": "none"
+                            },
+                            "Headers": [
+                                "Origin",
+                                "Access-Control-Request-Method",
+                                "Access-Control-Request-Headers"
+                            ]
+                        },
+                        "ViewerProtocolPolicy": "redirect-to-https",
+                        "AllowedMethods": [
+                            "HEAD",
+                            "GET",
+                            "OPTIONS"
+                        ],
+                        "CachedMethods": [
+                            "HEAD",
+                            "GET",
+                            "OPTIONS"
+                        ],
+                        "Compress": true,
+                        "MinTTL": 0,
+                        "DefaultTTL": 30,
+                        "MaxTTL": 60
+                    },
+                    "Enabled": true,
+                    "Origins": [
+                        {
+                            "DomainName": {
+                                "Fn::Join": [
+                                    "",
+                                    [
+                                        {
+                                            "Ref": "SampleWebContentBucket"
+                                        },
+                                        ".s3.amazonaws.com"
+                                    ]
+                                ]
+                            },
+                            "Id": "origin-www-bucket",
+                            "S3OriginConfig": {
+                                "OriginAccessIdentity": {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "origin-access-identity/cloudfront/",
+                                            {
+                                                "Ref": "SampleWebContentBucketOAI"
+                                            }
+                                        ]
+                                    ]
+                                }
+                            }
+                        }
+                    ],
+                    "ViewerCertificate": {
+                        "CloudFrontDefaultCertificate": true,
+                        "MinimumProtocolVersion": "TLSv1.2_2019"
+                    },
+                    "Logging": {
+                        "Bucket": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "SampleWebLoggingBucket"
+                                    },
+                                    ".s3.amazonaws.com"
+                                ]
+                            ]
+                        },
+                        "IncludeCookies": true,
+                        "Prefix": "cf/"
+                    }
+                }
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W70",
+                            "reason": "If the distribution uses the CloudFront domain name such as d111111abcdef8.cloudfront.net (you set CloudFrontDefaultCertificate to true), CloudFront automatically sets the security policy to TLSv1 regardless of the value that you set here."
+                        }
+                    ]
+                }
+            }
+        },
+        "SampleWebContentBucketPolicy": {
+            "Type": "AWS::S3::BucketPolicy",
+            "Properties": {
+                "Bucket": {
+                    "Ref": "SampleWebContentBucket"
+                },
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Id": "PolicyForCloudFrontPrivateContent",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "CanonicalUser": {
+                                    "Fn::GetAtt": [
+                                        "SampleWebContentBucketOAI",
+                                        "S3CanonicalUserId"
+                                    ]
+                                }
+                            },
+                            "Action": "s3:GetObject",
+                            "Resource": {
+                                "Fn::Join": [
+                                    "",
+                                    [
+                                        {
+                                            "Fn::GetAtt": [
+                                                "SampleWebContentBucket",
+                                                "Arn"
+                                            ]
+                                        },
+                                        "/*"
+                                    ]
+                                ]
+                            }
+                        },
+                        {
+                            "Effect": "Deny",
+                            "Principal": "*",
+                            "Action": "s3:*",
+                            "Resource": [
+                                {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            {
+                                                "Fn::GetAtt": [
+                                                    "SampleWebContentBucket",
+                                                    "Arn"
+                                                ]
+                                            },
+                                            "/*"
+                                        ]
+                                    ]
+                                },
+                                {
+                                    "Fn::GetAtt": [
+                                        "SampleWebContentBucket",
+                                        "Arn"
+                                    ]
+                                }
+                            ],
+                            "Condition": {
+                                "Bool": {
+                                    "aws:SecureTransport": "false"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "SampleWebLoggingBucketPolicy": {
+            "Type": "AWS::S3::BucketPolicy",
+            "Properties": {
+                "Bucket": {
+                    "Ref": "SampleWebLoggingBucket"
+                },
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Id": "PolicyForCloudFrontPrivateLogging",
+                    "Statement": [
+                        {
+                            "Effect": "Deny",
+                            "Principal": "*",
+                            "Action": "s3:*",
+                            "Resource": [
+                                {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            {
+                                                "Fn::GetAtt": [
+                                                    "SampleWebLoggingBucket",
+                                                    "Arn"
+                                                ]
+                                            },
+                                            "/*"
+                                        ]
+                                    ]
+                                },
+                                {
+                                    "Fn::GetAtt": [
+                                        "SampleWebLoggingBucket",
+                                        "Arn"
+                                    ]
+                                }
+                            ],
+                            "Condition": {
+                                "Bool": {
+                                    "aws:SecureTransport": "false"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "SampleWebContentBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "CorsConfiguration": {
+                    "CorsRules": [
+                        {
+                            "AllowedHeaders": [
+                                "*"
+                            ],
+                            "AllowedMethods": [
+                                "GET"
+                            ],
+                            "AllowedOrigins": [
+                                "*"
+                            ]
+                        }
+                    ]
+                },
+                "BucketEncryption": {
+                    "ServerSideEncryptionConfiguration": [
+                        {
+                            "ServerSideEncryptionByDefault": {
+                                "SSEAlgorithm": "AES256"
+                            }
+                        }
+                    ]
+                },
+                "LoggingConfiguration": {
+                    "DestinationBucketName": {
+                        "Ref": "SampleWebLoggingBucket"
+                    },
+                    "LogFilePrefix": "www/"
+                }
+            }
+        },
+        "SampleWebLoggingBucket": {
+            "Type": "AWS::S3::Bucket",
+            "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
+            "Properties": {
+                "AccessControl": "LogDeliveryWrite",
+                "BucketEncryption": {
+                    "ServerSideEncryptionConfiguration": [
+                        {
+                            "ServerSideEncryptionByDefault": {
+                                "SSEAlgorithm": "AES256"
+                            }
+                        }
+                    ]
+                },
+                "LifecycleConfiguration": {
+                    "Rules": [
+                        {
+                            "AbortIncompleteMultipartUpload": {
+                                "DaysAfterInitiation": 5
+                            },
+                            "ExpirationInDays": 3650,
+                            "Id": "Expire Objects After 10 Years",
+                            "NoncurrentVersionExpirationInDays": 3650,
+                            "Status": "Enabled"
+                        }
+                    ]
+                }
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W35",
+                            "reason": "This is the logging bucket. No access logging needed."
+                        },
+                        {
+                            "id": "W51",
+                            "reason": "This is the logging bucket.  No bucket policy needed."
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}
