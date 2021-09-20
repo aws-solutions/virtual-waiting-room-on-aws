@@ -95,16 +95,16 @@ jobs:
       #     name: virtual-environment-requirements
       #     path: deployment/requirements.txt
 
-  main-branch-deploy-cfn:
-    runs-on: ubuntu-latest
-    needs:
-      [
-        # cfn-lint-check-job,
-        # cfn-nag-check-job,
-        hawkeye-check-job,
-        # pylint-check-job,
-        jshint-check-job
-      ]
+  # main-branch-deploy-cfn:
+  #   runs-on: ubuntu-latest
+  #   needs:
+  #     [
+  #       # cfn-lint-check-job,
+  #       # cfn-nag-check-job,
+  #       hawkeye-check-job,
+  #       # pylint-check-job,
+  #       jshint-check-job
+  #     ]
     # use a specific environment for this build that has secrets defined and protection rules in place, if needed
     # environment: test_install_env
     # if: github.ref == ${{ env.BRANCH }}
