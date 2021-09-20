@@ -8,10 +8,7 @@ This module is the unit test for the core API Lambda functions.
 import os
 import unittest
 from unittest.mock import patch
-from unittest.mock import Mock
 
-from botocore import response
-from counters import *
 import json
 from botocore.response import StreamingBody
 from botocore.exceptions import ClientError
@@ -408,7 +405,7 @@ class CoreApiTestCase(unittest.TestCase):
             'event_id': self.invalid_id, 'request_id': self.request_id}}
         response = get_serving_num.lambda_handler(mock_event_400, None)
         self.assertEqual(response["statusCode"], 400)
-        self.assertEqual(json.loads(response['body'])["error"], self.invalid_event_req_id_msg)
+        self.assertEqual(json.loads(response['body'])["error"], self.invalid_event_id_msg)
 
         # request_id exists
         mock_event_200 = {'queryStringParameters': {
@@ -418,28 +415,18 @@ class CoreApiTestCase(unittest.TestCase):
         body = json.loads(response['body'])
         self.assertEqual(body['serving_counter'], 1)
 
-        # request_id does not exist
-        with patch.object(get_serving_num.rc, 'exists', return_value=0):
-            mock_event_404 = {'queryStringParameters': {
-                'event_id': self.event_id, 'request_id': self.invalid_id}}
-            response = get_serving_num.lambda_handler(mock_event_404, None)
-            self.assertEqual(response["statusCode"], 404)
-        self.assertEqual(json.loads(response['body'])["error"], self.invalid_request_id_msg)
-
     @patch.object(get_waiting_num.rc, 'get', return_value=1)
     @patch.object(get_waiting_num.rc, 'exists', return_value=1)
     def test_get_waiting_num(self, mock_get, mock_exists):
         """
         This function tests the get_waiting_num lambda function
         """
-        event_id = os.environ["EVENT_ID"]
-
         # event_id is invalid
         mock_event_400 = {'queryStringParameters': {
             'event_id': self.invalid_id, 'request_id': self.request_id}}
         response = get_waiting_num.lambda_handler(mock_event_400, None)
         self.assertEqual(response["statusCode"], 400)
-        self.assertEqual(json.loads(response['body'])["error"], self.invalid_event_req_id_msg)
+        self.assertEqual(json.loads(response['body'])["error"], self.invalid_event_id_msg)
 
         # request_id exists
         mock_event_200 = {'queryStringParameters': {
@@ -449,14 +436,6 @@ class CoreApiTestCase(unittest.TestCase):
         # waiting num = queue_count - token_count
         body = json.loads(response['body'])
         self.assertEqual(int(body['waiting_num']), 0)
-
-        # request_id does not exist
-        with patch.object(get_waiting_num.rc, 'exists', return_value=0):
-            mock_event_404 = {'queryStringParameters': {
-                'event_id': self.event_id, 'request_id': self.invalid_id}}
-            response = get_waiting_num.lambda_handler(mock_event_404, None)
-            self.assertEqual(response["statusCode"], 404)
-        self.assertEqual(json.loads(response['body'])["error"], self.invalid_request_id_msg)
 
     @patch.object(increment_serving_counter.rc, 'incrby', return_value=1)
     def test_increment_serving_counter(self, mock_incrby):

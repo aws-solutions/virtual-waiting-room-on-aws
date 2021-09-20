@@ -13,7 +13,6 @@ import boto3
 from botocore import config
 from counters import SERVING_COUNTER
 from vwr.common.sanitize import deep_clean
-from vwr.common.validate import is_valid_rid
 
 # connection info and other globals
 REDIS_HOST = os.environ["REDIS_HOST"]
@@ -32,6 +31,10 @@ redis_auth = response.get("SecretString")
 rc = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, ssl=True, decode_responses=True, password=redis_auth)
 
 def lambda_handler(event, context):
+    """
+    This function is the entry handler for Lambda.
+    """
+
     print(event)
     client_event_id = deep_clean(event['queryStringParameters']['event_id'])
     headers = {
@@ -51,6 +54,6 @@ def lambda_handler(event, context):
         response = {
             "statusCode": 400,
             "headers": headers,
-            "body": json.dumps({"error": "Invalid event"})
+            "body": json.dumps({"error": "Invalid event ID"})
         }
     return response

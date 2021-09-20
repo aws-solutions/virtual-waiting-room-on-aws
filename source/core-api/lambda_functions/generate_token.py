@@ -43,6 +43,10 @@ redis_auth = response.get("SecretString")
 rc = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, ssl=True, decode_responses=True, password=redis_auth)
    
 def lambda_handler(event, context):
+    """
+    This function is the entry handler for Lambda.
+    """
+
     print(event)
     body = json.loads(event['body'])
     request_id = deep_clean(body['request_id'])

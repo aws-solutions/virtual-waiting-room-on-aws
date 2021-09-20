@@ -29,6 +29,10 @@ active_tokens_api = f'{CORE_API_ENDPOINT}/num_active_tokens'
 num_updated_tokens = 0
 
 def lambda_handler(event, context):
+    """
+    This function is responsible for processing an SNS message to update serving counter
+    """
+
     print(event)
     msg = json.loads(event["Records"][0]["Sns"]["Message"])
     result = json.dumps({"message": "Nothing to process."})
@@ -83,6 +87,10 @@ def lambda_handler(event, context):
     return result
 
 def update_tokens(status, request_ids, auth):
+    """
+    This function is responsible for updating the status of a token via the API
+    """
+
     global num_updated_tokens
     print(f"number of status {status}: {len(request_ids)}")
 

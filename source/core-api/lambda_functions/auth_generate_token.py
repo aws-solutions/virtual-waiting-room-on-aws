@@ -44,6 +44,10 @@ redis_auth = response.get("SecretString")
 rc = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, ssl=True, decode_responses=True, password=redis_auth)
 
 def lambda_handler(event, context):
+    """
+    This function is the entry handler for Lambda.
+    """
+
     global VALIDITY_PERIOD
     print(event)
     body = json.loads(event['body'])

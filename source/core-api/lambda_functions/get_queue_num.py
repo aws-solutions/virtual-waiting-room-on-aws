@@ -32,6 +32,10 @@ rc = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, ssl=True, decode_responses=Tr
 
 
 def lambda_handler(event, context):
+    """
+    This function is the entry handler for Lambda.
+    """
+    
     print(event)
     request_id = deep_clean(event['queryStringParameters']['request_id'])
     client_event_id = deep_clean(event['queryStringParameters']['event_id'])

@@ -75,7 +75,7 @@ class CoreCustomResourcesTestCase(unittest.TestCase):
         # test create with exception
         with patch.object(generate_keys.secrets_client, 'create_secret', side_effect=Exception):
             with self.assertRaises(Exception):
-                response = generate_keys.create(None, None)
+                generate_keys.create(None, None)
 
         # test delete
         generate_keys.delete(None, None)

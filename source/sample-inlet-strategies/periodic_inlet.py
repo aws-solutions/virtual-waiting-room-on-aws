@@ -23,6 +23,10 @@ START_TIME = int(os.environ.get("START_TIME"))
 END_TIME = int(os.environ.get("END_TIME"))
 
 def lambda_handler(event, context):
+    """
+    This function is responsible for incrementing the serving counter on a periodic basis
+    """
+
     print(event)
     current_time = int(time.time())
     if (current_time > START_TIME and (END_TIME == 0 or current_time < END_TIME)):

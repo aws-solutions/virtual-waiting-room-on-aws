@@ -27,6 +27,10 @@ ddb_resource = boto3.resource('dynamodb', config=user_config)
 ddb_table = ddb_resource.Table(DDB_TABLE_NAME)
     
 def lambda_handler(event, context):
+    """
+    This function is the entry handler for Lambda.
+    """
+
     print(event)
     client_event_id = deep_clean(event['queryStringParameters']['event_id'])
     headers = { 

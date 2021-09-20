@@ -33,6 +33,10 @@ rc = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, ssl=True, decode_responses=Tr
 
 
 def lambda_handler(event, context):
+    """
+    This function is the entry handler for Lambda.
+    """
+
     headers = {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*'

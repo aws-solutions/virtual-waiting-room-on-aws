@@ -37,10 +37,10 @@ rc = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, ssl=True, decode_responses=Tr
 # put events for number of valid tokens, current queue_counter value, current serving_num value, 
 # total items(tokens) in db, and items(tokens) marked session_completed
 def lambda_handler(event, context):
-    print(event)
-    # get number of valid tokens
-    # call get_num_active_tokens function
-    
+    """
+    This function is the entry handler for Lambda.
+    """
+    print(event)    
     input_params = {"queryStringParameters": {"event_id": EVENT_ID}}
     
     response = lambda_client.invoke(

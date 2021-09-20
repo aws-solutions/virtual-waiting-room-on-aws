@@ -19,6 +19,10 @@ user_config = config.Config(**user_agent_extra)
 client = boto3.client('secretsmanager', config=user_config)
 
 def lambda_handler(event, context):
+    """
+    This function is the entry handler for Lambda.
+    """
+
     print(event)
     headers = {
         'Content-Type': 'application/json',
