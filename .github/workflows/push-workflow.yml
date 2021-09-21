@@ -6,7 +6,7 @@ env:
   SOLUTION_NAME: aws-virtual-waiting-room
   DIST_OUTPUT_BUCKET: swr
   REGIONS_TO_DEPLOY: "us-west-2"
-  BRANCH: refs/heads/main
+  RELEASE_BRANCH: refs/heads/main
 
 on:
   push:
@@ -73,40 +73,33 @@ jobs:
         run: |
           cd deployment
           ./build-s3-dist.sh $DIST_OUTPUT_BUCKET $SOLUTION_NAME $VERSION
-      # - name: Deploy to S3
-      #   run: |
-      #     cd deployment
-      #     # if we're building master, do a release deploy
-      #     if [ "$GITHUB_REF" == ${{ env.BRANCH }} ]; then
-      #       ./deploy.sh -b $DIST_OUTPUT_BUCKET -s $SOLUTION_NAME -v $VERSION -r "$REGIONS_TO_DEPLOY" -a public-read -t release
-      #     # if not, do a dev deploy
-      #     else
-      #       ./deploy.sh -b $DIST_OUTPUT_BUCKET -s $SOLUTION_NAME -v $VERSION -r "$REGIONS_TO_DEPLOY" -a none -t dev
-      #     fi
-      # - name: Store templates for check jobs
-      #   uses: actions/upload-artifact@v2
-      #   with:
-      #     name: cloudformation-templates
-      #     path: deployment/global-s3-assets/*release.template
-      # - name: Store virtual environment requirements
-      #   uses: actions/upload-artifact@v2
-      #   with:
-      #     name: virtual-environment-requirements
-      #     path: deployment/requirements.txt
+      - name: Deploy to S3
+        run: |
+          cd deployment
+          ./deploy.sh -b $DIST_OUTPUT_BUCKET -s $SOLUTION_NAME -v $VERSION -r "$REGIONS_TO_DEPLOY" -a none -t dev
+      - name: Store templates for check jobs
+        uses: actions/upload-artifact@v2
+        with:
+          name: cloudformation-templates
+          path: deployment/global-s3-assets/*.template
+      - name: Store virtual environment requirements
+        uses: actions/upload-artifact@v2
+        with:
+          name: virtual-environment-requirements
+          path: deployment/requirements.txt
 
   # main-branch-deploy-cfn:
   #   runs-on: ubuntu-latest
   #   needs:
   #     [
-  #       # cfn-lint-check-job,
-  #       # cfn-nag-check-job,
+  #       cfn-lint-check-job,
+  #       cfn-nag-check-job,
   #       hawkeye-check-job,
-  #       # pylint-check-job,
-  #       jshint-check-job
+  #       pylint-check-job
   #     ]
     # use a specific environment for this build that has secrets defined and protection rules in place, if needed
     # environment: test_install_env
-    # if: github.ref == ${{ env.BRANCH }}
+    # if: github.ref == ${{ env.RELEASE_BRANCH }}
     # steps:
     #   - name: Initialize AWS credentials
     #     uses: aws-actions/configure-aws-credentials@v1
@@ -124,31 +117,31 @@ jobs:
     #       response="$( aws cloudformation create-stack --stack-name MSAM-test-master-$VERSION --template-url $TEMPLATE --region $REGION --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND --disable-rollback )"
     #       echo $response
 
-  # cfn-lint-check-job:
-  #   needs: scan-build-upload-job
-  #   runs-on: ubuntu-latest
-  #   name: Check templates with cfn-lint
-  #   steps:
-  #     - name: Download build templates
-  #       uses: actions/download-artifact@v2
-  #       with:
-  #         name: cloudformation-templates
-  #     - name: Download virtual environment requirements
-  #       uses: actions/download-artifact@v2
-  #       with:
-  #         name: virtual-environment-requirements
-  #     - name: Update system path
-  #       run: echo "$HOME/.local/bin" >> $GITHUB_PATH
-  #     - name: Install required system packages
-  #       run: |
-  #         pip install --upgrade --force-reinstall -r requirements.txt 2> error.txt
-  #         if [ -s error.txt ]; then
-  #           echo "ERROR: System package installation failed."
-  #           cat error.txt
-  #           exit 1
-  #         fi
-  #     - name: Check with cfn-lint
-  #       run: cfn-lint *.template
+  cfn-lint-check-job:
+    needs: scan-build-upload-job
+    runs-on: ubuntu-latest
+    name: Check templates with cfn-lint
+    steps:
+      - name: Download build templates
+        uses: actions/download-artifact@v2
+        with:
+          name: cloudformation-templates
+      - name: Download virtual environment requirements
+        uses: actions/download-artifact@v2
+        with:
+          name: virtual-environment-requirements
+      - name: Update system path
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Install required system packages
+        run: |
+          pip install --upgrade --force-reinstall -r requirements.txt 2> error.txt
+          if [ -s error.txt ]; then
+            echo "ERROR: System package installation failed."
+            cat error.txt
+            exit 1
+          fi
+      - name: Check with cfn-lint
+        run: cfn-lint *.template
   
   # cfn-nag-check-job:
   #   needs: scan-build-upload-job
@@ -162,17 +155,17 @@ jobs:
   #     - name: Check with cfn-nag
   #       uses: stelligent/cfn_nag@master
 
-  hawkeye-check-job:
-    needs: scan-build-upload-job
-    runs-on: ubuntu-latest
-    name: Check source code with Hawkeye
-    steps:
-      # check out the merged PR
-      - name: Checkout
-        uses: actions/checkout@v2
-      # check it with Hawkeye
-      - name: Hawkeye Scanner
-        uses: ./.github/actions/hawkeye-scan
+  # hawkeye-check-job:
+  #   needs: scan-build-upload-job
+  #   runs-on: ubuntu-latest
+  #   name: Check source code with Hawkeye
+  #   steps:
+  #     # check out the merged PR
+  #     - name: Checkout
+  #       uses: actions/checkout@v2
+  #     # check it with Hawkeye
+  #     - name: Hawkeye Scanner
+  #       uses: ./.github/actions/hawkeye-scan
 
   # pylint-check-job:
   #   needs: scan-build-upload-job
@@ -198,19 +191,18 @@ jobs:
   #         cd source
   #         ./tools/pylint.sh
 
-  jshint-check-job:
-    needs: scan-build-upload-job
-    runs-on: ubuntu-latest
-    name: Check source code with JShint
-    steps:
-      # check out the merged PR
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Install JShint
-        run: npm install jshint
-      - name: Check with JShint
-        run: |
-          cd source/openid-waitingroom/www
-          find . -name '*.js' -type f -print | \
-            grep --invert-match "/external/" | \
-            xargs ../../node_modules/jshint/bin/jshint
+  # jshint-check-job:
+  #   needs: scan-build-upload-job
+  #   runs-on: ubuntu-latest
+  #   name: Check source code with JShint
+  #   steps:
+  #     # check out the merged PR
+  #     - name: Checkout
+  #       uses: actions/checkout@v2
+  #     - name: Install JShint
+  #       run: npm install jshint
+  #     - name: Check with JShint
+  #       run: |
+  #         cd source
+  #         find . -name '*.js' -type f -print | \
+  #         xargs ../node_modules/jshint/bin/jshint
