@@ -53,8 +53,6 @@ jobs:
           echo AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION >> $GITHUB_ENV
 
           curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r '.value' > $AWS_WEB_IDENTITY_TOKEN_FILE
-          # just for testing
-          aws s3 ls
       - name: Set up Push variables
         if: github.event_name == 'push'
         run: |
@@ -143,66 +141,66 @@ jobs:
       - name: Check with cfn-lint
         run: cfn-lint *.template
   
-  # cfn-nag-check-job:
-  #   needs: scan-build-upload-job
-  #   runs-on: ubuntu-latest
-  #   name: Check templates with cfn-nag
-  #   steps:
-  #     - name: Download build templates
-  #       uses: actions/download-artifact@v2
-  #       with:
-  #         name: cloudformation-templates
-  #     - name: Check with cfn-nag
-  #       uses: stelligent/cfn_nag@master
+  cfn-nag-check-job:
+    needs: scan-build-upload-job
+    runs-on: ubuntu-latest
+    name: Check templates with cfn-nag
+    steps:
+      - name: Download build templates
+        uses: actions/download-artifact@v2
+        with:
+          name: cloudformation-templates
+      - name: Check with cfn-nag
+        uses: stelligent/cfn_nag@master
 
-  # hawkeye-check-job:
-  #   needs: scan-build-upload-job
-  #   runs-on: ubuntu-latest
-  #   name: Check source code with Hawkeye
-  #   steps:
-  #     # check out the merged PR
-  #     - name: Checkout
-  #       uses: actions/checkout@v2
-  #     # check it with Hawkeye
-  #     - name: Hawkeye Scanner
-  #       uses: ./.github/actions/hawkeye-scan
+  hawkeye-check-job:
+    needs: scan-build-upload-job
+    runs-on: ubuntu-latest
+    name: Check source code with Hawkeye
+    steps:
+      # check out the merged PR
+      - name: Checkout
+        uses: actions/checkout@v2
+      # check it with Hawkeye
+      - name: Hawkeye Scanner
+        uses: ./.github/actions/hawkeye-scan
 
-  # pylint-check-job:
-  #   needs: scan-build-upload-job
-  #   runs-on: ubuntu-latest
-  #   name: Check source code with Pylint
-  #   steps:
-  #     # check out the merged PR
-  #     - name: Checkout
-  #       uses: actions/checkout@v2
-  #     - name: Update system path
-  #       run: echo "$HOME/.local/bin" >> $GITHUB_PATH
-  #     - name: Install required system packages
-  #       run: |
-  #         pip install --upgrade --force-reinstall -r deployment/requirements.txt 2> error.txt
-  #         if [ -s error.txt ]; then
-  #           echo "ERROR: System package installation failed."
-  #           cat error.txt
-  #           exit 1
-  #         fi
-  #     # check it with Pylint
-  #     - name: Check with Pylint
-  #       run: |
-  #         cd source
-  #         ./tools/pylint.sh
+  pylint-check-job:
+    needs: scan-build-upload-job
+    runs-on: ubuntu-latest
+    name: Check source code with Pylint
+    steps:
+      # check out the merged PR
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Update system path
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Install required system packages
+        run: |
+          pip install --upgrade --force-reinstall -r deployment/requirements.txt 2> error.txt
+          if [ -s error.txt ]; then
+            echo "ERROR: System package installation failed."
+            cat error.txt
+            exit 1
+          fi
+      # check it with Pylint
+      - name: Check with Pylint
+        run: |
+          cd source
+          ./tools/pylint.sh
 
-  # jshint-check-job:
-  #   needs: scan-build-upload-job
-  #   runs-on: ubuntu-latest
-  #   name: Check source code with JShint
-  #   steps:
-  #     # check out the merged PR
-  #     - name: Checkout
-  #       uses: actions/checkout@v2
-  #     - name: Install JShint
-  #       run: npm install jshint
-  #     - name: Check with JShint
-  #       run: |
-  #         cd source
-  #         find . -name '*.js' -type f -print | \
-  #         xargs ../node_modules/jshint/bin/jshint
+  jshint-check-job:
+    needs: scan-build-upload-job
+    runs-on: ubuntu-latest
+    name: Check source code with JShint
+    steps:
+      # check out the merged PR
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install JShint
+        run: npm install jshint
+      - name: Check with JShint
+        run: |
+          cd source
+          find . -name '*.js' -type f -print | \
+          xargs ../node_modules/jshint/bin/jshint
