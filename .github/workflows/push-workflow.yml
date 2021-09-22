@@ -85,7 +85,7 @@ jobs:
     # use a specific environment for this build that has secrets defined and protection rules in place, if needed
     needs:
       [
-        clamav-scan-job,
+        #clamav-scan-job,
         trufflehog-scan-job,
         bandit-check-job,
         # pylint-check-job,
