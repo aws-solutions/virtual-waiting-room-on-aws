@@ -1,4 +1,10 @@
-import json
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+"""
+This module determines and returns the list of AZs that are common
+to all the service endpoints specified in service_names.
+"""
+
 import boto3
 
 # REGION = 'us-west-2'

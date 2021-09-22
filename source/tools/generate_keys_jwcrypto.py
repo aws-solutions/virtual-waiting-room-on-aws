@@ -1,11 +1,14 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
+"""
+This module generates JWK and JWT using the jwcrypto library.
+"""
 
 import json
 import random
 import time
 import uuid
-from jwcrypto import jwk, jwt, jws
+from jwcrypto import jwk, jwt
 
 # key id
 kid = uuid.uuid4().hex

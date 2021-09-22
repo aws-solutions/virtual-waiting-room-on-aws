@@ -1,3 +1,9 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+"""
+This module creates CloudWatch alarms for various functions used by the solution.
+"""
+
 import copy
 import json
 

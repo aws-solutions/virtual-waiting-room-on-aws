@@ -1,13 +1,15 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
+"""
+This module generates JWK and JWT using the jose library.
+"""
 
 import json
 import random
 import time
-import uuid
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-from jose import jwt, jwk, jws
+from jose import jwk, jws
 
 # generate a 2048-bit key pair
 private_key = rsa.generate_private_key(

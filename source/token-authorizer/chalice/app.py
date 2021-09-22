@@ -6,9 +6,7 @@ can be integrated with solutions for the Waiting Room.
 """
 
 import json
-import linecache
 import os.path
-import sys
 import time
 
 import requests

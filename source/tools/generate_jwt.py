@@ -1,12 +1,10 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-import json
 import random
 import time
-import uuid
 import boto3
-from jwcrypto import jwk, jwt, jws
+from jwcrypto import jwk, jwt
 
 secrets_client = boto3.client("secretsmanager")
 
