@@ -17,7 +17,8 @@ from io import StringIO
 os.environ["REDIS_HOST"] = "local"
 os.environ["REDIS_PORT"] = "1234"
 os.environ["EVENT_ID"] = "abc123"
-os.environ["TOKEN_TABLE"] = "token_table"
+# Bandit B105: not a hardcoded password
+os.environ["TOKEN_TABLE"] = "token_table" # nosec
 os.environ["SOLUTION_ID"] = "SO0166"
 os.environ["STACK_NAME"] = "vwr"
 os.environ["EVENT_BUS_NAME"] = "vwr_event_bus"

@@ -12,7 +12,8 @@ QUEUE_COUNTER = "queue_counter"
 SERVING_COUNTER = "serving_counter"
 
 # counter for tokens generated
-TOKEN_COUNTER = "token_counter"
+# Bandit B105: not a hardcoded password
+TOKEN_COUNTER = "token_counter" # nosec
 
 # counter for sessions completed (i.e. token was used to complete transaction)
 COMPLETED_SESSION_COUNTER = "completed_counter"

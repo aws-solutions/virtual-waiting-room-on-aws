@@ -96,13 +96,15 @@ def lambda_handler(event, context):
                 print(f"access token header: {access_token.serialize().split('.')[0]}")
                 
                 # create ID token claims
-                claims["token_use"] = "id"
+                # Bandit B105: not a hardcoded password
+                claims["token_use"] = "id" # nosec
                 id_token = jwt.JWT(header={"alg": "RS256", "typ": "JWT"}, claims=claims)
                 id_token.make_signed_token(keypair)
                 print(f"id token header: {id_token.serialize().split('.')[0]}")
 
                 # create refresh token claims
-                claims["token_use"]="refresh"
+                # Bandit B105: not a hardcoded password
+                claims["token_use"]="refresh" # nosec
                 refresh_token = jwt.JWT(header={"alg": "RS256", "typ": "JWT"}, claims=claims)
                 refresh_token.make_signed_token(keypair)
                 print(f"refresh token header: {refresh_token.serialize().split('.')[0]}")

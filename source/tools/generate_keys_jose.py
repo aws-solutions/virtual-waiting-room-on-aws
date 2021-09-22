@@ -66,7 +66,8 @@ exp = iat + 3600
 
 # waiting room specific claims
 # generate a random position
-waiting_room = {'position': random.randint(1, 25000)}
+# Bandit B311: not used for cryptographic purposes
+waiting_room = {'position': random.randint(1, 25000)} # nosec
 
 # create token claims
 claims = {

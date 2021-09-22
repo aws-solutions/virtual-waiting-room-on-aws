@@ -29,7 +29,8 @@ def get_public_key():
     This function is responsible for retrieving the
     public JWK from the closest location
     """
-    local_key_file = "/tmp/jwks.json"
+    # Bandit B108: /tmp directory is ephemeral as this is ran on Lambda
+    local_key_file = "/tmp/jwks.json" # nosec
     key = {}
     if os.path.isfile(local_key_file):
         # retrieve from the local file
