@@ -38,7 +38,6 @@ jobs:
           scanArguments: "--regex --entropy=False"
   
   bandit-check-job:
-    needs: scan-build-upload-job
     runs-on: ubuntu-latest
     name: Check source code with bandit
     steps:
@@ -52,7 +51,6 @@ jobs:
         run: bandit -r source
 
   pylint-check-job:
-    needs: scan-build-upload-job
     runs-on: ubuntu-latest
     name: Check source code with Pylint
     steps:
@@ -66,7 +64,6 @@ jobs:
           ./tools/pylint.sh
 
   jshint-check-job:
-    needs: scan-build-upload-job
     runs-on: ubuntu-latest
     name: Check source code with JShint
     steps:
