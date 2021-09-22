@@ -1,6 +1,0 @@
-# action.yml
-name: 'Hawkeye CLI Scanner'
-description: Runs the Hawkeye CLI scanner for MSAM
-runs:
-  using: 'docker'
-  image: 'Dockerfile'

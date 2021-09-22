@@ -41,6 +41,7 @@ PyYAML==5.4.1
 readchar==2.0.1
 requests==2.23.0
 rsa==4.7.2
+safety==1.10.3
 s3transfer==0.3.6
 six==1.15.0
 testresources==2.0.1

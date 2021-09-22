@@ -35,12 +35,6 @@ jobs:
         uses: edplato/trufflehog-actions-scan@master
         with:
           scanArguments: "--regex --entropy=False"
-      # - name: Initialize AWS credentials
-      #   uses: aws-actions/configure-aws-credentials@v1
-      #   with:
-      #     aws-access-key-id: ${{ secrets.ACCESS_KEY_ID }}
-      #     aws-secret-access-key: ${{ secrets.SECRET_ACCESS_KEY }}
-      #     aws-region: ${{ env.REGION }}
       - name: Configure AWS
         run: |
           sleep 5
@@ -75,6 +69,16 @@ jobs:
         run: |
           cd deployment
           ./deploy.sh -b $DIST_OUTPUT_BUCKET -s $SOLUTION_NAME -v $VERSION -r "$REGIONS_TO_DEPLOY" -a none -t dev
+      - name: Zip up regional and global assets
+        run: |
+          cd deployment
+          zip regional-s3-assets.zip regional-s3-assets/*
+          zip global-s3-assets.zip global-s3-assets/*
+      - name: Store global and regional assets
+        uses: actions/upload-artifact@v2
+        with:
+          name: regional-global-assets
+          path: deployment/*.zip
       - name: Store templates for check jobs
         uses: actions/upload-artifact@v2
         with:
@@ -160,24 +164,45 @@ jobs:
       - name: Check with cfn-nag
         uses: stelligent/cfn_nag@master
 
-  hawkeye-check-job:
+  safety-check-job:
     needs: scan-build-upload-job
     runs-on: ubuntu-latest
-    name: Check source code with Hawkeye
     steps:
-      # check out the merged PR
       - name: Checkout
         uses: actions/checkout@v2
-      # check it with Hawkeye
-      - name: Hawkeye Scanner
-        uses: ./.github/actions/hawkeye-scan
+      - name: Update system path
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Install required system packages
+        run: |
+          pip install --upgrade --force-reinstall -r deployment/requirements.txt 2> error.txt
+          if [ -s error.txt ]; then
+            echo "ERROR: System package installation failed."
+            cat error.txt
+            exit 1
+          fi
+      - name: Check with Safety
+        run: safety check
+  
+  bandit-check-job:
+    needs: scan-build-upload-job
+    runs-on: ubuntu-latest
+    name: Check source code with bandit
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Update system path
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Install bandit
+        run: pip install bandit
+      - name: Check source with bandit
+        run: bandit -r source
 
   pylint-check-job:
     needs: scan-build-upload-job
     runs-on: ubuntu-latest
     name: Check source code with Pylint
     steps:
-      # check out the merged PR
+      # check out repo
       - name: Checkout
         uses: actions/checkout@v2
       - name: Update system path
@@ -201,7 +226,6 @@ jobs:
     runs-on: ubuntu-latest
     name: Check source code with JShint
     steps:
-      # check out the merged PR
       - name: Checkout
         uses: actions/checkout@v2
       - name: Install JShint
