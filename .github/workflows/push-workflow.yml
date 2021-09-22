@@ -60,6 +60,7 @@ jobs:
       # check it with Pylint
       - name: Check with Pylint
         run: |
+          pip install pylint
           cd source
           ./tools/pylint.sh
 
@@ -118,7 +119,9 @@ jobs:
           sudo apt-get update
           pip install -U pip
       - name: Run safety check before build
-        run: safety check -r deployment/requirements.txt
+        run: |
+          pip install safety
+          safety check -r deployment/requirements.txt
       - name: Install required system packages
         run: |
           pip install --upgrade --force-reinstall -r deployment/requirements.txt 2> error.txt
