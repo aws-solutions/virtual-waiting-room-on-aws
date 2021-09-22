@@ -53,6 +53,8 @@ jobs:
           echo "VERSION=`git rev-parse --short HEAD`" >> $GITHUB_ENV
       - name: Update system path
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Update system packages
+        run: sudo apt-get update
       - name: Install required system packages
         run: |
           pip install --upgrade --force-reinstall -r deployment/requirements.txt 2> error.txt
@@ -61,6 +63,8 @@ jobs:
             cat error.txt
             exit 1
           fi
+      - name: Run safety check before build
+        run: safety check
       - name: Run build script
         run: |
           cd deployment
@@ -163,25 +167,6 @@ jobs:
           name: cloudformation-templates
       - name: Check with cfn-nag
         uses: stelligent/cfn_nag@master
-
-  safety-check-job:
-    needs: scan-build-upload-job
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Update system path
-        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
-      - name: Install required system packages
-        run: |
-          pip install --upgrade --force-reinstall -r deployment/requirements.txt 2> error.txt
-          if [ -s error.txt ]; then
-            echo "ERROR: System package installation failed."
-            cat error.txt
-            exit 1
-          fi
-      - name: Check with Safety
-        run: safety check
   
   bandit-check-job:
     needs: scan-build-upload-job
