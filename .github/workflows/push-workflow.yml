@@ -158,7 +158,7 @@ jobs:
           path: deployment/requirements.txt
 
   cfn-lint-check-job:
-    needs: scan-build-upload-job
+    needs: build-job
     runs-on: ubuntu-latest
     name: Check templates with cfn-lint
     steps:
@@ -170,7 +170,7 @@ jobs:
         run: cfn-lint *.template
   
   cfn-nag-check-job:
-    needs: scan-build-upload-job
+    needs: build-job
     runs-on: ubuntu-latest
     name: Check templates with cfn-nag
     steps:
