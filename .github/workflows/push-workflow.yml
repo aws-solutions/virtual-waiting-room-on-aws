@@ -15,17 +15,17 @@ on:
       - "**/*.md"
 
 jobs:
-  clamav-scan-job:
-    runs-on: ubuntu-latest
-    name: Check source code with ClamAV Scan
-    steps:
-      - name: Check out repo
-        uses: actions/checkout@v2
-      # scan for any malware in the commit
-      - name: ClamAV Scan
-        uses: djdefi/gitavscan@main
-        with:
-          full: "--full"
+  # clamav-scan-job:
+  #   runs-on: ubuntu-latest
+  #   name: Check source code with ClamAV Scan
+  #   steps:
+  #     - name: Check out repo
+  #       uses: actions/checkout@v2
+  #     # scan for any malware in the commit
+  #     - name: ClamAV Scan
+  #       uses: djdefi/gitavscan@main
+  #       with:
+  #         full: "--full"
 
   trufflehog-scan-job:
     runs-on: ubuntu-latest
@@ -172,7 +172,9 @@ jobs:
         with:
           name: global-s3-assets
       - name: Check with cfn-lint
-        run: cfn-lint *.template
+        run: |
+          pip install cfn-lint
+          cfn-lint *.template
   
   cfn-nag-check-job:
     needs: build-job
@@ -182,7 +184,7 @@ jobs:
       - name: Download build templates
         uses: actions/download-artifact@v2
         with:
-          name: cloudformation-templates
+          name: global-s3-assets
       - name: Check with cfn-nag
         uses: stelligent/cfn_nag@master
 
