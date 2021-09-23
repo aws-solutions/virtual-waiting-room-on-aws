@@ -52,19 +52,19 @@ jobs:
       - name: Check source with bandit
         run: bandit -r source
 
-  # pylint-check-job:
-  #   runs-on: ubuntu-latest
-  #   name: Check source code with Pylint
-  #   steps:
-  #     # check out repo
-  #     - name: Checkout
-  #       uses: actions/checkout@v2
-  #     # check it with Pylint
-  #     - name: Check with Pylint
-  #       run: |
-  #         pip install pylint
-  #         cd source
-  #         ./tools/pylint.sh
+  pylint-check-job:
+    runs-on: ubuntu-latest
+    name: Check source code with Pylint
+    steps:
+      # check out repo
+      - name: Checkout
+        uses: actions/checkout@v2
+      # check it with Pylint
+      - name: Check with Pylint
+        run: |
+          pip install pylint
+          cd source
+          ./tools/pylint.sh
 
   jshint-check-job:
     runs-on: ubuntu-latest
@@ -88,7 +88,7 @@ jobs:
         #clamav-scan-job,
         trufflehog-scan-job,
         bandit-check-job,
-        # pylint-check-job,
+        pylint-check-job,
         jshint-check-job
       ]
     environment: push_env
