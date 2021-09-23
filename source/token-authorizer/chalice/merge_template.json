@@ -102,6 +102,19 @@
                     }
                 },
                 "Layers": [{ "Fn::Sub": "${JWCryptoLayer}" }]
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W89",
+                            "reason": "Lambda does not need to be in the Waiting Room VPC."
+                        },
+                        {
+                            "id": "W92",
+                            "reason": "Lambda does not require ReservedConcurrentExecutions."
+                        }
+                    ]}
             }
         }
     },
