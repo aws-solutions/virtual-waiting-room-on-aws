@@ -62,8 +62,8 @@ def put_web_contents(bucket_name):
     # upload each local file to the bucket, preserve folders
     for dirpath, _, filenames in os.walk(CONTENTS_LOCAL):
         for name in filenames:
-            local = "{}/{}".format(dirpath, name)
-            remote = local.replace("{}/".format(CONTENTS_LOCAL), "")
+            local = f"{dirpath}/{name}"
+            remote = local.replace(f"{CONTENTS_LOCAL}/", "")
             print(f'put {local}')
             content_type = None
             if remote.endswith(".js"):
@@ -74,10 +74,11 @@ def put_web_contents(bucket_name):
                 content_type = "text/css"
             else:
                 content_type = "binary/octet-stream"
-            client.put_object(Bucket=bucket_name,
-                              Key=remote,
-                              Body=open(local, 'rb'),
-                              ContentType=content_type)
+            with open(local, 'rb') as data:
+                client.put_object(Bucket=bucket_name,
+                                  Key=remote,
+                                  Body=data,
+                                  ContentType=content_type)
 
 
 def put_api_endpoints_js(bucket_name, apis):
