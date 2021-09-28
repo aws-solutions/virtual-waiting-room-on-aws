@@ -2507,7 +2507,7 @@
                     ]
                 },
                 "Runtime": "python3.8",
-                "Timeout": 30,
+                "Timeout": 900,
                 "VpcConfig": {
                     "SecurityGroupIds": [
                         {
