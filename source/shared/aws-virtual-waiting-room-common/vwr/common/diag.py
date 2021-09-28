@@ -18,5 +18,4 @@ def print_exception():
     filename = frame.f_code.co_filename
     linecache.checkcache(filename)
     line = linecache.getline(filename, lineno, frame.f_globals)
-    print('EXCEPTION IN ({}, LINE {} "{}"): {}'.format(filename, lineno,
-                                                       line.strip(), exc_obj))
+    print(f'EXCEPTION IN ({filename}, LINE {lineno} "{line.strip()}"): {exc_obj}')
