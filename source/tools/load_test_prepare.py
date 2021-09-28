@@ -8,14 +8,12 @@ AWS credentials from the environment are required.
 """
 
 import json
-import os
 import time
-from urllib.parse import unquote, parse_qs, urlparse
+from urllib.parse import urlparse
 
 import boto3
 import requests
 from aws_requests_auth.boto_utils import BotoAWSRequestsAuth
-from botocore import config
 
 PRIVATE_API_ENDPOINT = "https://qdtvlun7nj.execute-api.us-east-1.amazonaws.com/dev"
 API_REGION = "us-east-1"
@@ -30,6 +28,9 @@ DURATION = 7200
 
 
 def reset_waiting_room():
+    """
+    This function is responsible for calling the reset_initial_state API
+    """
     api = f"{PRIVATE_API_ENDPOINT}/reset_initial_state"
     body = {"event_id": EVENT_ID}
     parsed = urlparse(PRIVATE_API_ENDPOINT)
@@ -41,6 +42,10 @@ def reset_waiting_room():
 
 
 def update_inlet_run_window():
+    """
+    This function is responsible for updating the time and increment on
+    the periodic inlet Lambda function.
+    """
     client = boto3.client("lambda")
     response = client.get_function_configuration(
         FunctionName=INLET_LAMBDA_NAME)
@@ -48,7 +53,7 @@ def update_inlet_run_window():
     # start in 1 minute from now
     start_ingest = int(time.time()) + HOLD_OFF
     # stop after 60 minutes
-    stop_ingest = start_ingest + DURATION
+    # stop_ingest = start_ingest + DURATION
     # update the Lambda
     environment["START_TIME"] = f"{start_ingest}"
     # environment["END_TIME"] = f"{stop_ingest}"
