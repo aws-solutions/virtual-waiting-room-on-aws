@@ -151,7 +151,7 @@
                                     "Action": [
                                         "cloudwatch:DescribeAlarms"
                                     ],
-                                    "Resource": "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:*"
+                                    "Resource": {"Fn::Sub": "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:*"}
                                 }
                             ]
                         }
