@@ -67,6 +67,9 @@
                         },
                         "CORE_API_REGION": {
                             "Ref": "CoreApiRegion"
+                        },
+                        "CLOUDWATCH_ALARM": {
+                            "Ref": "CloudWatchAlarmName"
                         }
                     }
                 },
@@ -134,6 +137,21 @@
                                         "arn:aws:execute-api:*:*:*/*/POST/update_session",
                                         "arn:aws:execute-api:*:*:*/*/GET/num_active_tokens"
                                     ]
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "PolicyName": "AlarmPolicy",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "cloudwatch:DescribeAlarms"
+                                    ],
+                                    "Resource": "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:*"
                                 }
                             ]
                         }
@@ -406,13 +424,13 @@
             ]
         },
         "IncrementBy": {
-            "Description": "How much the serving counter should be incremented every minute",
+            "Description": "How much the serving counter should be incremented every minute.",
             "Type": "Number",
             "ConstraintDescription": "Please enter a value for this field.",
             "Default": 10
         },
         "StartTime": {
-            "Description": "Timestamp on when to start incrementing the serving number (epoch time in seconds)",
+            "Description": "Timestamp on when to start incrementing the serving number (epoch time in seconds).",
             "Type": "Number",
             "ConstraintDescription": "Please enter a value for this field.",
             "Default": 1626336061
@@ -423,8 +441,13 @@
             "ConstraintDescription": "Please enter a value for this field.",
             "Default": 0
         },
+        "CloudWatchAlarmName": {
+            "Description": "Optional CloudWatch alarm name to be associated with periodic inlet strategy. If provided and in alarming state, serving number is not incremented.",
+            "Type": "String",
+            "ConstraintDescription": "Please enter a value for this field."
+        },
         "MaxSize": {
-            "Description": "The maximum number of transactions that the downstream commerce site can process at a time",
+            "Description": "The maximum number of transactions that the downstream commerce site can process at a time.",
             "Type": "Number",
             "ConstraintDescription": "Please enter a value for this field.",
             "Default": 100
@@ -446,17 +469,18 @@
                 },
                 {
                     "Label": {
-                        "default": "PERIODIC INLET STRATEGY REQUIRED PARAMETERS"
+                        "default": "PERIODIC INLET STRATEGY PARAMETERS"
                     },
                     "Parameters": [
                         "IncrementBy",
                         "StartTime",
-                        "EndTime"
+                        "EndTime",
+                        "CloudWatchAlarmName"
                     ]
                 },
                 {
                     "Label": {
-                        "default": "MAXSIZE INLET STRATEGY REQUIRED PARAMETERS"
+                        "default": "MAXSIZE INLET STRATEGY PARAMETERS"
                     },
                     "Parameters": [
                         "MaxSize"
