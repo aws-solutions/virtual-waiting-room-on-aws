@@ -250,7 +250,7 @@
                     "deadLetterTargetArn" : {"Fn::GetAtt": [ "WaitingRoomDeadLetterQueue", "Arn" ]},
                     "maxReceiveCount" : 2
                 },
-                "VisibilityTimeout" : 5
+                "VisibilityTimeout" : 30
             }
         },
         "WaitingRoomDeadLetterQueue": {
