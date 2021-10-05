@@ -380,8 +380,10 @@
                                 "dynamodb:UpdateItem",
                                 "dynamodb:PutItem",
                                 "dynamodb:GetItem",
-                                "dynamodb:Scan",
-                                "dynamodb:DeleteItem"
+                                "dynamodb:UpdateContinuousBackups",
+                                "dynamodb:CreateTable",
+                                "dynamodb:DeleteTable",
+                                "dynamodb:DescribeTable"
                             ],
                             "Effect": "Allow",
                             "Resource": {
@@ -2507,7 +2509,7 @@
                     ]
                 },
                 "Runtime": "python3.8",
-                "Timeout": 30,
+                "Timeout": 300,
                 "VpcConfig": {
                     "SecurityGroupIds": [
                         {
@@ -3013,8 +3015,10 @@
                                 "dynamodb:UpdateItem",
                                 "dynamodb:PutItem",
                                 "dynamodb:GetItem",
-                                "dynamodb:Scan",
-                                "dynamodb:DeleteItem"
+                                "dynamodb:UpdateContinuousBackups",
+                                "dynamodb:CreateTable",
+                                "dynamodb:DeleteTable",
+                                "dynamodb:DescribeTable"
                             ],
                             "Resource": [
                                 {

@@ -78,7 +78,6 @@ jobs:
 
   build-job:
     runs-on: ubuntu-latest
-    # use a specific environment for this build that has secrets defined and protection rules in place, if needed
     needs:
       [
         clamav-scan-job,
@@ -87,7 +86,6 @@ jobs:
         pylint-check-job,
         jshint-check-job
       ]
-    environment: push_env
     steps:
       - name: Check out repo
         uses: actions/checkout@v2
