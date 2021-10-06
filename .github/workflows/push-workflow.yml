@@ -100,6 +100,10 @@ jobs:
           echo "VERSION=`git rev-parse --short HEAD`" >> $GITHUB_ENV
       - name: Update system path
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Set up AWS environment 
+        run: |
+          export AWS_DEFAULT_REGION=${{ env.REGION }}
+          echo AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION >> $GITHUB_ENV
       - name: Update packages
         run: |
           sudo apt-get update
