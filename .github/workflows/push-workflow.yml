@@ -153,7 +153,8 @@ jobs:
     steps:
       - name: Install cfn-lint
         run: pip install cfn-lint
-      - uses: actions/cache@v2
+      - name: Restore deployment directory from cache
+        uses: actions/cache@v2
         id: cache-deployment
         with:
           path: deployment/
@@ -171,7 +172,8 @@ jobs:
         build-job
       ]
     steps:
-      - uses: actions/cache@v2
+      - name: Restore deployment directory from cache
+        uses: actions/cache@v2
         id: cache-deployment
         with:
           path: deployment/
@@ -190,6 +192,13 @@ jobs:
         cfn-nag-job        
       ]
     steps:
+      - name: Restore deployment directory from cache
+        uses: actions/cache@v2
+        id: cache-deployment
+        with:
+          path: deployment/
+          key: ${{ github.sha }}
+
       - name: Upload to S3
         run: |
           cd deployment
