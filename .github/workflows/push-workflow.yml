@@ -78,7 +78,8 @@ jobs:
           find . -name '*.js' -type f -print | \
           xargs ../node_modules/jshint/bin/jshint
 
-  build-and-upload-job:
+  build-job:
+    name: Build assets
     runs-on: ubuntu-latest
     needs:
       [
@@ -133,41 +134,55 @@ jobs:
           fi
       - name: Cache deployment directory
         uses: actions/cache@v2
+        id: cache-deployment
         with:
           path: deployment/
-          key: build-${{ hashFiles('deployment/aws-virtual-waiting-room.json') }}
+          key: ${{ github.sha }}
       - name: Run build script
         run: |
           cd deployment
           ./build-s3-dist.sh $DIST_OUTPUT_BUCKET $SOLUTION_NAME $VERSION
       
   cfn-lint-job:
+    name: Run cfn-lint on templates
     runs-on: ubuntu-latest
     needs:
       [
-        build-and-upload-job
+        build-job
       ]
     steps:
       - name: Install cfn-lint
         run: pip install cfn-lint
+      - uses: actions/cache@v2
+        id: cache-deployment
+        with:
+          path: deployment/
+          key: ${{ github.sha }}
       - name: Run cfn-lint against templates
         run: |
           cd deployment/global-s3-assets
           cfn-lint *.template
   
   cfn-nag-job:
+    name: Run cfn-nag on templates
     runs-on: ubuntu-latest
     needs:
       [
-        build-and-upload-job
+        build-job
       ]
     steps:
+      - uses: actions/cache@v2
+        id: cache-deployment
+        with:
+          path: deployment/
+          key: ${{ github.sha }}
       - name: Run cfn-nag against templates
         uses: stelligent/cfn_nag@master
         with:
           input_path: deployment/global-s3-assets
 
   upload-and-store-job:
+    name: Upload and store regional and global assets
     runs-on: ubuntu-latest
     needs:
       [
