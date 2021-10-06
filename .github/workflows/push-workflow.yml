@@ -131,19 +131,51 @@ jobs:
             cat error.txt
             exit 1
           fi
+      - name: Cache deployment directory
+        uses: actions/cache@v2
+        with:
+          path: deployment/
+          key: build-${{ hashFiles('deployment/aws-virtual-waiting-room.json') }}
       - name: Run build script
         run: |
           cd deployment
           ./build-s3-dist.sh $DIST_OUTPUT_BUCKET $SOLUTION_NAME $VERSION
+      
+  cfn-lint-job:
+    runs-on: ubuntu-latest
+    needs:
+      [
+        build-and-upload-job
+      ]
+    steps:
+      - name: Install cfn-lint
+        run: pip install cfn-lint
       - name: Run cfn-lint against templates
         run: |
           cd deployment/global-s3-assets
           cfn-lint *.template
+  
+  cfn-nag-job:
+    runs-on: ubuntu-latest
+    needs:
+      [
+        build-and-upload-job
+      ]
+    steps:
       - name: Run cfn-nag against templates
         uses: stelligent/cfn_nag@master
         with:
           input_path: deployment/global-s3-assets
-      - name: Deploy to S3
+
+  upload-and-store-job:
+    runs-on: ubuntu-latest
+    needs:
+      [
+        cfn-lint-job,
+        cfn-nag-job        
+      ]
+    steps:
+      - name: Upload to S3
         run: |
           cd deployment
           ./deploy.sh -b $DIST_OUTPUT_BUCKET -s $SOLUTION_NAME -v $VERSION -r "$REGIONS_TO_DEPLOY" -a none -t dev
@@ -156,8 +188,8 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: zipped-regional-global-assets
-          path: deployment/*.zip
-
+          path: deployment/*.zip  
+  
   # main-branch-deploy-cfn:
   #   runs-on: ubuntu-latest
   #   needs:
