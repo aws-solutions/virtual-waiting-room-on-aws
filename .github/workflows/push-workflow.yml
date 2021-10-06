@@ -91,25 +91,9 @@ jobs:
       ]
     # use a specific environment for this build that has secrets defined 
     # and protection rules in place, if needed
-    environment: push_env
-    permissions:
-      id-token: write
-      contents: read
     steps:
       - name: Check out repo
         uses: actions/checkout@v2
-      - name: Configure AWS
-        run: |
-          sleep 5
-          export AWS_ROLE_ARN=${{ secrets.VWR_ROLE_ARN }}
-          export AWS_WEB_IDENTITY_TOKEN_FILE=/tmp/awscreds
-          export AWS_DEFAULT_REGION=${{ env.REGION }}
-
-          echo AWS_WEB_IDENTITY_TOKEN_FILE=$AWS_WEB_IDENTITY_TOKEN_FILE >> $GITHUB_ENV
-          echo AWS_ROLE_ARN=$AWS_ROLE_ARN >> $GITHUB_ENV
-          echo AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION >> $GITHUB_ENV
-
-          curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r '.value' > $AWS_WEB_IDENTITY_TOKEN_FILE
       - name: Set up Push variables
         if: github.event_name == 'push'
         run: |
@@ -186,19 +170,34 @@ jobs:
   upload-and-store-job:
     name: Upload and store regional and global assets
     runs-on: ubuntu-latest
+    environment: push_env
+    permissions:
+      id-token: write
+      contents: read
     needs:
       [
         cfn-lint-job,
         cfn-nag-job        
       ]
     steps:
+      - name: Configure AWS
+        run: |
+          sleep 5
+          export AWS_ROLE_ARN=${{ secrets.VWR_ROLE_ARN }}
+          export AWS_WEB_IDENTITY_TOKEN_FILE=/tmp/awscreds
+          export AWS_DEFAULT_REGION=${{ env.REGION }}
+
+          echo AWS_WEB_IDENTITY_TOKEN_FILE=$AWS_WEB_IDENTITY_TOKEN_FILE >> $GITHUB_ENV
+          echo AWS_ROLE_ARN=$AWS_ROLE_ARN >> $GITHUB_ENV
+          echo AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION >> $GITHUB_ENV
+
+          curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r '.value' > $AWS_WEB_IDENTITY_TOKEN_FILE
       - name: Restore deployment directory from cache
         uses: actions/cache@v2
         id: cache-deployment
         with:
           path: deployment/
           key: ${{ github.sha }}
-
       - name: Upload to S3
         run: |
           cd deployment
