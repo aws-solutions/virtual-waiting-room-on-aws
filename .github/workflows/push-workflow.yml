@@ -64,6 +64,17 @@ jobs:
           cd source
           ./tools/pylint.sh
 
+  pa11y-check-job:
+    runs-on: ubuntu-latest
+    name: Check HTML code with pa11y for accessibility
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install pa11y
+        run: npm install pa11y
+      - name: Check with pa11y
+        run: find source -iname '*.html' -exec node_modules/pa11y/bin/pa11y.js {} \;
+
   jshint-check-job:
     runs-on: ubuntu-latest
     name: Check source code with JShint
