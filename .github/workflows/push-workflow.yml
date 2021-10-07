@@ -5,7 +5,7 @@ env:
   REGION: us-west-2
   SOLUTION_NAME: aws-virtual-waiting-room
   DIST_OUTPUT_BUCKET: swr
-  REGIONS_TO_DEPLOY: "us-west-2"
+  REGIONS_TO_DEPLOY: "us-west-2 us-east-1"
   RELEASE_BRANCH: refs/heads/main
 
 on:
@@ -124,14 +124,14 @@ jobs:
         with:
           path: deployment/
           key: ${{ github.sha }}
-      # - name: Run unit tests
-      #   run: |
-      #     cd deployment
-      #     ./run-unit-tests.sh
       - name: Run build script
         run: |
           cd deployment
           ./build-s3-dist.sh $DIST_OUTPUT_BUCKET $SOLUTION_NAME $VERSION
+      # - name: Run unit tests
+      #   run: |
+      #     cd deployment
+      #     ./run-unit-tests.sh
       
   cfn-lint-job:
     name: Run cfn-lint on templates
@@ -208,6 +208,7 @@ jobs:
       - name: Upload to S3
         run: |
           cd deployment
+          echo $DIST_OUTPUT_BUCKET $SOLUTION_NAME $VERSION $REGIONS_TO_DEPLOY
           ./deploy.sh -b $DIST_OUTPUT_BUCKET -s $SOLUTION_NAME -v $VERSION -r "$REGIONS_TO_DEPLOY" -a none -t dev
       - name: Zip up regional and global assets
         run: |
