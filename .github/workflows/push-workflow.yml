@@ -128,10 +128,11 @@ jobs:
         run: |
           cd deployment
           ./build-s3-dist.sh $DIST_OUTPUT_BUCKET $SOLUTION_NAME $VERSION
-      # - name: Run unit tests
-      #   run: |
-      #     cd deployment
-      #     ./run-unit-tests.sh
+      - name: Run unit tests
+        run: |
+          cd deployment
+          pip install pkg/aws_virtual_waiting_room_common-1.0.0-py3-none-any.whl
+          ./run-unit-tests.sh
       
   cfn-lint-job:
     name: Run cfn-lint on templates
