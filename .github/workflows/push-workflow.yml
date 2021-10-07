@@ -186,6 +186,8 @@ jobs:
       id-token: write
       contents: read
     steps:
+      - name: Check out repo
+        uses: actions/checkout@v2
       - run: sleep 5 # per doc there is still some kind of race condition
       - name: Configure AWS
         run: |
@@ -208,7 +210,6 @@ jobs:
       - name: Upload to S3
         run: |
           cd deployment
-          echo $DIST_OUTPUT_BUCKET $SOLUTION_NAME $VERSION $REGIONS_TO_DEPLOY
           ./deploy.sh -b $DIST_OUTPUT_BUCKET -s $SOLUTION_NAME -v $VERSION -r "$REGIONS_TO_DEPLOY" -a none -t dev
       - name: Zip up regional and global assets
         run: |
