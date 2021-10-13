@@ -41,8 +41,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Update system path
-        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
       - name: Install bandit
         run: pip install bandit
       - name: Check source with bandit
@@ -112,25 +110,58 @@ jobs:
             cat error.txt
             exit 1
           fi
+      - name: Cache deployment directory
+        uses: actions/cache@v2
+        id: cache-deployment
+        with:
+          path: deployment/
+          key: ${{ github.sha }}
       - name: Run build script
         run: |
           cd deployment
           ./build-s3-dist.sh $DIST_OUTPUT_BUCKET $SOLUTION_NAME $VERSION
+      - name: Run unit tests
+        run: |
+          cd deployment
+          pip install pkg/aws_virtual_waiting_room_common-1.0.0-py3-none-any.whl
+          ./run-unit-tests.sh
+
+  cfn-lint-job:
+    name: Run cfn-lint on templates
+    runs-on: ubuntu-latest
+    needs:
+      [
+        build-job
+      ]
+    steps:
+      - name: Install cfn-lint
+        run: pip install cfn-lint
+      - name: Restore deployment directory from cache
+        uses: actions/cache@v2
+        id: cache-deployment
+        with:
+          path: deployment/
+          key: ${{ github.sha }}
       - name: Run cfn-lint against templates
         run: |
           cd deployment/global-s3-assets
           cfn-lint *.template
+  
+  cfn-nag-job:
+    name: Run cfn-nag on templates
+    runs-on: ubuntu-latest
+    needs:
+      [
+        build-job
+      ]
+    steps:
+      - name: Restore deployment directory from cache
+        uses: actions/cache@v2
+        id: cache-deployment
+        with:
+          path: deployment/
+          key: ${{ github.sha }}
       - name: Run cfn-nag against templates
         uses: stelligent/cfn_nag@master
         with:
           input_path: deployment/global-s3-assets
-      - name: Zip up regional and global assets
-        run: |
-          cd deployment
-          zip regional-s3-assets.zip regional-s3-assets/*
-          zip global-s3-assets.zip global-s3-assets/*
-      - name: Store zipped global and regional assets
-        uses: actions/upload-artifact@v2
-        with:
-          name: zipped-regional-global-assets
-          path: deployment/*.zip
