@@ -3,6 +3,7 @@ name: Push Workflow
 # global environment variables to all jobs
 env:
   REGION: us-west-2
+  SOLUTION_ORG: aws-solutions
   SOLUTION_NAME: aws-virtual-waiting-room
   DIST_OUTPUT_BUCKET: swr
   REGIONS_TO_DEPLOY: "us-west-2 us-east-1"
@@ -236,38 +237,14 @@ jobs:
           name: zipped-regional-global-assets
           path: deployment/*.zip  
   
-  # main-branch-deploy-cfn:
-  #   runs-on: ubuntu-latest
-  #   needs:
-  #     [
-  #       cfn-lint-check-job,
-  #       cfn-nag-check-job,
-  #       hawkeye-check-job,
-  #       pylint-check-job,
-  #       jshint-check-job
-  #     ]
-  #   # use a specific environment for this build that has secrets defined and protection rules in place, if needed
-  #   environment: test_install_env
-  #   if: github.ref == ${{ env.RELEASE_BRANCH }}
-  #   steps:
-  #     - name: Configure AWS
-  #       run: |
-  #         sleep 5
-  #         export AWS_ROLE_ARN=${{ secrets.SB_ROLE_ARN }}
-  #         export AWS_WEB_IDENTITY_TOKEN_FILE=/tmp/awscreds
-  #         export AWS_DEFAULT_REGION=${{ env.REGION }}
-
-  #         echo AWS_WEB_IDENTITY_TOKEN_FILE=$AWS_WEB_IDENTITY_TOKEN_FILE >> $GITHUB_ENV
-  #         echo AWS_ROLE_ARN=$AWS_ROLE_ARN >> $GITHUB_ENV
-  #         echo AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION >> $GITHUB_ENV
-
-  #         curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r '.value' > $AWS_WEB_IDENTITY_TOKEN_FILE
-  #     - name: Generate version out of commit ID
-  #       run: |
-  #         echo "VERSION=${GITHUB_SHA::7}" >> $GITHUB_ENV
-  #     - name: Create CloudFormation stack based on last job's build
-  #       run: |
-  #         TEMPLATE="https://$DIST_OUTPUT_BUCKET-us-west-2.s3-us-west-2.amazonaws.com/$SOLUTION_NAME/latest/$SOLUTION_NAME-release.template"
-  #         echo $TEMPLATE
-  #         response="$( aws cloudformation create-stack --stack-name MSAM-test-master-$VERSION --template-url $TEMPLATE --region $REGION --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND --disable-rollback )"
-  #         echo $response
+  notify-end-workflow:
+    name: Send a notification for end of workflow
+    needs:
+      [
+        upload-and-store-job
+      ]
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "Run ID: " {{ github.run_id }}
+          curl -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/$SOLUTION_ORG/$SOLUTION_NAME/actions/runs/{{ github.run_id }}/artifacts
