@@ -1,0 +1,17 @@
+name: test workflow
+env:
+  SOLUTION_ORG: aws-solutions
+  SOLUTION_NAME: aws-virtual-waiting-room
+on: 
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'workflow run ID'     
+        required: true
+jobs:
+  get_run_artifacts:
+    runs-on: ubuntu-latest
+    steps:
+    - run: |
+        echo "Run ID:  ${{ github.event.inputs.run_id }}"
+        curl -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/${{ env.SOLUTION_ORG }}/${{ env.SOLUTION_NAME }}/actions/runs/${{ github.event.inputs.run_id }}/artifacts
