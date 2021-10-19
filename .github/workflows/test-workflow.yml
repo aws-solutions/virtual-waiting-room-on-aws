@@ -7,16 +7,43 @@ on:
   workflow_run:
     workflows: ["Push Workflow"]
     types: [completed]
-    # inputs:
-    #   run_id:
-    #     description: 'Workflow Run ID'     
-    #     required: true
 jobs:
   on_success:
     runs-on: ubuntu-latest
-    # if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    environment: notify_env
+    permissions:
+      id-token: write
+      contents: read
+    # if: ${{ github.event.workflow_run.conclusion == 'success' }}    
     steps:
-    - run: |
-        echo "Run ID:  ${{ github.event.workflow_run.id }}"
-        # curl -X GET -H "Accept: application/vnd.github.v3+json" -H "authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ env.SOLUTION_ORG }}/${{ env.SOLUTION_NAME }}/actions/runs/${{ github.event.inputs.run_id }}/artifacts
-        
+      - name: Check out repo
+        uses: actions/checkout@v2
+      - name: Install required system packages
+        run: |
+          pip install --upgrade --force-reinstall -r deployment/requirements.txt 2> error.txt
+          if [ -s error.txt ]; then
+            echo "ERROR: System package installation failed."
+            cat error.txt
+            exit 1
+          fi
+      - run: sleep 5 # per doc there is still some kind of race condition
+      - name: Configure AWS
+        run: |
+          export AWS_ROLE_ARN=${{ secrets.NOTIFY_ROLE }}
+          export AWS_WEB_IDENTITY_TOKEN_FILE=/tmp/awscreds
+          export AWS_DEFAULT_REGION=${{ env.REGION }}
+          export NOTIFICATION_ENDPOINT=${{ secrets.ENDPOINT }}
+          # get the artifacts
+          export PAYLOAD=`curl -X GET -H "Accept: application/vnd.github.v3+json" -H "authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ env.SOLUTION_ORG }}/${{ env.SOLUTION_NAME }}/actions/runs/${{ github.event.workflow_run.id }}/artifacts`
+          
+          echo AWS_WEB_IDENTITY_TOKEN_FILE=$AWS_WEB_IDENTITY_TOKEN_FILE >> $GITHUB_ENV
+          echo AWS_ROLE_ARN=$AWS_ROLE_ARN >> $GITHUB_ENV
+          echo AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION >> $GITHUB_ENV
+          echo NOTIFICATION_ENDPOINT=$NOTIFICATION_ENDPOINT >> $GITHUB_ENV
+          echo PAYLOAD=$PAYLOAD >> $GITHUB_ENV
+
+          curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r '.value' > $AWS_WEB_IDENTITY_TOKEN_FILE      
+      - name: Invoke endpoint
+        run: |
+          cd deployment
+          python end-workflow-notification.py
