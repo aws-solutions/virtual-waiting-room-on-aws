@@ -257,7 +257,7 @@ jobs:
         run: |
           curl -X POST -H "Accept: application/vnd.github.v3+json" -H "authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
           https://api.github.com/repos/${{ env.SOLUTION_ORG }}/${{ env.SOLUTION_NAME }}/actions/workflows/test-workflow.yml/dispatches \
-          -d '{ "ref":${{ github.ref }}, "inputs": {"run_id": ${{ github.run_id}}} }'
+          -d '{ "ref":"${{ github.ref }}", "inputs": {"run_id": "${{ github.run_id}}}" }'
 
     # environment: notify_env
     # permissions:
