@@ -281,6 +281,7 @@ jobs:
           echo AWS_ROLE_ARN=$AWS_ROLE_ARN >> $GITHUB_ENV
           echo AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION >> $GITHUB_ENV
           echo NOTIFICATION_ENDPOINT=$NOTIFICATION_ENDPOINT >> $GITHUB_ENV
+          echo PAYLOAD=$PAYLOAD >> $GITHUB_ENV
           
           curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r '.value' > $AWS_WEB_IDENTITY_TOKEN_FILE      
       - name: Invoke endpoint
