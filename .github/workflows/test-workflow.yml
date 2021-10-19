@@ -1,18 +1,21 @@
-name: test workflow
+name: Send Artifacts Workflow
 env:
+  REGION: us-west-2
   SOLUTION_ORG: aws-solutions
   SOLUTION_NAME: aws-virtual-waiting-room
 on: 
-  workflow_dispatch:
-    inputs:
-      run_id:
-        description: 'workflow run ID'     
-        required: true
+  workflow_run:
+    workflows: ["Push Workflow"]
+    types: [completed]
+    # inputs:
+    #   run_id:
+    #     description: 'Workflow Run ID'     
+    #     required: true
 jobs:
-  get_run_artifacts:
+  on_success:
     runs-on: ubuntu-latest
+    # if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
     - run: |
-        echo "Run ID:  ${{ github.event.inputs.run_id }}"
-        curl -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/${{ env.SOLUTION_ORG }}/${{ env.SOLUTION_NAME }}/actions/runs/${{ github.event.inputs.run_id }}/artifacts
-
+        echo "Run ID:  ${{ github.event.workflow_run.id }}"
+        # curl -X GET -H "Accept: application/vnd.github.v3+json" -H "authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ env.SOLUTION_ORG }}/${{ env.SOLUTION_NAME }}/actions/runs/${{ github.event.inputs.run_id }}/artifacts
