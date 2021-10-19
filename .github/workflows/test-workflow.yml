@@ -44,7 +44,8 @@ jobs:
           # echo PAYLOAD=$PAYLOAD >> $GITHUB_ENV
 
           curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r '.value' > $AWS_WEB_IDENTITY_TOKEN_FILE      
-          curl -X GET -H "Accept: application/vnd.github.v3+json" -H "authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ env.SOLUTION_ORG }}/${{ env.SOLUTION_NAME }}/actions/runs/${{ github.event.workflow_run.id }}/artifacts
+          # curl -X GET -H "Accept: application/vnd.github.v3+json" -H "authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ env.SOLUTION_ORG }}/${{ env.SOLUTION_NAME }}/actions/runs/${{ github.event.workflow_run.id }}/artifacts
+          curl -X GET -H "Accept: application/vnd.github.v3+json" -H "authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ env.SOLUTION_ORG }}/${{ env.SOLUTION_NAME }}/actions/artifacts
 #       - name: Invoke endpoint
 #         run: |
 #           cd deployment
