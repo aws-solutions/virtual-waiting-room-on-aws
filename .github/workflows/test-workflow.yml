@@ -14,4 +14,5 @@ jobs:
     steps:
     - run: |
         echo "Run ID:  ${{ github.event.inputs.run_id }}"
-        curl -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/${{ env.SOLUTION_ORG }}/${{ env.SOLUTION_NAME }}/actions/runs/${{ github.event.inputs.run_id }}/artifacts
+        curl -X GET -u ${{ secrets.GITHUB_TOKEN}}:x-oauth-basic -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/${{ env.SOLUTION_ORG }}/${{ env.SOLUTION_NAME }}/actions/runs/${{ github.event.inputs.run_id }}/artifacts
+        
