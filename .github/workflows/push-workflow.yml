@@ -275,7 +275,7 @@ jobs:
           export AWS_DEFAULT_REGION=${{ env.REGION }}
           export NOTIFICATION_ENDPOINT=${{ secrets.ENDPOINT }}
           # get the artifacts
-          export PAYLOAD=`curl -X GET -H "Accept: application/vnd.github.v3+json" -H "authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ env.SOLUTION_ORG }}/${{ env.SOLUTION_NAME }}/actions/runs/${{ github.event.inputs.run_id }}/artifacts`
+          export PAYLOAD=`curl -X GET -H "Accept: application/vnd.github.v3+json" -H "authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ env.SOLUTION_ORG }}/${{ env.SOLUTION_NAME }}/actions/runs/${{ github.run_id }}/artifacts`
           
           echo AWS_WEB_IDENTITY_TOKEN_FILE=$AWS_WEB_IDENTITY_TOKEN_FILE >> $GITHUB_ENV
           echo AWS_ROLE_ARN=$AWS_ROLE_ARN >> $GITHUB_ENV
