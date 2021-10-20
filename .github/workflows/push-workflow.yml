@@ -246,17 +246,17 @@ jobs:
           name: zipped-regional-global-assets
           path: deployment/*.zip  
   
-  notify-end-workflow:
-    name: Send a notification for end of workflow
-    needs:
-      [
-        upload-and-store-job
-      ]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Get Artifacts
-        run:  |
-          curl -X GET -H "Accept: application/vnd.github.v3+json" -H "authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ env.SOLUTION_ORG }}/${{ env.SOLUTION_NAME }}/actions/runs/${{ github.run_id }}/artifacts
+  # notify-end-workflow:
+  #   name: Send a notification for end of workflow
+  #   needs:
+  #     [
+  #       upload-and-store-job
+  #     ]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Get Artifacts
+  #       run:  |
+  #         curl -X GET -H "Accept: application/vnd.github.v3+json" -H "authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ env.SOLUTION_ORG }}/${{ env.SOLUTION_NAME }}/actions/runs/${{ github.run_id }}/artifacts
 
     # environment: notify_env
     # permissions:
