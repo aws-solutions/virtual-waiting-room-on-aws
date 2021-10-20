@@ -16,16 +16,15 @@ from urllib.parse import urlparse
 API_REGION = os.environ.get('AWS_DEFAULT_REGION')
 NOTIFICATION_ENDPOINT = os.environ.get('NOTIFICATION_ENDPOINT')
 PAYLOAD = json.loads(os.environ.get('PAYLOAD'))
-BRANCH = os.environ.get('BRANCH')
 SOLUTION_NAME = 'aws-virtual-waiting-room'
 
 def main():
-    print(NOTIFICATION_ENDPOINT)
     print(PAYLOAD)
     PAYLOAD['solution_name'] = SOLUTION_NAME
-    PAYLOAD['branch'] = BRANCH
+    PAYLOAD['branch'] = os.environ.get('BRANCH')
+    PAYLOAD['workflow_name'] = os.environ.get('WORKFLOW_NAME')
+    
     parsed = urlparse(NOTIFICATION_ENDPOINT)
-    print(parsed)
     auth = BotoAWSRequestsAuth(aws_host=parsed.netloc,
                                aws_region=API_REGION,
                                aws_service='execute-api')
