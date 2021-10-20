@@ -11,9 +11,9 @@ jobs:
   on_success:
     runs-on: ubuntu-latest
     environment: notify_env
-    permissions:
-      id-token: write
-      contents: read
+#     permissions:
+#       id-token: write
+#       contents: read
     # if: ${{ github.event.workflow_run.conclusion == 'success' }}    
     steps:
       - name: Check out repo
