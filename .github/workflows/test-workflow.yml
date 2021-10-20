@@ -46,6 +46,11 @@ jobs:
           echo NOTIFICATION_ENDPOINT=$NOTIFICATION_ENDPOINT >> $GITHUB_ENV
           echo BRANCH=$BRANCH >> $GITHUB_ENV
           curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r '.value' > $AWS_WEB_IDENTITY_TOKEN_FILE      
+
+          #debug
+          echo ${{ toJson(github.event.workflow_run) }}
+          echo ${{ toJson(github.event.workflow) }}
+          
       - name: Invoke endpoint
         run: |
           cd deployment
