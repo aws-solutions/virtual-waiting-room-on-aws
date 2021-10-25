@@ -1,8 +1,8 @@
 astroid==2.5.2
 attrs==20.3.0
 aws-requests-auth==0.4.3
-aws-sam-cli==1.22.0
-aws-sam-translator==1.35.0
+aws-sam-cli==1.33.0
+aws-sam-translator==1.39.0
 awscli==1.19.47
 blessed==1.17.6
 boto3==1.17.47
@@ -46,7 +46,7 @@ s3transfer==0.3.6
 six==1.15.0
 testresources==2.0.1
 toml==0.10.2
-tomlkit==0.7.0
+tomlkit==0.7.2
 urllib3==1.26.5
 wcwidth==0.2.5
 Werkzeug==1.0.1
