@@ -29,11 +29,14 @@ jobs:
           fi
       - name: Get artifacts
         run: |
-          export PAYLOAD=`curl -X GET -H "Accept: application/vnd.github.v3+json" -H "authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ env.SOLUTION_ORG }}/${{ env.SOLUTION_NAME }}/actions/runs/${{ github.event.workflow_run.id }}/artifacts`
+          export WORKFLOW_RUN_ID=${{ github.event.workflow_run.id }} 
+          export COMMIT_ID=${{ github.event.workflow_run.head_sha }}
           export BRANCH=${{ github.event.workflow_run.head_branch }}
           export WORKFLOW_NAME="${{ github.event.workflow_run.name }}"
           export NOTIFICATION_ENDPOINT=${{ secrets.ENDPOINT }}
-          echo PAYLOAD=$PAYLOAD >> $GITHUB_ENV
+
+          echo WORKFLOW_RUN_ID=$WORKFLOW_RUN_ID >> $GITHUB_ENV
+          echo COMMIT_ID=$COMMIT_ID >> $GITHUB_ENV
           echo NOTIFICATION_ENDPOINT=$NOTIFICATION_ENDPOINT >> $GITHUB_ENV
           echo BRANCH=$BRANCH >> $GITHUB_ENV
           echo WORKFLOW_NAME=$WORKFLOW_NAME >> $GITHUB_ENV
