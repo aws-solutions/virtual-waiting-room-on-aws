@@ -10,7 +10,7 @@
         },
         "CoreApi": {
             "Stage": {
-                "Name": "dev"
+                "Name": "api"
             }
         },
         "SolutionId": {
