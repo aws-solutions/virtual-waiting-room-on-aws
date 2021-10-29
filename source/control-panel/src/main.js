@@ -1,7 +1,9 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import { createApp } from 'vue'
-import App from './App.vue'
+/*jshint esversion: 6 */
 
-createApp(App).mount('#app')
+import { createApp } from 'vue';
+import App from './App.vue';
+
+createApp(App).mount('#app');
