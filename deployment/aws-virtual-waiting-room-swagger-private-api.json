@@ -587,6 +587,9 @@
               "responses": {
                 "default": {
                   "statusCode": "200",
+                  "responseParameters": {
+                    "method.response.header.Access-Control-Allow-Origin": "'*'"
+                  },    
                   "responseTemplates": {
                     "application/json": "{\"message\": \"It may take a minute or two to reset counters and recreate the database. Verify that token table is available and active in DynamoDB before using the waiting room.\"}"
                   }
