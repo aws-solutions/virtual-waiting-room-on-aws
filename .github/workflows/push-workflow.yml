@@ -204,6 +204,8 @@ jobs:
     steps:
       - name: Check out repo
         uses: actions/checkout@v2
+      - name: Set up Push variables
+        run: echo "VERSION=`git rev-parse --short HEAD`" >> $GITHUB_ENV
       - name: Install required system packages
         run: |
           pip install --upgrade --force-reinstall -r deployment/requirements.txt 2> error.txt
@@ -212,19 +214,11 @@ jobs:
             cat error.txt
             exit 1
           fi
-      - run: sleep 5 # per doc there is still some kind of race condition
-      - name: Configure AWS
-        run: |
-          export AWS_ROLE_ARN=${{ secrets.VWR_ROLE_ARN }}
-          export AWS_WEB_IDENTITY_TOKEN_FILE=/tmp/awscreds
-          export AWS_DEFAULT_REGION=${{ env.REGION }}
-
-          echo AWS_WEB_IDENTITY_TOKEN_FILE=$AWS_WEB_IDENTITY_TOKEN_FILE >> $GITHUB_ENV
-          echo AWS_ROLE_ARN=$AWS_ROLE_ARN >> $GITHUB_ENV
-          echo AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION >> $GITHUB_ENV
-          echo "VERSION=`git rev-parse --short HEAD`" >> $GITHUB_ENV
-          
-          curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r '.value' > $AWS_WEB_IDENTITY_TOKEN_FILE
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.VWR_ROLE_ARN }}
+          aws-region: ${{ env.REGION }}
       - name: Restore deployment directory from cache
         uses: actions/cache@v2
         id: cache-deployment
@@ -246,51 +240,3 @@ jobs:
           name: zipped-regional-global-assets
           path: deployment/*.zip  
   
-  # notify-end-workflow:
-  #   name: Send a notification for end of workflow
-  #   needs:
-  #     [
-  #       upload-and-store-job
-  #     ]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Get Artifacts
-  #       run:  |
-  #         curl -X GET -H "Accept: application/vnd.github.v3+json" -H "authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ env.SOLUTION_ORG }}/${{ env.SOLUTION_NAME }}/actions/runs/${{ github.run_id }}/artifacts
-
-    # environment: notify_env
-    # permissions:
-    #   id-token: write
-    #   contents: read
-    # steps:
-    #   - name: Check out repo
-    #     uses: actions/checkout@v2
-    #   - name: Install required system packages
-    #     run: |
-    #       pip install --upgrade --force-reinstall -r deployment/requirements.txt 2> error.txt
-    #       if [ -s error.txt ]; then
-    #         echo "ERROR: System package installation failed."
-    #         cat error.txt
-    #         exit 1
-    #       fi
-    #   - run: sleep 5 # per doc there is still some kind of race condition
-    #   - name: Configure AWS
-    #     run: |
-    #       export AWS_ROLE_ARN=${{ secrets.NOTIFY_ROLE }}
-    #       export AWS_WEB_IDENTITY_TOKEN_FILE=/tmp/awscreds
-    #       export AWS_DEFAULT_REGION=${{ env.REGION }}
-    #       export NOTIFICATION_ENDPOINT=${{ secrets.ENDPOINT }}
-    #       # get the artifacts
-    #       export PAYLOAD=`curl -X GET -H "Accept: application/vnd.github.v3+json" -H "authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ env.SOLUTION_ORG }}/${{ env.SOLUTION_NAME }}/actions/runs/${{ github.run_id }}/artifacts`
-          
-    #       echo AWS_WEB_IDENTITY_TOKEN_FILE=$AWS_WEB_IDENTITY_TOKEN_FILE >> $GITHUB_ENV
-    #       echo AWS_ROLE_ARN=$AWS_ROLE_ARN >> $GITHUB_ENV
-    #       echo AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION >> $GITHUB_ENV
-    #       echo NOTIFICATION_ENDPOINT=$NOTIFICATION_ENDPOINT >> $GITHUB_ENV
-    #       echo PAYLOAD=$PAYLOAD >> $GITHUB_ENV
-
-    #       curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r '.value' > $AWS_WEB_IDENTITY_TOKEN_FILE      
-    #   - name: Invoke endpoint
-    #     run: |
-    #       cd deployment
-    #       python end-workflow-notification.py
