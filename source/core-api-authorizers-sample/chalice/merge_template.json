@@ -48,7 +48,22 @@
         "WaitingRoomURL": {
             "Value": {
                 "Fn::Sub": [
-                    "https://${CloudFrontDomainName}/index.html?event_id=${EventID}",
+                    "https://${CloudFrontDomainName}/waitingroom/index.html?event_id=${EventID}",
+                    {
+                        "CloudFrontDomainName": {
+                            "Fn::GetAtt": [
+                                "SampleWebContentCloudFront",
+                                "DomainName"
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "ControlPanelURL": {
+            "Value": {
+                "Fn::Sub": [
+                    "https://${CloudFrontDomainName}/control-panel/index.html",
                     {
                         "CloudFrontDomainName": {
                             "Fn::GetAtt": [
@@ -60,6 +75,7 @@
                 ]
             }
         }
+
     },
     "Resources": {
         "AuthorizerInvokePermission": {

@@ -146,6 +146,7 @@ export default {
         this.credentials.accessKey = event.accessKey;
         this.credentials.secretAccessKey = event.secretAccessKey;
         this.credentials.sessionToken = event.sessionToken;
+        this.credentials.valid = true;
       }
     },
     endpointsChangeHandler(event) {
@@ -156,6 +157,7 @@ export default {
         this.endpoints.publicApiUrl = event.publicApiUrl;
         this.endpoints.privateApiUrl = event.privateApiUrl;
         this.endpoints.regionName = event.regionName;
+        this.endpoints.valid = true;
       }
     },
     eventDataChangeHandler(event) {
@@ -164,6 +166,7 @@ export default {
       if (event.valid) {
         // keep the event data if it's valid
         this.eventData.id = event.id;
+        this.eventData.valid = true;
       }
     },
   },

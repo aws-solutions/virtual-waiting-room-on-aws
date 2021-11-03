@@ -44,6 +44,9 @@ export default {
       },
     };
   },
+  created() {
+    document.title = "AWS Virtual Waiting Room Control Panel";
+  },
   components: { Banner, Configuration, Controls, Counters },
   methods: {
     configurationUpdate(event) {
