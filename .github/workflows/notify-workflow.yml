@@ -8,8 +8,9 @@ on:
     workflows: ["Push Workflow"]
     types: [completed]
 jobs:
-  on_success:
+  notify-job:
     runs-on: ubuntu-latest
+    name: Send workflow information to endpoint
     environment: notify_env
     permissions:
       id-token: write
