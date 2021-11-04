@@ -23,8 +23,8 @@ for resetting the waiting room to a default state -->
       <div class="m-2 mx-5">
         Warning: This will reset the waiting room counters and clear all session
         tokens from the database.
-        After resetting the waiting room, some API requests may be return an
-        error for up to 30 seconds.
+        After resetting the waiting room, some API requests may return an
+        error for several seconds and in some cases a few minutes.
       </div>
       <!-- enable the button if the configuration objects are valid -->
       <button
