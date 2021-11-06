@@ -5,10 +5,6 @@
             "Description": "ARN of the API Gateway Lambda Authorizer",
             "Type": "String"
         },
-        "InletTopicARN": {
-            "Description": "ARN of topic subscribed by inlet Lambda function",
-            "Type": "String"
-        },
         "APIGatewayRegion": {
             "Description": "AWS Region name of the API Gateway",
             "Type": "String"
@@ -24,11 +20,6 @@
         "EventID": {
             "Description": "Event ID of waiting room",
             "Type": "String"
-        },
-        "CheckoutUserCount": {
-            "Description": "Number of current users to report after each checkout",
-            "Type": "String",
-            "Default": "99"
         }
     },
     "Mappings": {
@@ -182,16 +173,6 @@
                                         "logs:FilterLogEvents"
                                     ],
                                     "Resource": {"Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*"}                       
-                                },
-                                {
-                                    "Effect": "Allow",
-                                    "Action": [
-                                        "sns:Publish"
-                                    ],
-                                    "Resource": {
-                                        "Fn::Sub": "${InletTopicARN}"
-                                    },
-                                    "Sid": "3f565d4d5621425b3a29c4fb08122991f9f0f35d"
                                 }
                             ]
                         },
@@ -238,30 +219,12 @@
                 },
                 "Environment": {
                     "Variables": {
-                        "AUTHORIZER_ARN": {
-                            "Fn::Sub": "${AuthorizerARN}"
-                        },
-                        "API_GATEWAY_REGION": {
-                            "Fn::Sub": "${APIGatewayRegion}"
-                        },
-                        "INLET_TOPIC_ARN": {
-                            "Fn::Sub": "${InletTopicARN}"
-                        },
-                        "PUBLIC_API_ENDPOINT": {
-                            "Fn::Sub": "${PublicAPIEndpoint}"
-                        },
-                        "PRIVATE_API_ENDPOINT": {
-                            "Fn::Sub": "${PrivateAPIEndpoint}"
-                        },
                         "SOLUTION_ID": {
                             "Fn::FindInMap": [
                                 "SolutionId",
                                 "UserAgent",
                                 "Extra"
                             ]
-                        },
-                        "CHECKOUT_USER_COUNT": {
-                            "Fn::Sub": "${CheckoutUserCount}"
                         }
                     }
                 }

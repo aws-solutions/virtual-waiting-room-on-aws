@@ -6,42 +6,62 @@ SPDX-License-Identifier: Apache-2.0
 <!--
 This SFC is responsible for containing each of the configuration
 components, combining their output and emitting an event to the parent
-and storing the configuration on the seesion when the use button is clicked.
+and storing the configuration on the session when the use button is clicked.
 -->
 
 <template>
   <!-- contain everything in a flexbox -->
   <div class="d-flex flex-column w-50 mx-auto p-4 border border-2 rounded">
-    <p class="lead">Configuration</p>
-    <Credentials
-      @inputChanged="credentialsChangeHandler"
-      :credentials="credentials"
-    />
-    <div class="my-3">&nbsp;</div>
-    <Endpoints @inputChanged="endpointsChangeHandler" :endpoints="endpoints" />
-    <div class="my-3">&nbsp;</div>
-    <Event @inputChanged="eventDataChangeHandler" :event-data="eventData" />
-    <div class="d-flex flex-row-reverse">
-      <!-- show revert changes button if something has changed -->
+    <div class="d-flex justify-content-between">
+      <div class="lead">Configuration</div>
       <button
         type="button"
-        class="btn btn-sm btn-primary btn-warning rounded m-1"
-        v-on:click="revert"
-        v-bind:disabled="!changed"
+        class="btn btn-sm btn-primary rounded m-1"
+        v-on:click="toggleShown"
       >
-        Revert
+        {{ shown ? "Hide" : "Show" }}
       </button>
-      <!-- show the save button if the inputs are valid and have changed -->
-      <button
-        type="button"
-        class="btn btn-sm btn-primary btn-success rounded m-1"
-        v-on:click="use"
-        v-bind:disabled="
-          !(credentials.valid && endpoints.valid && eventData.valid && changed)
-        "
-      >
-        Use
-      </button>
+    </div>
+
+    <div v-if="shown">
+      <Credentials
+        @inputChanged="credentialsChangeHandler"
+        :credentials="credentials"
+      />
+      <div class="my-3">&nbsp;</div>
+      <Endpoints
+        @inputChanged="endpointsChangeHandler"
+        :endpoints="endpoints"
+      />
+      <div class="my-3">&nbsp;</div>
+      <Event @inputChanged="eventDataChangeHandler" :event-data="eventData" />
+      <div class="d-flex flex-row-reverse">
+        <!-- show revert changes button if something has changed -->
+        <button
+          type="button"
+          class="btn btn-sm btn-primary btn-warning rounded m-1"
+          v-on:click="revert"
+          v-bind:disabled="!changed"
+        >
+          Revert
+        </button>
+        <!-- show the save button if the inputs are valid and have changed -->
+        <button
+          type="button"
+          class="btn btn-sm btn-primary btn-success rounded m-1"
+          v-on:click="use"
+          v-bind:disabled="
+            !(
+              credentials.valid &&
+              endpoints.valid &&
+              eventData.valid &&
+              changed
+            )
+          "
+        >
+          Use
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -59,6 +79,7 @@ export default {
   data() {
     // try to restore the configuration data from the session
     let configuration = this.restore();
+    configuration["shown"] = false;
     return configuration;
   },
   mounted() {
@@ -77,6 +98,9 @@ export default {
     }
   },
   methods: {
+    toggleShown() {
+      this.shown = !this.shown;
+    },
     revert() {
       // restore the previously saved configuration
       let stored = this.restore();
