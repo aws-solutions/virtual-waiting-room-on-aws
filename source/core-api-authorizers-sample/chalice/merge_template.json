@@ -54,7 +54,7 @@
         "ControlPanelURL": {
             "Value": {
                 "Fn::Sub": [
-                    "https://${CloudFrontDomainName}/control-panel/index.html",
+                    "https://${CloudFrontDomainName}/control-panel/index.html?eventId=${EventID}&publicApiUrl=${PublicAPIEndpoint}&privateApiUrl=${PrivateAPIEndpoint}&regionName=${AWS::Region}",
                     {
                         "CloudFrontDomainName": {
                             "Fn::GetAtt": [
