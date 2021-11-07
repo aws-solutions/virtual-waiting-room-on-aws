@@ -57,6 +57,9 @@ export default {
     };
   },
   emits: ["inputChanged"],
+  mounted(){
+    this.validateInput();
+  },
   methods: {
     validateInput() {
       // update the valid flag based on tests

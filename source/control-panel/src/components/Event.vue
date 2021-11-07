@@ -6,7 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 <!-- this SFC is responsible for collecting the event ID from the user -->
 
 <template>
-<!-- wrap everything in a flexbox -->
+  <!-- wrap everything in a flexbox -->
   <div class="d-flex flex-column">
     <label class="h6">Event ID</label>
     <!-- connect the input to the data model and input change handler -->
@@ -24,7 +24,7 @@ SPDX-License-Identifier: Apache-2.0
 
 <script>
 import _ from "lodash";
-import { reactive } from 'vue'
+import { reactive } from "vue";
 export default {
   props: ["event-data"],
   data() {
@@ -35,6 +35,9 @@ export default {
     };
   },
   emits: ["inputChanged"],
+  mounted() {
+    this.validateInput();
+  },
   methods: {
     validateInput() {
       // update the valid flag based on test results

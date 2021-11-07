@@ -145,6 +145,19 @@ export default {
           valid: false,
         };
       }
+      // override with query parameters if provided
+      if (document.location.search) {
+        const parameters = new URLSearchParams(document.location.search);
+        const publicApiUrl = parameters.get("publicApiUrl");
+        const privateApiUrl = parameters.get("privateApiUrl");
+        const regionName = parameters.get("regionName");
+        const eventId = parameters.get("eventId");
+        if (publicApiUrl) configuration.endpoints.publicApiUrl = publicApiUrl;
+        if (privateApiUrl)
+          configuration.endpoints.privateApiUrl = privateApiUrl;
+        if (regionName) configuration.endpoints.regionName = regionName;
+        if (eventId) configuration.eventData.id = eventId;
+      }
       return configuration;
     },
     use() {

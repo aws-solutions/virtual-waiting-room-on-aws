@@ -44,18 +44,21 @@ SPDX-License-Identifier: Apache-2.0
 
 <script>
 import _ from "lodash";
-import { reactive } from 'vue'
+import { reactive } from "vue";
 export default {
   name: "Credentials",
   props: ["credentials"],
   data() {
     let configuration = {
       valid: false,
-      formCredentials: reactive(this.credentials)
+      formCredentials: reactive(this.credentials),
     };
     return configuration;
   },
   emits: ["inputChanged"],
+  mounted() {
+    this.validateInput();
+  },
   methods: {
     validateInput() {
       // set the valid flag based on tests

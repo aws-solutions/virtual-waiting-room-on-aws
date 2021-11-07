@@ -9,13 +9,13 @@ SPDX-License-Identifier: Apache-2.0
   <!-- wrap everything in a flexbox with one column -->
   <div class="d-flex flex-column">
     <Banner />
-    <!-- respond to configuration events coming upstream -->
+    <!-- respond to configuration update events coming upstream -->
     <Configuration @use="configurationUpdate" />
     <p class="m-2">&nbsp;</p>
-    <!-- send the configuration downstream -->
+    <!-- send the configuration to components downstream -->
     <Counters :configuration="configuration" />
     <p class="m-2">&nbsp;</p>
-    <!-- send the configuration downstream -->
+    <!-- send the configuration to components downstream -->
     <Controls :configuration="configuration" />
     <p class="m-2">&nbsp;</p>
   </div>
@@ -30,7 +30,7 @@ export default {
   name: "App",
   data() {
     // default data model
-    return {
+    const model = {
       configuration: {
         endpoints: {
           valid: false,
@@ -43,6 +43,7 @@ export default {
         },
       },
     };
+    return model;
   },
   created() {
     document.title = "AWS Virtual Waiting Room Control Panel";
