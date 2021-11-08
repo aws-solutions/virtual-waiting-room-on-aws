@@ -6,9 +6,6 @@ to perform store operations after the user has received a token to pass through
 the waiting room.
 """
 
-import json
-import os
-import boto3
 from chalice import Chalice, CustomAuthorizer, CORSConfig, Response
 
 app = Chalice(app_name='core-api-authorizers-sample')
