@@ -8,8 +8,9 @@ on:
     workflows: ["Push Workflow"]
     types: [completed]
 jobs:
-  on_success:
+  notify-job:
     runs-on: ubuntu-latest
+    name: Send workflow information to endpoint
     environment: notify_env
     permissions:
       id-token: write
@@ -45,6 +46,7 @@ jobs:
         with:
           role-to-assume: ${{ secrets.NOTIFY_ROLE }}
           aws-region: ${{ env.REGION }}
+          role-duration-seconds: 900
       - name: Invoke endpoint
         run: |
           cd deployment

@@ -1,0 +1,131 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "(SO0166) AWS Virtual Waiting Room %%VERSION%%",
+    "Resources": {
+        "CoreModuleStack": {
+            "Type": "AWS::CloudFormation::Stack",
+            "Properties": {
+                "TemplateURL": {"Fn::Sub": "https://%%BUCKET_NAME%%-${AWS::Region}.s3.amazonaws.com/%%SOLUTION_NAME%%/%%VERSION%%/aws-virtual-waiting-room.template"},
+                "Parameters": {
+                    "EventId": {"Ref": "EventId"},
+                    "ValidityPeriod": {"Ref": "ValidityPeriod"},
+                    "EnableEventsGeneration": {"Ref": "EnableEventsGeneration"},
+                    "RedisPort": {"Ref": "RedisPort"}                    
+                }
+            }
+        },
+        "AuthorizersModuleStack": {
+            "Type": "AWS::CloudFormation::Stack",
+            "Properties": {
+                "TemplateURL": {"Fn::Sub": "https://%%BUCKET_NAME%%-${AWS::Region}.s3.amazonaws.com/%%SOLUTION_NAME%%/%%VERSION%%/aws-virtual-waiting-room-authorizers.template"},
+                "Parameters": {
+                    "PublicAPIEndpoint": {
+                        "Fn::GetAtt": [
+                            "CoreModuleStack",
+                            "Outputs.PublicApiInvokeURL"
+                        ]
+                      },
+                      "WaitingRoomEventID": {"Ref": "EventId"},
+                      "IssuerURI": {
+                        "Fn::GetAtt": [
+                            "CoreModuleStack",
+                            "Outputs.PublicTokenIssuer"
+                        ]
+                      }
+                }
+            }
+        },
+        "SampleModuleStack": {
+            "Type": "AWS::CloudFormation::Stack",
+            "Properties": {
+                "TemplateURL": {"Fn::Sub": "https://%%BUCKET_NAME%%-${AWS::Region}.s3.amazonaws.com/%%SOLUTION_NAME%%/%%VERSION%%/aws-virtual-waiting-room-sample.template"},
+                "Parameters": {
+                    "AuthorizerARN": {
+                        "Fn::GetAtt": [
+                            "AuthorizersModuleStack",
+                            "Outputs.ApiGatewayAuthorizerArn"
+                        ]
+                      },
+                      "APIGatewayRegion": {"Fn::Sub": "${AWS::Region}"},
+                      "PublicAPIEndpoint": {
+                        "Fn::GetAtt": [
+                            "CoreModuleStack",
+                            "Outputs.PublicApiInvokeURL"
+                        ]
+                      },
+                      "PrivateAPIEndpoint": {
+                        "Fn::GetAtt": [
+                            "CoreModuleStack",
+                            "Outputs.PrivateApiInvokeURL"
+                        ]
+                      },
+                      "EventID": {"Ref": "EventId"}
+                }
+            }
+        }
+    },
+    "Parameters": {
+        "EventId": {
+            "Description": "Unique ID for this instance of the waiting room",
+            "Type": "String",
+            "MinLength": 1,
+            "ConstraintDescription": "Please enter a value for this field.",
+            "Default": "abc123"
+        },
+        "ValidityPeriod": {
+            "Description": "Token validity period in seconds",
+            "Type": "Number",
+            "ConstraintDescription": "Please enter a value for this field.",
+            "Default": 3600
+        },
+        "EnableEventsGeneration": {
+            "Description": "If set to true, metrics related to the Waiting Room will be written to its event bus every minute",
+            "Type": "String",
+            "AllowedValues": [
+                "true",
+                "false"
+            ],
+            "Default": "false"
+        },
+        "RedisPort": {
+            "Description": "Port to use when connecting to Redis",
+            "Type": "Number",
+            "ConstraintDescription": "Please enter a value for this field.",
+            "Default": "1785"
+        }   
+    },
+    "Outputs": {
+        "PublicApiInvokeURL": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "CoreModuleStack",
+                    "Outputs.PublicApiInvokeURL"
+                ]
+            }
+        },
+        "PrivateApiInvokeURL": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "CoreModuleStack",
+                    "Outputs.PrivateApiInvokeURL"
+                ]
+            }
+        },
+        "WaitingRoomURL": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "SampleModuleStack",
+                    "Outputs.WaitingRoomURL"
+                ]
+            }
+        },
+        "ControlPanelURL": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "SampleModuleStack",
+                    "Outputs.ControlPanelURL"
+                ]
+            }
+        }
+    }
+}
