@@ -1,3 +1,8 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+/*jshint esversion: 6 */
+
 import { createRouter, createWebHistory } from 'vue-router';
 import Home from '../views/Home.vue';
 import WaitingRoom from '../views/WaitingRoom.vue';

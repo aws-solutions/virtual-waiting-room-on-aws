@@ -20,7 +20,7 @@ const store = createStore({
             receipt: null,
             commerceApiUrl: "",
             launchQueryParameters: ""
-        }
+        };
     },
     mutations: {
         setRequestId(state, id) {
@@ -68,7 +68,7 @@ const store = createStore({
     }
 });
 
-const app = createApp(App)
+const app = createApp(App);
 app.use(router);
 app.use(store);
 app.mount('#app');
