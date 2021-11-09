@@ -111,19 +111,19 @@
                 ]
             }
         },
-        "PublicTokenIssuer": {
+        "WaitingRoomURL": {
             "Value": {
                 "Fn::GetAtt": [
-                    "CoreModuleStack",
-                    "Outputs.PublicTokenIssuer"
+                    "SampleModuleStack",
+                    "Outputs.WaitingRoomURL"
                 ]
             }
         },
-        "PrivateTokenIssuer": {
+        "ControlPanelURL": {
             "Value": {
                 "Fn::GetAtt": [
-                    "CoreModuleStack",
-                    "Outputs.PrivateTokenIssuer"
+                    "SampleModuleStack",
+                    "Outputs.ControlPanelURL"
                 ]
             }
         }

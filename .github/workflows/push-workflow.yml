@@ -183,8 +183,6 @@ jobs:
         with:
           path: deployment/
           key: ${{ github.sha }}
-      - name: Remove nested template before running cfn_nag
-        run: rm deployment/global-s3-assets/aws-virtual-waiting-room-getting-started.template
       - name: Run cfn-nag against templates
         uses: stelligent/cfn_nag@master
         with:
