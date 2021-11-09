@@ -221,7 +221,7 @@ jobs:
         with:
           role-to-assume: ${{ secrets.VWR_ROLE_ARN }}
           aws-region: ${{ env.REGION }}
-          role-duration-seconds: 60
+          role-duration-seconds: 900
       - name: Restore deployment directory from cache
         uses: actions/cache@v2
         id: cache-deployment
