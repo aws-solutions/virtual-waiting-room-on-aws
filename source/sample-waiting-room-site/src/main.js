@@ -4,9 +4,9 @@
 /*jshint esversion: 6 */
 
 import { createApp } from 'vue';
-import { createStore } from 'vuex'
+import { createStore } from 'vuex';
 import App from './App.vue';
-import router from './router'
+import router from './router';
 
 const store = createStore({
     state() {
@@ -46,8 +46,7 @@ const store = createStore({
         },
         setCommerceApiUrl(state, url) {
             state.commerceApiUrl = url;
-        }
-        ,
+        },
         setLaunchQueryParameters(state, query) {
             state.launchQueryParameters = query;
         }

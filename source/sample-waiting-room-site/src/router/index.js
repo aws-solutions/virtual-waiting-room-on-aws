@@ -1,7 +1,7 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import Home from '../views/Home.vue'
-import WaitingRoom from '../views/WaitingRoom.vue'
-import CheckOut from '../views/CheckOut.vue'
+import { createRouter, createWebHistory } from 'vue-router';
+import Home from '../views/Home.vue';
+import WaitingRoom from '../views/WaitingRoom.vue';
+import CheckOut from '../views/CheckOut.vue';
 
 const routes = [
   {
@@ -19,11 +19,11 @@ const routes = [
     name: 'Check Out',
     component: CheckOut,
   }
-]
+];
 
 const router = createRouter({
   history: createWebHistory(process.env.BASE_URL),
   routes
-})
+});
 
-export default router
+export default router;
