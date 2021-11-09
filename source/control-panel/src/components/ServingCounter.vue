@@ -31,12 +31,13 @@ export default {
   mixins: [VueTimers],
   // endpoint configuration comes from upstream as a property
   props: ["configuration"],
-  // se a vue timer for periodic updates
+  // use a vue timer for periodic updates
   timers: {
     updateServingCounter: {
       time: UPDATE_INTERVAL_MS,
       autostart: true,
       repeat: true,
+      immediate: true
     },
   },
   data() {
@@ -46,10 +47,6 @@ export default {
       updateSuccess: false,
       updateError: false,
     };
-  },
-  mounted() {
-    // update once after the component instance is mounted in the DOM
-    this.updateServingCounter();
   },
   methods: {
     updateServingCounter() {

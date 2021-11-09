@@ -37,6 +37,7 @@ export default {
       time: UPDATE_INTERVAL_MS,
       autostart: true,
       repeat: true,
+      immediate: true
     },
   },
   data() {
@@ -46,10 +47,6 @@ export default {
       updateSuccess: false,
       updateError: false,
     };
-  },
-  mounted() {
-    // update the status once after mounting this component to the DOM
-    this.updateWaitingRoomSize();
   },
   methods: {
     updateWaitingRoomSize() {

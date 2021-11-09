@@ -36,6 +36,7 @@ export default {
       time: UPDATE_INTERVAL_MS,
       autostart: true,
       repeat: true,
+      immediate: true
     },
   },
   data() {
@@ -45,10 +46,6 @@ export default {
       updateSuccess: false,
       updateError: false,
     };
-  },
-  mounted() {
-    // update the counter
-    this.updateWaitingRoomSize();
   },
   methods: {
     updateWaitingRoomSize() {

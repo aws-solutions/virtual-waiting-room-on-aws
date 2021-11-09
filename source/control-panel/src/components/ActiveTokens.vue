@@ -43,6 +43,7 @@ export default {
       time: UPDATE_INTERVAL_MS,
       autostart: true,
       repeat: true,
+      immediate: true
     },
   },
   data() {
@@ -51,10 +52,6 @@ export default {
       updateSuccess: false,
       updateError: false,
     };
-  },
-  mounted() {
-    // try to update once after mounting the component in the DOM
-    this.updateActiveTokenCount();
   },
   methods: {
     updateActiveTokenCount() {
