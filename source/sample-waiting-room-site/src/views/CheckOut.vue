@@ -39,18 +39,10 @@ import CompletePurchase from "@/components/CompletePurchase.vue";
 import PurchaseReceipt from "@/components/PurchaseReceipt.vue";
 export default {
   name: "CheckOut",
-  computed: {
-    myPosition() {
-      return this.$store.state.myPosition;
-    },
-    hasQueuePosition() {
-      return this.$store.getters.hasQueuePosition;
-    },
-  },
   methods: {
     restartWaitingRoom() {
       const query = this.$store.state.launchQueryParameters;
-      window.location = `/${query}`;
+      window.location = `/index.html${query}`;
     }
   },
   components: {

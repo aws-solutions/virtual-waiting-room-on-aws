@@ -39,7 +39,7 @@
         "WaitingRoomURL": {
             "Value": {
                 "Fn::Sub": [
-                    "https://${CloudFrontDomainName}/waitingroom/index.html?event_id=${EventID}",
+                    "https://${CloudFrontDomainName}/waiting-room-site/index.html?eventId=${EventID}&publicApiUrl=${PublicAPIEndpoint}&commerceApiUrl=https://${RestAPI}.execute-api.${AWS::Region}.amazonaws.com/store",
                     {
                         "CloudFrontDomainName": {
                             "Fn::GetAtt": [
@@ -66,7 +66,6 @@
                 ]
             }
         }
-
     },
     "Resources": {
         "AuthorizerInvokePermission": {
@@ -172,7 +171,9 @@
                                         "logs:GetLogEvents",
                                         "logs:FilterLogEvents"
                                     ],
-                                    "Resource": {"Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*"}                       
+                                    "Resource": {
+                                        "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*"
+                                    }
                                 }
                             ]
                         },
@@ -240,7 +241,8 @@
                             "id": "W92",
                             "reason": "Lambda does not require ReservedConcurrentExecutions."
                         }
-                    ]}
+                    ]
+                }
             }
         },
         "BucketLoaderFunction": {
@@ -314,7 +316,8 @@
                             "id": "W92",
                             "reason": "Lambda does not require ReservedConcurrentExecutions."
                         }
-                    ]}
+                    ]
+                }
             }
         },
         "BucketLoaderResource": {
