@@ -258,8 +258,8 @@ zip -r9 ../tmp/aws-virtual-waiting-room-sample-custom-resources.zip .
 cd $source_dir/shared/custom_resources
 zip -g $source_dir/core-api-authorizers-sample/custom_resources/tmp/aws-virtual-waiting-room-sample-custom-resources.zip cfn_bucket_loader.py
 # add sample web content to custom resource zip
-cd $source_dir/core-api-authorizers-sample
-zip -r -g $source_dir/core-api-authorizers-sample/custom_resources/tmp/aws-virtual-waiting-room-sample-custom-resources.zip www/*
+# cd $source_dir/core-api-authorizers-sample
+# zip -r -g $source_dir/core-api-authorizers-sample/custom_resources/tmp/aws-virtual-waiting-room-sample-custom-resources.zip www/*
 
 # build vue control panel and package into dist
 cd $source_dir/control-panel
@@ -270,6 +270,14 @@ npm run build
 cd dist/
 zip -r -g $source_dir/core-api-authorizers-sample/custom_resources/tmp/aws-virtual-waiting-room-sample-custom-resources.zip www/*
 
+# build vue sample site and package into dist
+cd $source_dir/sample-waiting-room-site
+rm -rf dist/ node_modules/
+npm install
+npm run build
+# add dist files to the custom resources zip 
+cd dist/
+zip -r -g $source_dir/core-api-authorizers-sample/custom_resources/tmp/aws-virtual-waiting-room-sample-custom-resources.zip www/*
 
 cd $source_dir/core-api-authorizers-sample/custom_resources/tmp
 # copy the zip file to the build directory
