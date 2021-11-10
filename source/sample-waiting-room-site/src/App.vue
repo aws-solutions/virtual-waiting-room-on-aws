@@ -12,6 +12,9 @@ SPDX-License-Identifier: Apache-2.0
 <script>
 export default {
   name: "App",
+  created() {
+    document.title = "Sample Waiting Room Site";
+  },
   mounted() {
     // add specific query parameters to the vuex store
     if (document.location.search) {

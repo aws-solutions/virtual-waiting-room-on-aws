@@ -87,6 +87,7 @@ export default {
       client
         .post(resource, body)
         .then(function (response) {
+          console.log(response.data);
           store.commit("setRequestId", response.data.api_request_id);
         })
         .catch(function (error) {

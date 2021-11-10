@@ -12,18 +12,18 @@ the current serving counter of the waiting room -->
     <div class="text-center lead mb-2">Estimated Time to Exit</div>
     <div class="mb-2">
       This compartment shows the estimated time remaining to exit the waiting
-      room to check out.
+      room and check out.
     </div>
     <div>
       <div
-        v-if="timeToExit !== 0 && myPosition > queuePosition"
+        v-if="estimatedExitTimestamp !== 0 && myPosition > queuePosition"
         class="alert alert-primary"
         role="alert"
       >
-        {{ new Date(timeToExit).toTimeString() }}
+        Exit {{ remainingTime }}
       </div>
       <div
-        v-if="timeToExit === 0 && myPosition > queuePosition"
+        v-if="estimatedExitTimestamp === 0 && myPosition > queuePosition"
         class="alert alert-secondary"
         role="alert"
       >
@@ -44,6 +44,7 @@ the current serving counter of the waiting room -->
 import { mapGetters } from "vuex";
 import { mixin as VueTimers } from "vue-timers";
 import { linearRegression, linearRegressionLine } from "simple-statistics";
+import moment from "moment";
 const UPDATE_INTERVAL_MS = 3000;
 const MAX_SAMPLES = 50;
 export default {
@@ -71,7 +72,8 @@ export default {
   data() {
     return {
       samples: [],
-      timeToExit: 0,
+      estimatedExitTimestamp: 0,
+      remainingTime: ""
     };
   },
   computed: {
@@ -88,6 +90,9 @@ export default {
     },
   },
   methods: {
+    language() {
+      return navigator.language;
+    },
     updateExitExtrapolation() {
       const now = new Date().getTime();
       const item = [this.queuePosition, now];
@@ -99,9 +104,10 @@ export default {
       const fitFunction = linearRegressionLine(linearRegression(this.samples));
       const estimate = Number.parseInt(fitFunction(this.myPosition));
       if (!isNaN(estimate)) {
-        this.timeToExit = estimate;
+        this.estimatedExitTimestamp = estimate;
+        this.remainingTime = moment().to(new Date(this.estimatedExitTimestamp));
       } else {
-        this.timeToExit = 0;
+        this.estimatedExitTimestamp = 0;
       }
     },
   },

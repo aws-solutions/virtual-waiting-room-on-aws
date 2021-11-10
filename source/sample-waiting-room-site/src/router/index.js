@@ -11,11 +11,7 @@ import CheckOut from '../views/CheckOut.vue';
 const routes = [
   {
     path: '/',
-    name: 'Home',
-    component: Home,
-  },
-  {
-    path: '/index.html',
+    alias: "/index.html",
     name: 'Home',
     component: Home,
   },

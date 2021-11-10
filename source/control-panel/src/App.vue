@@ -7,8 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 
 <template>
   <!-- wrap everything in a flexbox with one column -->
-  <div class="d-flex flex-column">
-    <Banner />
+  <div class="d-flex flex-column m-2">
+    <Banner class="mb-3"/>
     <!-- respond to configuration update events coming upstream -->
     <Configuration @use="configurationUpdate" />
     <p class="m-2">&nbsp;</p>
