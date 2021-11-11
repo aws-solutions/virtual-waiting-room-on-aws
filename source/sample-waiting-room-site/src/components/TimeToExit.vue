@@ -45,7 +45,7 @@ import { mapGetters } from "vuex";
 import { mixin as VueTimers } from "vue-timers";
 import { linearRegression, linearRegressionLine } from "simple-statistics";
 import moment from "moment";
-const UPDATE_INTERVAL_MS = 3000;
+const UPDATE_INTERVAL_MS = 5000;
 const MAX_SAMPLES = 50;
 export default {
   name: "TimeToExit",
@@ -90,9 +90,6 @@ export default {
     },
   },
   methods: {
-    language() {
-      return navigator.language;
-    },
     updateExitExtrapolation() {
       const now = new Date().getTime();
       const item = [this.queuePosition, now];
