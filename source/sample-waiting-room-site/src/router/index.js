@@ -8,6 +8,8 @@ import Home from '../views/Home.vue';
 import WaitingRoom from '../views/WaitingRoom.vue';
 import CheckOut from '../views/CheckOut.vue';
 
+// routes determine which view component to show based on the address
+
 const routes = [
   {
     path: '/',

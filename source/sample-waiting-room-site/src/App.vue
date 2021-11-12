@@ -19,10 +19,15 @@ export default {
     // add specific query parameters to the vuex store
     if (document.location.search) {
       const parameters = new URLSearchParams(document.location.search);
-      const publicApiUrl = parameters.get("publicApiUrl");
-      const eventId = parameters.get("eventId");
-      const commerceApiUrl = parameters.get("commerceApiUrl");
       this.$store.commit("setLaunchQueryParameters", document.location.search);
+      // public api for entering waiting room, checking status, etc.
+      const publicApiUrl = parameters.get("publicApiUrl");
+      // event ID for this waiting room configuration
+      const eventId = parameters.get("eventId");
+      // customer's API protected by waiting room authorizer
+      const commerceApiUrl = parameters.get("commerceApiUrl");
+      // specifies if user should automatically advance out of the waiting room
+      const passThru = parameters.get("passThru");
       if (publicApiUrl) {
         this.$store.commit("setPublicApiUrl", publicApiUrl);
       }
@@ -31,6 +36,9 @@ export default {
       }
       if (commerceApiUrl) {
         this.$store.commit("setCommerceApiUrl", commerceApiUrl);
+      }
+      if (passThru) {
+        this.$store.commit("setPassThru");
       }
     }
   },

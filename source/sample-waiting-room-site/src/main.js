@@ -19,7 +19,8 @@ const store = createStore({
             token: null,
             receipt: null,
             commerceApiUrl: "",
-            launchQueryParameters: ""
+            launchQueryParameters: "",
+            passThru: false
         };
     },
     mutations: {
@@ -49,6 +50,9 @@ const store = createStore({
         },
         setLaunchQueryParameters(state, query) {
             state.launchQueryParameters = query;
+        },
+        setPassThru(state, value) {
+            state.passThru = value;
         }
     },
     getters:

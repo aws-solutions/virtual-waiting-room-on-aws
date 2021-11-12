@@ -61,5 +61,6 @@ export default {
 </script>
 
 <style>
+/* use bootstrap 5.x CSS */
 @import "~bootstrap/dist/css/bootstrap.min.css";
 </style>
