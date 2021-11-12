@@ -70,7 +70,7 @@
             "Type": "String",
             "MinLength": 1,
             "ConstraintDescription": "Please enter a value for this field.",
-            "Default": "abc123"
+            "Default": "Sample"
         },
         "ValidityPeriod": {
             "Description": "Token validity period in seconds",
