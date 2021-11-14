@@ -405,9 +405,7 @@
         "PrivateCoreApiEndpoint": {
             "Description": "The private core API endpoint",
             "Type": "String",
-            "ConstraintDescription": "Please enter a value for this field.",
-            "Default": "https://svb3ke9gk8.execute-api.us-west-2.amazonaws.com/dev"
-        },
+            "ConstraintDescription": "Please enter a value for this field."        },
         "CoreApiRegion": {
             "Description": "AWS Region where the core API is installed",
             "Type": "String",

@@ -8,6 +8,7 @@ AWS credentials from the environment are required.
 """
 
 import json
+import os
 import time
 from urllib.parse import urlparse
 
@@ -15,12 +16,10 @@ import boto3
 import requests
 from aws_requests_auth.boto_utils import BotoAWSRequestsAuth
 
-PRIVATE_API_ENDPOINT = "https://qdtvlun7nj.execute-api.us-east-1.amazonaws.com/dev"
-API_REGION = "us-east-1"
-
-INLET_LAMBDA_NAME = "inlet-strategies-PeriodicInlet-MDF2BQpUXmII"
-
-EVENT_ID = "BC5346030A57"
+PRIVATE_API_ENDPOINT = os.environ["PRIVATE_API_ENDPOINT"]
+PRIVATE_API_REGION = os.environ["PRIVATE_API_REGION"]
+INLET_LAMBDA_NAME = os.environ["INLET_LAMBDA_NAME"]
+EVENT_ID = os.environ["EVENT_ID"]
 
 INCREMENT = 1000
 HOLD_OFF = 30
@@ -35,7 +34,7 @@ def reset_waiting_room():
     body = {"event_id": EVENT_ID}
     parsed = urlparse(PRIVATE_API_ENDPOINT)
     auth = BotoAWSRequestsAuth(aws_host=parsed.netloc,
-                               aws_region=API_REGION,
+                               aws_region=PRIVATE_API_REGION,
                                aws_service='execute-api')
     response = requests.post(api, json=body, auth=auth, timeout=25)
     print(f"/reset_initial_state {response.status_code}")

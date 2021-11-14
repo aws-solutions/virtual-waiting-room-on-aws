@@ -3,6 +3,8 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 -->
 
+<!-- this SFC is a view for the site's landing page -->
+
 <template>
   <div class="d-flex flex-column w-50 mx-auto p-4 border border-2 rounded mt-2">
     <div class="text-center lead mb-2">Home</div>
@@ -51,7 +53,6 @@ export default {
       return this.hasRequestId && (this.myPosition <= this.queuePosition);
     },
   },
-  // props: ["model"],
   methods: {
     handleReserveButtonClick() {
       this.$router.push("/waitingroom");

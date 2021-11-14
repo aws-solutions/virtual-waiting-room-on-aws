@@ -3,6 +3,8 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 -->
 
+<!-- this SFC is a view for the site's waiting room page -->
+
 <template>
   <div class="d-flex flex-column w-50 mx-auto border border-2 rounded mt-2">
     <div class="text-center lead mb-2">Waiting Room</div>
@@ -42,7 +44,15 @@ import WaitingRoomSize from "@/components/WaitingRoomSize.vue";
 
 export default {
   name: "WaitingRoom",
+  created() {
+    this.$watch("readyForCheckOut", this.passThruCheckOut);
+  },
   methods: {
+    passThruCheckOut() {
+      if (this.passThru && this.readyForCheckOut) {
+        this.navigateToCheckOut();
+      }
+    },
     navigateToCheckOut() {
       this.$router.push("/CheckOut");
     },
@@ -56,8 +66,16 @@ export default {
     queuePosition() {
       return this.$store.state.queuePosition;
     },
+    passThru() {
+      return this.$store.state.passThru;
+    },
     readyForCheckOut() {
-      return this.hasRequestId && (this.myPosition <= this.queuePosition);
+      return (
+        this.hasRequestId &&
+        this.myPosition &&
+        this.queuePosition &&
+        this.myPosition <= this.queuePosition
+      );
     },
   },
   components: {

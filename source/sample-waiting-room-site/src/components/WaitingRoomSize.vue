@@ -4,7 +4,7 @@ SPDX-License-Identifier: Apache-2.0
 -->
 
 <!-- this SFC is responsible for retrieving and displaying
-the current serving counter of the waiting room -->
+the number of users currently in the waiting room -->
 
 <template>
   <div class="d-flex flex-column border border-2 rounded p-2">
@@ -14,6 +14,7 @@ the current serving counter of the waiting room -->
       to check out.
     </div>
     <div>
+      <!-- display an alert with the count or an error message -->
       <div v-if="!apiFailed" class="alert alert-secondary" role="alert">
         {{ waitingRoomSize }} people are in the waiting room
       </div>
@@ -42,6 +43,7 @@ export default {
       immediate: true,
     },
   },
+  // stop and restart the timers if we leave and re-enter this view
   unmounted() {
     if (this.timers.updateWaitingRoomSite.isRunning) {
       this.$timer.stop("updateWaitingRoomSite");
@@ -53,6 +55,7 @@ export default {
     }
   },
   data() {
+    // track local state on the component
     return {
       apiFailed: false,
       waitingRoomSize: 0,
@@ -60,6 +63,7 @@ export default {
   },
   methods: {
     updateWaitingRoomSite() {
+      // retry until we get a 200 status back, or we've tried enough times
       const client = axios.create({
         validateStatus: function (status) {
           return status === 200;
@@ -72,18 +76,21 @@ export default {
           return state.response.status !== 200;
         },
       });
+      // include the event ID on the request
       const eventId = this.$store.state.eventId;
       const resource = `${this.$store.state.publicApiUrl}/waiting_num?event_id=${eventId}`;
       const component = this;
       client
         .get(resource)
         .then(function (response) {
+          // keep the waiting room size locally
           component.apiFailed = false;
           component.waitingRoomSize = Number.parseInt(
             response.data.waiting_num
           );
         })
         .catch(function (error) {
+          // print the error and stop the timer
           console.log(error);
           component.apiFailed = true;
           component.$timer.stop("updateWaitingRoomSite");

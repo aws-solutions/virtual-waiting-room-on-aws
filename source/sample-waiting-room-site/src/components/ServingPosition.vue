@@ -14,6 +14,7 @@ the current serving counter of the waiting room -->
       This compartment shows the current serving position of the line.
     </div>
     <div>
+      <!-- show an alert based on the state -->
       <div
         v-if="!apiFailed && queuePosition < myPosition"
         class="alert alert-secondary"
@@ -59,11 +60,13 @@ export default {
       apiFailed: false,
     };
   },
+  // stop the timer when we leave this component
   unmounted() {
     if (this.timers.updateServingPosition.isRunning) {
       this.$timer.stop("updateServingPosition");
     }
   },
+  // start the timer when we re-enter this component
   mounted() {
     if (!this.timers.updateServingPosition.isRunning) {
       this.$timer.start("updateServingPosition");
@@ -84,6 +87,7 @@ export default {
   },
   methods: {
     updateServingPosition() {
+      // use retry on this API call
       const client = axios.create({
         validateStatus: function (status) {
           return status === 200;
@@ -96,20 +100,25 @@ export default {
           return state.response.status !== 200;
         },
       });
+      // include the event ID as a parameter on the request
       const eventId = this.$store.state.eventId;
       const resource = `${this.$store.state.publicApiUrl}/serving_num?event_id=${eventId}`;
       const store = this.$store;
       const component = this;
+      // send the request
       client
         .get(resource)
         .then(function (response) {
           component.apiFailed = false;
+          // store the counter value 
           store.commit(
             "setQueuePosition",
             Number.parseInt(response.data.serving_counter)
           );
         })
         .catch(function (error) {
+          // print the error, stop the update timer and
+          // update the state locally on this component
           console.log(error);
           component.apiFailed = true;
           component.$timer.stop("updateServingPosition");

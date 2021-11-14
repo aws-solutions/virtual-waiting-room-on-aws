@@ -3,15 +3,16 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 -->
 
-<!-- this SFC is responsible for retrieving and displaying
-the current serving counter of the waiting room -->
+<!-- this SFC is responsible for using the waiting room token to
+make a protected API request -->
 
 <template>
-  <div class="d-flex flex-column border border-2 rounded p-2">
+  <div class="d-flex flex-column border border-2 border-dark rounded p-2">
     <!-- display a header with the last connection status -->
     <div class="text-center lead mb-2">Complete Purchase</div>
     <div class="mb-2">This compartment shows the status of your purchase.</div>
     <div>
+      <!-- show an alert based on the state -->
       <div
         v-if="!hasToken && readyForCheckOut"
         class="alert alert-secondary"
@@ -31,6 +32,7 @@ the current serving counter of the waiting room -->
       </div>
     </div>
     <div class="d-flex flex-row mx-auto mb-2">
+      <!-- enable the purchase button when we have the token -->
       <button
         type="button"
         class="btn btn-success m-2"
@@ -53,6 +55,7 @@ export default {
   computed: {
     // mix the getters into computed with object spread operator
     ...mapGetters(["hasRequestId", "hasQueuePosition", "hasToken"]),
+    // computed properties for vuex state
     myPosition() {
       return this.$store.state.myPosition;
     },
@@ -74,16 +77,20 @@ export default {
   },
   data() {
     return {
+      // tracking the internal component state
       purchaseFailed: false,
     };
   },
   methods: {
     completePurchase() {
+      // make the secure API call using axios and axios-retry
       const client = axios.create({
+        // only status 200 is a success
         validateStatus: function (status) {
           return status === 200;
         },
       });
+      // configure the retry for back-off and retry anything that's not 200
       axiosRetry(client, {
         retries: maxApiRetries,
         retryDelay: axiosRetry.exponentialDelay,
@@ -91,6 +98,7 @@ export default {
           return state.response.status !== 200;
         },
       });
+      // create the URL and headers with the waiting room token
       const resource = `${this.commerceApiUrl}/checkout`;
       const headers = {
         "Content-Type": "application/json",
@@ -98,15 +106,18 @@ export default {
       };
       const store = this.$store;
       const component = this;
+      // send the request
       client
         .get(resource, {
           headers: headers,
         })
         .then(function (response) {
+          // store the response as the receipt on success
           console.log(response);
           store.commit("setReceipt", response.data);
         })
         .catch(function (error) {
+          // print the error and update the component state
           console.log(error);
           component.purchaseFailed = true;
         });
