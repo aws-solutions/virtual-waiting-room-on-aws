@@ -1,10 +1,111 @@
 # AWS Virtual Waiting Room Developer Guide
 
+
+## What is the AWS Virtual Waiting Room?
+
+the AWS Virtual Waiting Room is a solution that, when deployed, can be used to temporarily divert and absorb web traffic from a site that not be prepared for large bursts of requests related to an event.
+
+The AWS Virtual Waiting Room is can be integrated with new or existing web sites in several different ways. The CloudFormation templates create a cloud infrastructure that can be used as-is, or customized for unique needs.
+
+Refer to the implementation guide for details on installing an AWS Virtual Waiting Room stack in your AWS account.
+
+## Managing a Deployed Virtual Waiting Room
+
+### CloudFormation stacks
+
+Adding, removing and updating the top-level subsystems of a AWS Virtual Waiting Room is performed using CloudFormation.
+
+|Template	|Description	|
+|---	|---	|
+|aws-virtual-waiting-room-api-gateway-cw-logs-role.template	|Use this template to add a default role ARN to API Gateway at the account-level for CloudWatch logging permissions	|
+|aws-virtual-waiting-room.template	|This is the core security, public and private REST APIs, storage configuration and logic for creating waiting room events	|
+|aws-virtual-waiting-room-openid.template	|Open ID identity provider for waiting room integration with authorization interfaces	|
+|aws-virtual-waiting-room-authorizers.template	|Lambda authorizer designed for waiting room-issued tokens and intended for protecting end-users' APIs	|
+|aws-virtual-waiting-room-sample-inlet-strategy.template	|Sample inlet strategies intended for use between a commerce/reservation site and the waiting room. Inlet strategies help encapsulate logic to determine when to allow more users into the target site.	|
+|aws-virtual-waiting-room-sample.template	|Minimal web and API Gateway configuration for  a waiting room and commerce site	|
+
+Each template provides a layer of functionality for building Virtual Waiting Rooms and integrating it with a web site.
+
+
+### Updating stack parameters
+
+Most of the AWS Virtual Waiting Room stacks include parameters for various settings used during configuration and while the solution is running. Any of the parameters can be changed and the stack updated in place using the existing templates.
+
+### CloudWatch metrics and alarms
+
+The core stack for the AWS Virtual Waiting Room installs several CloudWatch Alarms. Navigate to the CloudWatch Console and select an alarm option on the left side of the page. The installed alarms include:
+
+1. 4xx status codes for public and private APIs
+1. 5xx status codes for public and private APIs
+1. Lambda throttling for each installed function
+1. Lambda errors for each installed function
+
+The alarms are installed in the same region as the core API stack. Each alarm is prefixed with the stack name, the resource name and "Alarm" at the end. If you know the core stack name, you can quickly filter other alarms out of the list view.
+
+The alarms are configured for a 1-minute evaluation period and any count greater than zero (0) will trigger the alarm for that period of time. You can configure these alarms to send notifications when their state changes.
+
+
+
+## Basic Concepts and Flow of a Virtual Waiting Room
+
+
+High level flow chart
+
+
+Options - inlet strategies
+Options - Open ID adapter
+
+
+
+## Customizing and Extending
+
+### Virtual Waiting Room Landing Pages
+
+
+
+### Inlet Strategies
+
+
+
+
+
+## Security
+
+
+
+
+
+## Monitoring
+
+### API Gateway Alarms
+
+### Lambda Throttle Alarms
+
+### Lambda Error Alarms
+
+
+
+
+
+
+
+
+
+
+
+
 ## Developing a Virtual Waiting Room
 
 The purpose of a virtual waiting room is to absorb and reduce the traffic load on a web site that may not be prepared for large bursts of requests related to an event.
 
-The AWS Virtual Waiting Room is can be integrated with new or existing web sites. The templates create a cloud infrastructure designed for temporarily absorbing traffic away from a site. 
+The AWS Virtual Waiting Room is can be integrated with new or existing web sites. The CloudFormation templates create a cloud infrastructure designed for temporarily absorbing traffic away from a site. 
+
+
+
+
+
+
+
 
 
 ## Waiting Room Development Roles/Tasks
@@ -25,7 +126,7 @@ The AWS Virtual Waiting Room is can be integrated with new or existing web sites
 ## Sample Stack
 
 
-The Sample stack requires the Core (main) API and API Gateway authorizers stacks.
+The Sample stack requires the Core (main) API and API Gateway authorizers stacks be installed first.
 
 The main web page is stored in an S3 bucket and used as an origin to CloudFront. The connection between CloudFront and the bucket is secured using a CloudFront Origin Access Identity.
 
