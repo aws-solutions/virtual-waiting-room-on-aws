@@ -54,7 +54,7 @@ export default {
       }
     },
     navigateToCheckOut() {
-      this.$router.push("/CheckOut");
+      this.$router.push("/checkout");
     },
   },
   computed: {

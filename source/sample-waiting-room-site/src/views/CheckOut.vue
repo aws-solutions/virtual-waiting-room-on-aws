@@ -44,7 +44,7 @@ export default {
       // add the query parameters from the launch page
       const query = this.$store.state.launchQueryParameters;
       // reload
-      window.location = `/index.html${query}`;
+      window.location = `index.html${query}`;
     }
   },
   components: {
