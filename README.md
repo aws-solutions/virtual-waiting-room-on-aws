@@ -1,37 +1,54 @@
+**[🚀 Solution Landing Page](https://aws.amazon.com/solutions/implementations/virtual-waiting-room/)** | **[🚧 Feature request](https://github.com/aws-solutions/aws-virtual-waiting-room/issues/new?assignees=&labels=feature-request%2C+enhancement&template=feature_request.md&title=)** | **[🐛 Bug Report](https://github.com/aws-solutions/aws-virtual-waiting-room/issues/new?assignees=&labels=bug%2C+triage&template=bug_report.md&title=)**
+
+Note: If you want to use the solution without building from source, navigate to Solution Landing Page
+
+
 # AWS Virtual Waiting Room
 Site wrapper to absorb and control user traffic flowing into smaller web sites.
 
-## Running unit tests for customization
-* Clone the repository, then make the desired code changes
-* Next, run unit tests to make sure added customization passes the tests
-```
-cd ./deployment
-chmod +x ./run-unit-tests.sh  \n
-./run-unit-tests.sh \n
-```
+<a name="prerequisites-for-customization"></a>
+## Prerequisites for Customization
+[//]: # (Add any prerequisites for customization steps. e.g. Prerequisite: Node.js>10)
+
+* Install/update to Python 3.x
+* Install the AWS Command Line Interface (CLI)
+* Create a Python [virtual environment](https://docs.python.org/3.8/library/venv.html) using [requirements.txt](deployment/requirements.txt) and activate it
+* Configure the bucket name of your target Amazon S3 distribution bucket
+
 
 ## Building distributable for customization
 * Configure the bucket name of your target Amazon S3 distribution bucket
 ```
-export DIST_OUTPUT_BUCKET=my-bucket-name # bucket where customized code will reside
+export DIST_OUTPUT_BUCKET=<MY-BUCKET-NAME> # bucket where customized code will reside
 export SOLUTION_NAME=my-solution-name
 export VERSION=my-version # version number for the customized code
 ```
-_Note:_ You would have to create an S3 bucket with the prefix 'my-bucket-name-<aws_region>'; aws_region is where you are testing the customized solution. Also, the assets in bucket should be publicly accessible.
+_Note:_ You would have to create an S3 bucket with the prefix '<MY-BUCKET-NAME>-<AWS-REGION>'; <AWS-REGION> is where you are testing the customized solution. Also, the assets in bucket should be publicly accessible.
 
 * Now build the distributable:
 ```
-chmod +x ./build-s3-dist.sh \n
-./build-s3-dist.sh $DIST_OUTPUT_BUCKET $SOLUTION_NAME $VERSION \n
+chmod +x ./build-s3-dist.sh 
+./build-s3-dist.sh $DIST_OUTPUT_BUCKET $SOLUTION_NAME $VERSION 
 ```
 
-* Deploy the distributable to an Amazon S3 bucket in your account. _Note:_ you must have the AWS Command Line Interface installed.
+* Deploy the distributable to an Amazon S3 bucket in your account. The head-bucket command verifies that your account owns the bucket. _Note:_ you must have the AWS Command Line Interface installed.
 ```
-aws s3 cp ./dist/ s3://my-bucket-name-<aws_region>/$SOLUTION_NAME/$VERSION/ --recursive --acl bucket-owner-full-control --profile aws-cred-profile-name \n
+aws s3api head-bucket --bucket <MY-BUCKET-NAME>-<AWS-REGION> --expected-bucket-owner <AWS-ACCOUNT-ID>
+aws s3 cp ./dist/ s3://<MY-BUCKET-NAME>-<AWS-REGION>/$SOLUTION_NAME/$VERSION/ --recursive --acl bucket-owner-full-control --profile aws-cred-profile-name 
 ```
 
 * Get the link of the solution template uploaded to your Amazon S3 bucket.
 * Deploy the solution to your account by launching a new AWS CloudFormation stack using the link of the solution template in Amazon S3.
+
+## Running unit tests for customization
+* Some packages require a build before unit tests will run
+* Install the common package into the virtual envronment before running
+```
+cd ./deployment
+pip install ./pkg/aws_virtual_waiting_room_common-1.0.0-py3-none-any.whl
+chmod +x ./run-unit-tests.sh  
+./run-unit-tests.sh 
+```
 
 *** 
 
@@ -42,6 +59,7 @@ aws s3 cp ./dist/ s3://my-bucket-name-<aws_region>/$SOLUTION_NAME/$VERSION/ --re
 │   ├── Dockerfile [ Used by docker_build script for building jwcrypto library ]
 │   ├── aws-virtual-waiting-room-api-gateway-cw-logs-role.json   [ Base template for CloudWatch Logs role ] 
 │   ├── aws-virtual-waiting-room-authorizers.json [ Base template for authorizers ]
+│   ├── aws-virtual-waiting-room-getting-started.json [ Nested template for new users ]
 │   ├── aws-virtual-waiting-room-openid.json    [ Base template for Open ID ]
 │   ├── aws-virtual-waiting-room-sample-inlet-strategy.json   [ Base template for sample inlet strategy]
 │   ├── aws-virtual-waiting-room-sample.json    [ Base template for sample site ]
@@ -63,20 +81,21 @@ aws s3 cp ./dist/ s3://my-bucket-name-<aws_region>/$SOLUTION_NAME/$VERSION/ --re
 │   ├── sequence-diagrams.drawio
 │   └── software-architecture.md
 └── source
+    ├── control-panel    [ Source files for sample control panel ]
     ├── core-api    [ Source files for core API ]
     ├── core-api-authorizers-sample   [ Source files Authorizers ]
     ├── openid-waitingroom    [ Source files for Open ID ]
     ├── sample-inlet-strategies   [ Source files for inlet strategies ]
+    ├── sample-waiting-room-site   [ Source files for sample waiting room ]
     ├── shared    [ Source files for shared library ]
     ├── token-authorizer    [ Source files for token authorizer ]
-    ├── tools   [ Source files for tools and helper scripts ]
-    └── webserver-container   [ Source files for sample site's web server ]
+    └── tools   [ Source files for tools and helper scripts ]
 ```
 
 ***
 
 
-Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 
 Licensed under the Apache License Version 2.0 (the "License"). You may not use this file except in compliance with the License. A copy of the License is located at
 
