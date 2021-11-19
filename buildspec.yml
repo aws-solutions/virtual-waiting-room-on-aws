@@ -9,17 +9,19 @@ phases:
       - echo "nothing to do in install"
   pre_build:
     commands:
-      - echo "Installing dependencies and executing unit tests - `pwd`"
-      - cd deployment && chmod +x ./run-unit-tests.sh && ./run-unit-tests.sh
-      - echo "Installing dependencies and executing unit tests completed `date`"
+      - echo "Skipping pre-build unit tests and running after build `date`"
   build:
     commands:
       - echo "Starting build `date` in `pwd`"
-      - chmod +x ./build-s3-dist.sh && ./build-s3-dist.sh $DIST_OUTPUT_BUCKET $SOLUTION_NAME $VERSION
+      - pip install --upgrade --force-reinstall -r deployment/requirements.txt
+      - cd deployment && chmod +x ./build-s3-dist.sh && ./build-s3-dist.sh $DIST_OUTPUT_BUCKET $SOLUTION_NAME $VERSION
       - echo "Build completed `date`"
       - echo "Starting open-source-dist `date` in `pwd`"
       - chmod +x ./build-open-source-dist.sh && ./build-open-source-dist.sh $SOLUTION_NAME
       - echo "Open Source Dist completed `date`"
+      - echo "Installing dependencies and executing unit tests - `pwd`"
+      - pip install ./pkg/aws_virtual_waiting_room_common-1.0.0-py3-none-any.whl && chmod +x ./run-unit-tests.sh && ./run-unit-tests.sh
+      - echo "Installing dependencies and executing unit tests completed `date`"
   post_build:
     commands:
       - echo "Retrieving next stage buildspec `date` in `pwd`"

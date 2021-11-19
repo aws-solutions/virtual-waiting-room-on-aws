@@ -1,10 +1,168 @@
 # AWS Virtual Waiting Room Developer Guide
 
+
+## What is the AWS Virtual Waiting Room?
+
+the AWS Virtual Waiting Room is a solution that, when deployed, can be used to temporarily divert and absorb web traffic from a site that not be prepared for large bursts of requests related to an event.
+
+The AWS Virtual Waiting Room is can be integrated with new or existing web sites in several different ways. The CloudFormation templates create a cloud infrastructure that can be used as-is, or customized for unique needs.
+
+Refer to the implementation guide for details on installing an AWS Virtual Waiting Room stack in your AWS account.
+
+## Managing a Deployed Virtual Waiting Room
+
+### CloudFormation stacks
+
+Adding, removing and updating the top-level subsystems of a AWS Virtual Waiting Room is performed using CloudFormation.
+
+|Template	|Description	|
+|---	|---	|
+|aws-virtual-waiting-room-api-gateway-cw-logs-role.template	|Use this template to add a default role ARN to API Gateway at the account-level for CloudWatch logging permissions	|
+|aws-virtual-waiting-room.template	|This is the core security, public and private REST APIs, storage configuration and logic for creating waiting room events	|
+|aws-virtual-waiting-room-openid.template	|Open ID identity provider for waiting room integration with authorization interfaces	|
+|aws-virtual-waiting-room-authorizers.template	|Lambda authorizer designed for waiting room-issued tokens and intended for protecting end-users' APIs	|
+|aws-virtual-waiting-room-sample-inlet-strategy.template	|Sample inlet strategies intended for use between a commerce/reservation site and the waiting room. Inlet strategies help encapsulate logic to determine when to allow more users into the target site.	|
+|aws-virtual-waiting-room-sample.template	|Minimal web and API Gateway configuration for  a waiting room and commerce site	|
+
+Each template provides a layer of functionality for building Virtual Waiting Rooms and integrating it with a web site.
+
+
+### Updating stack parameters
+
+Most of the AWS Virtual Waiting Room stacks include parameters for various settings used during configuration and while the solution is running. Any of the parameters can be changed and the stack updated in place using the existing templates.
+
+### CloudWatch metrics and alarms
+
+The core stack for the AWS Virtual Waiting Room installs several CloudWatch Alarms. Navigate to the CloudWatch Console and select an alarm option on the left side of the page. The installed alarms include:
+
+1. 4xx status codes for public and private APIs
+1. 5xx status codes for public and private APIs
+1. Lambda throttling for each installed function
+1. Lambda errors for each installed function
+
+The alarms are installed in the same region as the core API stack. Each alarm is prefixed with the stack name, the resource name and "Alarm" at the end. If you know the core stack name, you can quickly filter other alarms out of the list view.
+
+The alarms are configured for a 1-minute evaluation period and any count greater than zero (0) will trigger the alarm for that period of time. You can configure these alarms to send notifications when their state changes.
+
+
+
+## Basic Concepts and Flow of a Virtual Waiting Room
+
+
+High level flow chart
+
+
+Options - inlet strategies
+Options - Open ID adapter
+
+
+
+## Customizing and Extending
+
+### Virtual Waiting Room Landing Pages
+
+
+
+### Inlet Strategies
+
+Inlet strategies encapsulate the logic and data needed to move clients from the waiting room to the website. An inlet strategy can be implemented as a Lambda function, container, EC2 or any other compute resource. It does not need to be a cloud resource as long as it can call the waiting room public and private APIs. The inlet strategy may receive events about the waiting room, the website, or other outside indicators that help it decide when more clients can have tokens issued and enter the site. There are several approaches to inlet strategies. Which one you adopt depends on the resources available to you and constraints in the design of the website being protected. 
+
+The primary action taken by the inlet strategy is to call the increment_serving_num private API with a relative value that indicates how many more clients can enter the site. This section describes two sample inlet strategies. These can be used as-is, customized, or you can employ a completely different approach.
+
+**MaxSize**
+
+Using the MaxSize strategy, the Inlet Lambda function is configured with the maximum number of clients that can use the website concurrently. This is a fixed value. A client issues an Amazon SNS notification that invokes the MaxSizeInlet Lambda function to increase the serving counter based on the message payload. The source of the SNS message can come from anywhere, including code on the website or a monitoring tool that observes the site’s utilization level.
+The MaxSizeInlet Lambda function expects to receive a message that can include:
+•	exited : number of transactions that have completed
+•	list of request IDs to be marked completed
+•	list of request IDs to be marked abandoned
+This data is used to determine how much to increment the serving counter. There may be cases where there is no additional capacity to increment the counter, based on the current number of clients.
+
+**Periodic**
+
+When using the Periodic strategy, a CloudWatch rule invokes a Lambda function every minute to increase the serving counter by a fixed quantity. The Periodic inlet is parameterized with the event start time, end time, and increment amount. Optionally, this strategy will also check a CloudWatch alarm and, if the alarm is in OK state, perform the increment, otherwise skip it. The site integrators can connect a utilization metric to an alarm, and use that alarm to pause the periodic inlet. This strategy will only change the serving position while the current time is between the start and end times, and optionally, the specified alarm is in the OK state.
+
+
+
+## Security
+
+ElastiCache for Redis is assigned a network interface inside the private VPC. The Lambda functions that interact with 
+
+ElastiCache for Redis are also assigned network interfaces within a VPC. All other resources have network connectivity in the shared AWS network space. Lambda functions with VPC interfaces that interact with other AWS services use VPC endpoints to connect to these services.
+
+The public and private keys used for creating and validating JSON web tokens are generated at installation time and stored in Secrets Manager. The password used to connect to ElastiCache for Redis is also generated at installation time and stored in Secrets Manager. The private key and ElastiCache for Redis password are not accessible via any solution API.
+
+The public API must be accessed through CloudFront. The solution generates an API key for API Gateway, which is used as the value of a custom header, x-api-key, in CloudFront. CloudFront includes this header when making origin requests. For additional details, refer to [Adding custom headers to origin requests](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/add-origin-custom-headers.html) in the Amazon CloudFront Developer Guide.
+
+The private APIs are configured to require AWS IAM authorization for invocation. The solution creates the ProtectedAPIGroup IAM user group with the appropriate permissions to invoke the private APIs. An IAM user added to this group are authorized to invoke the private APIs.
+
+IAM policies used in roles and permissions that are attached to various resources created by the solution grant only the permissions required to perform the necessary tasks.
+For resources such as S3 buckets, SQS queues, and SNS topics generated by the solution, encryption at rest and during transit is enabled wherever possible. 
+
+## Monitoring
+The core API stack includes several CloudWatch Alarms that can be monitored to detect problems while the solution is operating. The stack creates an alarm for Lambda function errors and throttle conditions, and will change the state of the alarm from OK to ALARM if an error or throttle condition occurs in a one-minute period.
+The stack also creates alarms for each API Gateway deployment for 4XX and 5XX status codes. The alarm will change state from OK to ALARM if a 4XX or 5XX status code is returned from the API within a one-minute period.
+These alarms will return to an OK state after one minute of no errors or throttles.
+
+### API Gateway Alarms
+
+4xx response status from APIs
+-	This can be caused from an incorrect Event ID or Request ID or both – you will see this occur in the CloudWatch Logs for the related Lambda function
+-	Private APIs are IAM authenticated and the client will need AWS keys that have rights to invoke the private APIs – you will see this occur in the CloudWatch Logs for API Gateway
+
+5xx response status from APIs
+-	Response from throttled Lambda or API Gateway, check LambdaNameThrottlesAlarm
+-	Misconfiguration on back-end, check LambdaNameErrorsAlarm and CloudWatch Logs for details
+
+5XXErrorPublic/PrivateApiAlarm
+-	This alarm state is ALARM when the API returns a 5XX status to the caller within a 60 second period
+-	This alarm returns to OK when no 5xx status is returned for 60 seconds
+-	This alarm can be triggered by a Lambda function or Lambda runtime returning an error to API Gateway
+
+4XXErrorPublic/PrivateApiAlarm
+-	This alarm state is ALARM when the API return a 4XX status to the caller within a 60 second period
+-	This alarm returns to OK when to 4XX status is returned for 60 seconds
+-	This alarm can be trigged by an incorrect API URL
+
+### Lambda Throttle Alarms
+
+*LambdaName*ThrottlesAlarm
+-	This alarm state is ALARM when the named Lambda encounters a concurrent execution limit within a 60 second period
+-	This alarm returns to OK if no throttles are encountered for 60 seconds
+-	You may need to increase the concurrency limit for your account’s region
+-	You may be encountering the burst limit for Lambda, which requires some retry logic on your client
+
+### Lambda Error Alarms
+
+*LambdaName*ErrorsAlarm
+-	This alarm state is ALARM when the named Lambda encounters a runtime execution error within a 60 second period
+-	This alarm returns to OK if no errors are encountered for 60 seconds
+-	This can be caused by a misconfiguration on the back-end
+-	This can be caused by a bug in the Lambda’s code
+
+
+
+
+
+
+
+
+
+
+
+
 ## Developing a Virtual Waiting Room
 
 The purpose of a virtual waiting room is to absorb and reduce the traffic load on a web site that may not be prepared for large bursts of requests related to an event.
 
-The AWS Virtual Waiting Room is can be integrated with new or existing web sites. The templates create a cloud infrastructure designed for temporarily absorbing traffic away from a site. 
+The AWS Virtual Waiting Room is can be integrated with new or existing web sites. The CloudFormation templates create a cloud infrastructure designed for temporarily absorbing traffic away from a site. 
+
+
+
+
+
+
+
 
 
 ## Waiting Room Development Roles/Tasks
@@ -25,7 +183,7 @@ The AWS Virtual Waiting Room is can be integrated with new or existing web sites
 ## Sample Stack
 
 
-The Sample stack requires the Core (main) API and API Gateway authorizers stacks.
+The Sample stack requires the Core (main) API and API Gateway authorizers stacks be installed first.
 
 The main web page is stored in an S3 bucket and used as an origin to CloudFront. The connection between CloudFront and the bucket is secured using a CloudFront Origin Access Identity.
 
@@ -95,7 +253,7 @@ The Core APIs are divided into publicly accessible resources and IAM-authorized 
 The “Content-Type” header is always set to “application/json” with these resources and request body parameters are URL-encoded JSON objects.
 
 1. `/assign_queue_num`
-    1. Description: Request to enter the waiting room queue. This is usually the first request issued by client when thy are ready to get in line. This is an asynchronous request that returns a request ID immediately that can be used later to retrieve the result this request using `/queue_num`.
+    1. Description: Request to enter the waiting room queue. This is usually the first request issued by client when thy are ready to get in line. This is an asynchronous request that returns a request ID immediately that can be used later to retrieve the result of this request using `/queue_num`.
     2. Authorization: NONE
     3. Method: POST
     4. Content-Type: `application/json`
@@ -128,10 +286,11 @@ The “Content-Type” header is always set to “application/json” with these
         "token_type": "Bearer",
         "expires_in": SECONDS
         }`
-    8. Status codes:
-        200: Success,
-        400: Request ID queue position not being served,
-        404: Invalid request or event ID
+    8. Status codes:  
+        200: Success  
+        202: Request ID queue position not being served  
+        400: Invalid event ID or request ID not in the expected format  
+        404: Invalid request ID (not found)
 3. `/public_key`
     1. Description: Returns the public JWT that can be used to verify signed tokens issued by this stack.
     2. Authorization: NONE
@@ -147,8 +306,8 @@ The “Content-Type” header is always set to “application/json” with these
         "n": KEY,
         "e": "AQAB"
         }`
-    7. Status code:
-        200: Success,
+    7. Status codes:  
+        200: Success  
         404: Missing event ID
 4. `/queue_num`
     1. Description: Returns the queue position for the provided event and request ID. This API may need to be called more than once depending on load of the waiting room. This API will return a 404 status code until it has processed the request from API Gateway.
@@ -164,38 +323,38 @@ The “Content-Type” header is always set to “application/json” with these
         "event_id": EVENT_ID,
         "status": STATUS (1 = successfully entered, -1 = invalid request sent)
         }
-    8. Status code:
-        200: Success,
-    9. 202: Request ID not processed yet
-        404: Invalid event ID 
+    8. Status codes:  
+        200: Success  
+        202: Request ID not processed yet  
+        404: Invalid event or request ID 
 5. `/serving_num`
     1. Description: Returns the current serving position in the queue. Requests with an equal or lower position in the waiting room can request tokens from the API.
     2. Authorization: NONE
     3. Method: GET
     4. Content-Type: `application/json`
-    5. Query parameters: `event_id, request_id`
+    5. Query parameters: `event_id`
     6. Request body: NONE
     7. Response body:
         `{
         "serving_counter": INTEGER
         }`
-    8. Status code:
-        200: Success,
-        404: Invalid event ID or request ID
+    8. Status codes:  
+        200: Success  
+        404: Invalid event ID
 6. `/waiting_num`
     1. Description: Returns the number users currently queued in the waiting room and have not been issued a token yet.
     2. Authorization: NONE
     3. Method: GET
     4. Content-Type: `application/json`
-    5. Query parameters: `event_id, request_id`
+    5. Query parameters: `event_id`
     6. Request body: NONE
     7. Response body:
         `{
         "waiting_num": INTEGER
         }`
-    8. Status code:
-        200: Success,
-        404: Invalid event ID or request ID
+    8. Status codes:  
+        200: Success  
+        404: Invalid event ID
 
 ## Private REST APIs
 
@@ -208,8 +367,9 @@ The “Content-Type” header is always set to “application/json” with these
     6. Request body: NONE
     7. Response body:
         `[ REQUEST_ID, REQUEST_ID, ... ]`
-    8. Status codes:
-        200: Success
+    8. Status codes:  
+        200: Success  
+        400: Invalid event ID
 2. `/generate_token`
     1. Description: Generates a JWT set with options to override the token claims. The current serving position must be equal or greater to this request ID’s queue position to obtain a token. This API is idempotent, meaning, the exact tokens generated for the event and request ID are returned on all future requests.
     2. Authorization: IAM
@@ -231,10 +391,11 @@ The “Content-Type” header is always set to “application/json” with these
         "token_type": "Bearer",
         "expires_in": SECONDS
         }`
-    8. Status codes:
-        200: Success,
-        400: Request ID not being served,
-        404: Invalid request or event ID
+    8. Status codes:  
+        200: Success  
+        202: Request ID not being served  
+        400: Invalid event ID or request ID not in the expected format  
+        404: Invalid request ID (not found)
 3. `/increment_serving_counter`
     1. Description: Move the serving counter forward or backward a number of positions.
     2. Authorization: IAM
@@ -250,9 +411,9 @@ The “Content-Type” header is always set to “application/json” with these
         `{
         "serving_num": INTEGER
         }`
-    8. Status code:
-        200: Success,
-        404: Invalid event ID
+    8. Status codes:  
+        200: Success  
+        400: Invalid event ID
 4. `/num_active_tokens`
     1. Description: Returns the number of active tokens issued for this event. An active token has an `exp` attribute that is later than the current time.
     2. Authorization: IAM
@@ -264,11 +425,11 @@ The “Content-Type” header is always set to “application/json” with these
         `{
         "active_tokens": INTEGER
         }`
-    7. Status code:
-        200: Success,
+    7. Status codes:  
+        200: Success  
         404: Invalid event ID
 5. `/reset_initial_state`
-    1. Description: This API reset the internal counters to zero and clears the DynamoDB table used by the core API.
+    1. Description: This API resets the internal counters to zero and deletes then recreates the DynamoDB table used by the core API.
     2. Authorization: IAM
     3. Method: POST
     4. Content-Type: `application/json`
@@ -279,11 +440,11 @@ The “Content-Type” header is always set to “application/json” with these
         }`
         Response body:
         `{
-        "message": "Counters reset. DynamoDB table cleared."
+        "message": "Counters reset. DynamoDB table recreated."
         }`
-    7. Status code:
-        200: Success,
-        404: Invalid event ID
+    7. Status codes:  
+        200: Success  
+        400: Invalid event ID
 6. /update_session
     1. Description: This API will change the status of an issued token.
     2. Authorization: IAM
@@ -297,9 +458,10 @@ The “Content-Type” header is always set to “application/json” with these
         "status": INTEGER (1 = completed, -1 = abandoned)
         }`
     7. Response body: NONE
-    8. Status code:
-        200: Success,
-        404: Invalid event ID or request ID
+    8. Status codes:  
+        200: Success  
+        400: Invalid event ID or request ID  
+        404: Request ID doesn't exist or status already set
 
 
 
@@ -374,8 +536,8 @@ This is the translation table of Virtual Waiting Room to Open ID values and nami
     5. Query parameters: `client_id, redirect_uri, response_type`
     6. Request body: NONE
     7. Response body: NONE
-    8. Status code:
-        302: Redirect to waiting room entry page
+    8. Status codes:  
+        302: Redirect to waiting room entry page  
         400: Bad request
 4. `/token`
     1. Description: https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint
@@ -398,8 +560,8 @@ This is the translation table of Virtual Waiting Room to Open ID values and nami
         "token_type": "Bearer",
         "expires_in": SECONDS
         }`
-    8. Status code:
-        200: Success
+    8. Status codes:  
+        200: Success  
         400: Bad request
 5. `/userInfo`
     1. Description: https://openid.net/specs/openid-connect-core-1_0.html#UserInfo
@@ -423,7 +585,7 @@ This is the translation table of Virtual Waiting Room to Open ID values and nami
         "token_type": "Bearer",
         "expires_in": SECONDS
         }`
-    8. Status code:
-        200: Success
+    8. Status codes:  
+        200: Success  
         400: Bad request
 

@@ -49,5 +49,4 @@ toml==0.10.2
 tomlkit==0.7.2
 urllib3==1.26.5
 wcwidth==0.2.5
-Werkzeug==1.0.1
 wrapt==1.12.1

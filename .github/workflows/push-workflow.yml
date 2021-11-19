@@ -3,10 +3,11 @@ name: Push Workflow
 # global environment variables to all jobs
 env:
   REGION: us-west-2
+  SOLUTION_ORG: aws-solutions
   SOLUTION_NAME: aws-virtual-waiting-room
   DIST_OUTPUT_BUCKET: swr
-  REGIONS_TO_DEPLOY: "us-west-2"
-  BRANCH: refs/heads/main
+  REGIONS_TO_DEPLOY: "us-west-2 us-east-1"
+  RELEASE_BRANCH: refs/heads/main
 
 on:
   push:
@@ -15,52 +16,114 @@ on:
       - "**/*.md"
 
 jobs:
-  scan-build-upload-job:
+  # clamav-scan-job:
+  #   runs-on: ubuntu-latest
+  #   name: Check source code with ClamAV Scan
+  #   steps:
+  #     - name: Check out repo
+  #       uses: actions/checkout@v2
+  #     # scan for any malware in the commit
+  #     - name: ClamAV Scan
+  #       uses: djdefi/gitavscan@main
+  #       with:
+  #         full: "--full"
+
+  trufflehog-scan-job:
     runs-on: ubuntu-latest
-    # use a specific environment for this build that has secrets defined and protection rules in place, if needed
-    environment: push_env
-    permissions:
-      id-token: write
-      contents: read
+    name: Check source code with Trufflehog Scan
     steps:
       - name: Check out repo
         uses: actions/checkout@v2
-      # scan for any malware in the commit
-      - name: ClamAV Scan
-        uses: djdefi/gitavscan@main
-        with:
-          full: "--full"
       # scan for various types of keys and tokens
       - name: Trufflehog Scan
         uses: edplato/trufflehog-actions-scan@master
         with:
           scanArguments: "--regex --entropy=False"
-      # - name: Initialize AWS credentials
-      #   uses: aws-actions/configure-aws-credentials@v1
-      #   with:
-      #     aws-access-key-id: ${{ secrets.ACCESS_KEY_ID }}
-      #     aws-secret-access-key: ${{ secrets.SECRET_ACCESS_KEY }}
-      #     aws-region: ${{ env.REGION }}
-      - name: Configure AWS
+  
+  bandit-check-job:
+    runs-on: ubuntu-latest
+    name: Check source code with Bandit
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install bandit
+        run: pip install bandit
+      - name: Check source with bandit
+        run: bandit -r source
+
+  pylint-check-job:
+    runs-on: ubuntu-latest
+    name: Check source code with Pylint
+    steps:
+      # check out repo
+      - name: Checkout
+        uses: actions/checkout@v2
+      # check it with Pylint
+      - name: Check with Pylint
         run: |
-          sleep 5
-          export AWS_ROLE_ARN=${{ secrets.VWR_ROLE_ARN }}
-          export AWS_WEB_IDENTITY_TOKEN_FILE=/tmp/awscreds
-          export AWS_DEFAULT_REGION=${{ env.REGION }}
+          pip install pylint
+          cd source
+          ./tools/pylint.sh
 
-          echo AWS_WEB_IDENTITY_TOKEN_FILE=$AWS_WEB_IDENTITY_TOKEN_FILE >> $GITHUB_ENV
-          echo AWS_ROLE_ARN=$AWS_ROLE_ARN >> $GITHUB_ENV
-          echo AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION >> $GITHUB_ENV
+  pa11y-check-job:
+    runs-on: ubuntu-latest
+    name: Check HTML code with Pa11y for accessibility
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Pa11y
+        run: npm install pa11y
+      - name: Check with Pa11y
+        run: |
+          cd source
+          find . -iname '*.html' -exec ../node_modules/pa11y/bin/pa11y.js {} \;
 
-          curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r '.value' > $AWS_WEB_IDENTITY_TOKEN_FILE
-          # just for testing
-          aws s3 ls
+  jshint-check-job:
+    runs-on: ubuntu-latest
+    name: Check source code with JShint
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install JShint
+        run: npm install jshint
+      - name: Check with JShint
+        run: |
+          cd source
+          find . -name '*.js' -type f -print | \
+          xargs ../node_modules/jshint/bin/jshint
+
+  build-job:
+    name: Run build script
+    runs-on: ubuntu-latest
+    needs:
+      [
+        #clamav-scan-job,
+        trufflehog-scan-job,
+        bandit-check-job,
+        pylint-check-job,
+        jshint-check-job
+      ]
+    # use a specific environment for this build that has secrets defined 
+    # and protection rules in place, if needed
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v2
       - name: Set up Push variables
-        if: github.event_name == 'push'
-        run: |
-          echo "VERSION=`git rev-parse --short HEAD`" >> $GITHUB_ENV
+        run: echo "VERSION=`git rev-parse --short HEAD`" >> $GITHUB_ENV
       - name: Update system path
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Set up AWS environment 
+        run: |
+          export AWS_DEFAULT_REGION=${{ env.REGION }}
+          echo AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION >> $GITHUB_ENV
+      - name: Update packages
+        run: |
+          sudo apt-get update
+          pip install -U pip
+      - name: Run safety check before build
+        run: |
+          pip install safety
+          safety check -r deployment/requirements.txt
       - name: Install required system packages
         run: |
           pip install --upgrade --force-reinstall -r deployment/requirements.txt 2> error.txt
@@ -69,148 +132,112 @@ jobs:
             cat error.txt
             exit 1
           fi
+      - name: Cache deployment directory
+        uses: actions/cache@v2
+        id: cache-deployment
+        with:
+          path: deployment/
+          key: ${{ github.sha }}
       - name: Run build script
         run: |
           cd deployment
           ./build-s3-dist.sh $DIST_OUTPUT_BUCKET $SOLUTION_NAME $VERSION
-      # - name: Deploy to S3
-      #   run: |
-      #     cd deployment
-      #     # if we're building master, do a release deploy
-      #     if [ "$GITHUB_REF" == ${{ env.BRANCH }} ]; then
-      #       ./deploy.sh -b $DIST_OUTPUT_BUCKET -s $SOLUTION_NAME -v $VERSION -r "$REGIONS_TO_DEPLOY" -a public-read -t release
-      #     # if not, do a dev deploy
-      #     else
-      #       ./deploy.sh -b $DIST_OUTPUT_BUCKET -s $SOLUTION_NAME -v $VERSION -r "$REGIONS_TO_DEPLOY" -a none -t dev
-      #     fi
-      # - name: Store templates for check jobs
-      #   uses: actions/upload-artifact@v2
-      #   with:
-      #     name: cloudformation-templates
-      #     path: deployment/global-s3-assets/*release.template
-      # - name: Store virtual environment requirements
-      #   uses: actions/upload-artifact@v2
-      #   with:
-      #     name: virtual-environment-requirements
-      #     path: deployment/requirements.txt
-
-  # main-branch-deploy-cfn:
-  #   runs-on: ubuntu-latest
-  #   needs:
-  #     [
-  #       # cfn-lint-check-job,
-  #       # cfn-nag-check-job,
-  #       hawkeye-check-job,
-  #       # pylint-check-job,
-  #       jshint-check-job
-  #     ]
-    # use a specific environment for this build that has secrets defined and protection rules in place, if needed
-    # environment: test_install_env
-    # if: github.ref == ${{ env.BRANCH }}
-    # steps:
-    #   - name: Initialize AWS credentials
-    #     uses: aws-actions/configure-aws-credentials@v1
-    #     with:
-    #       aws-access-key-id: ${{ secrets.INSTALL_ACCESS_KEY_ID }}
-    #       aws-secret-access-key: ${{ secrets.INSTALL_SECRET_ACCESS_KEY }}
-    #       aws-region: ${{ env.REGION }}
-    #   - name: Generate version out of commit ID
-    #     run: |
-    #       echo "VERSION=${GITHUB_SHA::7}" >> $GITHUB_ENV
-    #   - name: Create CloudFormation stack based on last job's build
-    #     run: |
-    #       TEMPLATE="https://$DIST_OUTPUT_BUCKET-us-west-2.s3-us-west-2.amazonaws.com/$SOLUTION_NAME/latest/$SOLUTION_NAME-release.template"
-    #       echo $TEMPLATE
-    #       response="$( aws cloudformation create-stack --stack-name MSAM-test-master-$VERSION --template-url $TEMPLATE --region $REGION --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND --disable-rollback )"
-    #       echo $response
-
-  # cfn-lint-check-job:
-  #   needs: scan-build-upload-job
-  #   runs-on: ubuntu-latest
-  #   name: Check templates with cfn-lint
-  #   steps:
-  #     - name: Download build templates
-  #       uses: actions/download-artifact@v2
-  #       with:
-  #         name: cloudformation-templates
-  #     - name: Download virtual environment requirements
-  #       uses: actions/download-artifact@v2
-  #       with:
-  #         name: virtual-environment-requirements
-  #     - name: Update system path
-  #       run: echo "$HOME/.local/bin" >> $GITHUB_PATH
-  #     - name: Install required system packages
-  #       run: |
-  #         pip install --upgrade --force-reinstall -r requirements.txt 2> error.txt
-  #         if [ -s error.txt ]; then
-  #           echo "ERROR: System package installation failed."
-  #           cat error.txt
-  #           exit 1
-  #         fi
-  #     - name: Check with cfn-lint
-  #       run: cfn-lint *.template
-  
-  # cfn-nag-check-job:
-  #   needs: scan-build-upload-job
-  #   runs-on: ubuntu-latest
-  #   name: Check templates with cfn-nag
-  #   steps:
-  #     - name: Download build templates
-  #       uses: actions/download-artifact@v2
-  #       with:
-  #         name: cloudformation-templates
-  #     - name: Check with cfn-nag
-  #       uses: stelligent/cfn_nag@master
-
-  hawkeye-check-job:
-    needs: scan-build-upload-job
-    runs-on: ubuntu-latest
-    name: Check source code with Hawkeye
-    steps:
-      # check out the merged PR
-      - name: Checkout
-        uses: actions/checkout@v2
-      # check it with Hawkeye
-      - name: Hawkeye Scanner
-        uses: ./.github/actions/hawkeye-scan
-
-  # pylint-check-job:
-  #   needs: scan-build-upload-job
-  #   runs-on: ubuntu-latest
-  #   name: Check source code with Pylint
-  #   steps:
-  #     # check out the merged PR
-  #     - name: Checkout
-  #       uses: actions/checkout@v2
-  #     - name: Update system path
-  #       run: echo "$HOME/.local/bin" >> $GITHUB_PATH
-  #     - name: Install required system packages
-  #       run: |
-  #         pip install --upgrade --force-reinstall -r deployment/requirements.txt 2> error.txt
-  #         if [ -s error.txt ]; then
-  #           echo "ERROR: System package installation failed."
-  #           cat error.txt
-  #           exit 1
-  #         fi
-  #     # check it with Pylint
-  #     - name: Check with Pylint
-  #       run: |
-  #         cd source
-  #         ./tools/pylint.sh
-
-  jshint-check-job:
-    needs: scan-build-upload-job
-    runs-on: ubuntu-latest
-    name: Check source code with JShint
-    steps:
-      # check out the merged PR
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Install JShint
-        run: npm install jshint
-      - name: Check with JShint
+      - name: Run unit tests
         run: |
-          cd source/openid-waitingroom/www
-          find . -name '*.js' -type f -print | \
-            grep --invert-match "/external/" | \
-            xargs ../../node_modules/jshint/bin/jshint
+          cd deployment
+          pip install pkg/aws_virtual_waiting_room_common-1.0.0-py3-none-any.whl
+          ./run-unit-tests.sh
+      
+  cfn-lint-job:
+    name: Run cfn-lint on templates
+    runs-on: ubuntu-latest
+    needs:
+      [
+        build-job
+      ]
+    steps:
+      - name: Install cfn-lint
+        run: pip install cfn-lint
+      - name: Restore deployment directory from cache
+        uses: actions/cache@v2
+        id: cache-deployment
+        with:
+          path: deployment/
+          key: ${{ github.sha }}
+      - name: Run cfn-lint against templates
+        run: |
+          cd deployment/global-s3-assets
+          cfn-lint *.template
+  
+  cfn-nag-job:
+    name: Run cfn-nag on templates
+    runs-on: ubuntu-latest
+    needs:
+      [
+        build-job
+      ]
+    steps:
+      - name: Restore deployment directory from cache
+        uses: actions/cache@v2
+        id: cache-deployment
+        with:
+          path: deployment/
+          key: ${{ github.sha }}
+      - name: Run cfn-nag against templates
+        uses: stelligent/cfn_nag@master
+        with:
+          input_path: deployment/global-s3-assets
+
+  upload-and-store-job:
+    name: Upload and store regional and global assets
+    needs:
+      [
+        cfn-lint-job,
+        cfn-nag-job        
+      ]
+    runs-on: ubuntu-latest
+    environment: push_env
+    permissions:
+      actions: read
+      id-token: write
+      contents: read
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v2
+      - name: Set up Push variables
+        run: echo "VERSION=`git rev-parse --short HEAD`" >> $GITHUB_ENV
+      - name: Install required system packages
+        run: |
+          pip install --upgrade --force-reinstall -r deployment/requirements.txt 2> error.txt
+          if [ -s error.txt ]; then
+            echo "ERROR: System package installation failed."
+            cat error.txt
+            exit 1
+          fi
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@master
+        with:
+          role-to-assume: ${{ secrets.VWR_ROLE_ARN }}
+          aws-region: ${{ env.REGION }}
+          role-duration-seconds: 900
+      - name: Restore deployment directory from cache
+        uses: actions/cache@v2
+        id: cache-deployment
+        with:
+          path: deployment/
+          key: ${{ github.sha }}
+      - name: Upload to S3
+        run: |
+          cd deployment
+          ./deploy.sh -b $DIST_OUTPUT_BUCKET -s $SOLUTION_NAME -v $VERSION -r "$REGIONS_TO_DEPLOY" -a none -t dev
+      - name: Zip up regional and global assets
+        run: |
+          cd deployment
+          zip regional-s3-assets.zip regional-s3-assets/*
+          zip global-s3-assets.zip global-s3-assets/*
+      - name: Store zipped global and regional assets
+        uses: actions/upload-artifact@v2
+        with:
+          name: zipped-regional-global-assets
+          path: deployment/*.zip  
+  

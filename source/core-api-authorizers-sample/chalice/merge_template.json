@@ -5,10 +5,6 @@
             "Description": "ARN of the API Gateway Lambda Authorizer",
             "Type": "String"
         },
-        "InletTopicARN": {
-            "Description": "ARN of topic subscribed by inlet Lambda function",
-            "Type": "String"
-        },
         "APIGatewayRegion": {
             "Description": "AWS Region name of the API Gateway",
             "Type": "String"
@@ -24,11 +20,6 @@
         "EventID": {
             "Description": "Event ID of waiting room",
             "Type": "String"
-        },
-        "CheckoutUserCount": {
-            "Description": "Number of current users to report after each checkout",
-            "Type": "String",
-            "Default": "99"
         }
     },
     "Mappings": {
@@ -48,7 +39,22 @@
         "WaitingRoomURL": {
             "Value": {
                 "Fn::Sub": [
-                    "https://${CloudFrontDomainName}/index.html?event_id=${EventID}",
+                    "https://${CloudFrontDomainName}/waiting-room-site/index.html?eventId=${EventID}&publicApiUrl=${PublicAPIEndpoint}&commerceApiUrl=https://${RestAPI}.execute-api.${AWS::Region}.amazonaws.com/store",
+                    {
+                        "CloudFrontDomainName": {
+                            "Fn::GetAtt": [
+                                "SampleWebContentCloudFront",
+                                "DomainName"
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "ControlPanelURL": {
+            "Value": {
+                "Fn::Sub": [
+                    "https://${CloudFrontDomainName}/control-panel/index.html?eventId=${EventID}&publicApiUrl=${PublicAPIEndpoint}&privateApiUrl=${PrivateAPIEndpoint}&regionName=${AWS::Region}",
                     {
                         "CloudFrontDomainName": {
                             "Fn::GetAtt": [
@@ -165,17 +171,9 @@
                                         "logs:GetLogEvents",
                                         "logs:FilterLogEvents"
                                     ],
-                                    "Resource": {"Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*"}                       
-                                },
-                                {
-                                    "Effect": "Allow",
-                                    "Action": [
-                                        "sns:Publish"
-                                    ],
                                     "Resource": {
-                                        "Fn::Sub": "${InletTopicARN}"
-                                    },
-                                    "Sid": "3f565d4d5621425b3a29c4fb08122991f9f0f35d"
+                                        "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*"
+                                    }
                                 }
                             ]
                         },
@@ -222,32 +220,28 @@
                 },
                 "Environment": {
                     "Variables": {
-                        "AUTHORIZER_ARN": {
-                            "Fn::Sub": "${AuthorizerARN}"
-                        },
-                        "API_GATEWAY_REGION": {
-                            "Fn::Sub": "${APIGatewayRegion}"
-                        },
-                        "INLET_TOPIC_ARN": {
-                            "Fn::Sub": "${InletTopicARN}"
-                        },
-                        "PUBLIC_API_ENDPOINT": {
-                            "Fn::Sub": "${PublicAPIEndpoint}"
-                        },
-                        "PRIVATE_API_ENDPOINT": {
-                            "Fn::Sub": "${PrivateAPIEndpoint}"
-                        },
                         "SOLUTION_ID": {
                             "Fn::FindInMap": [
                                 "SolutionId",
                                 "UserAgent",
                                 "Extra"
                             ]
-                        },
-                        "CHECKOUT_USER_COUNT": {
-                            "Fn::Sub": "${CheckoutUserCount}"
                         }
                     }
+                }
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W89",
+                            "reason": "Lambda does not need to be in the Waiting Room VPC."
+                        },
+                        {
+                            "id": "W92",
+                            "reason": "Lambda does not require ReservedConcurrentExecutions."
+                        }
+                    ]
                 }
             }
         },
@@ -309,6 +303,20 @@
                             ]
                         }
                     }
+                }
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W89",
+                            "reason": "Lambda does not need to be in the Waiting Room VPC."
+                        },
+                        {
+                            "id": "W92",
+                            "reason": "Lambda does not require ReservedConcurrentExecutions."
+                        }
+                    ]
                 }
             }
         },

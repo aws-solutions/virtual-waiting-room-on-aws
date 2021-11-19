@@ -1,0 +1,167 @@
+name: Pull Request Workflow
+
+# global environment variables to all jobs
+env:
+  REGION: us-west-2
+  SOLUTION_NAME: aws-virtual-waiting-room
+  DIST_OUTPUT_BUCKET: swr
+
+on: 
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+jobs:
+  clamav-scan-job:
+    runs-on: ubuntu-latest
+    name: Check source code with ClamAV Scan
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v2
+      # scan for any malware in the commit
+      - name: ClamAV Scan
+        uses: djdefi/gitavscan@main
+        with:
+          full: "--full"
+
+  trufflehog-scan-job:
+    runs-on: ubuntu-latest
+    name: Check source code with Trufflehog Scan
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v2
+      # scan for various types of keys and tokens
+      - name: Trufflehog Scan
+        uses: edplato/trufflehog-actions-scan@master
+        with:
+          scanArguments: "--regex --entropy=False"
+  
+  bandit-check-job:
+    runs-on: ubuntu-latest
+    name: Check source code with Bandit
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install bandit
+        run: pip install bandit
+      - name: Check source with bandit
+        run: bandit -r source
+
+  pylint-check-job:
+    runs-on: ubuntu-latest
+    name: Check source code with Pylint
+    steps:
+      # check out repo
+      - name: Checkout
+        uses: actions/checkout@v2
+      # check it with Pylint
+      - name: Check with Pylint
+        run: |
+          pip install pylint
+          cd source
+          ./tools/pylint.sh
+
+  jshint-check-job:
+    runs-on: ubuntu-latest
+    name: Check source code with JShint
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install JShint
+        run: npm install jshint
+      - name: Check with JShint
+        run: |
+          cd source
+          find . -name '*.js' -type f -print | \
+          xargs ../node_modules/jshint/bin/jshint
+
+  build-job:
+    runs-on: ubuntu-latest
+    needs:
+      [
+        clamav-scan-job,
+        trufflehog-scan-job,
+        bandit-check-job,
+        pylint-check-job,
+        jshint-check-job
+      ]
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v2
+      - name: Set up PR variables
+        run: |
+          PR_ID=$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
+          echo "VERSION=PR$PR_ID" >> $GITHUB_ENV
+          echo "AWS_DEFAULT_REGION=$REGION" >> $GITHUB_ENV
+      - name: Update system path
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Update packages
+        run: |
+          sudo apt-get update
+          pip install -U pip
+      - name: Run safety check before build
+        run: |
+          pip install safety
+          safety check -r deployment/requirements.txt
+      - name: Install required system packages
+        run: |
+          pip install --upgrade --force-reinstall -r deployment/requirements.txt 2> error.txt
+          if [ -s error.txt ]; then
+            echo "ERROR: System package installation failed."
+            cat error.txt
+            exit 1
+          fi
+      - name: Cache deployment directory
+        uses: actions/cache@v2
+        id: cache-deployment
+        with:
+          path: deployment/
+          key: ${{ github.sha }}
+      - name: Run build script
+        run: |
+          cd deployment
+          ./build-s3-dist.sh $DIST_OUTPUT_BUCKET $SOLUTION_NAME $VERSION
+      - name: Run unit tests
+        run: |
+          cd deployment
+          pip install pkg/aws_virtual_waiting_room_common-1.0.0-py3-none-any.whl
+          ./run-unit-tests.sh
+
+  cfn-lint-job:
+    name: Run cfn-lint on templates
+    runs-on: ubuntu-latest
+    needs:
+      [
+        build-job
+      ]
+    steps:
+      - name: Install cfn-lint
+        run: pip install cfn-lint
+      - name: Restore deployment directory from cache
+        uses: actions/cache@v2
+        id: cache-deployment
+        with:
+          path: deployment/
+          key: ${{ github.sha }}
+      - name: Run cfn-lint against templates
+        run: |
+          cd deployment/global-s3-assets
+          cfn-lint *.template
+  
+  cfn-nag-job:
+    name: Run cfn-nag on templates
+    runs-on: ubuntu-latest
+    needs:
+      [
+        build-job
+      ]
+    steps:
+      - name: Restore deployment directory from cache
+        uses: actions/cache@v2
+        id: cache-deployment
+        with:
+          path: deployment/
+          key: ${{ github.sha }}
+      - name: Run cfn-nag against templates
+        uses: stelligent/cfn_nag@master
+        with:
+          input_path: deployment/global-s3-assets

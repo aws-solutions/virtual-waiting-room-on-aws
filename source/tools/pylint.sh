@@ -10,6 +10,7 @@
 # under the License.
 
 # IGNORED RULES
+# E0401 Unable to import module (packaged via Lambda layers instead)
 # C0103 Constant name
 # C0301 Line too long
 # C0302 Too many lines in module
@@ -37,4 +38,4 @@ set -euo pipefail
 find . -iname '*.py' | \
     grep "/package/" --invert-match | \
     grep "/chalice/vendor/" --invert-match | \
-    xargs pylint -d C0103,C0301,C0302,C0303,C0411,C0412,C0413,R0201,R0801,R1702,R0912,R0913,R0914,R0915,W0105,W0401,W0703,W0603,W0613,W0621,W0640
+    xargs pylint -d E0401,C0103,C0301,C0302,C0303,C0411,C0412,C0413,R0201,R0801,R1702,R0912,R0913,R0914,R0915,W0105,W0401,W0703,W0603,W0613,W0621,W0640

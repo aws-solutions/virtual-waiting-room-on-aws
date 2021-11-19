@@ -10,7 +10,7 @@
         },
         "CoreApi": {
             "Stage": {
-                "Name": "dev"
+                "Name": "api"
             }
         },
         "SolutionId": {
@@ -250,7 +250,7 @@
                     "deadLetterTargetArn" : {"Fn::GetAtt": [ "WaitingRoomDeadLetterQueue", "Arn" ]},
                     "maxReceiveCount" : 2
                 },
-                "VisibilityTimeout" : 5
+                "VisibilityTimeout" : 30
             }
         },
         "WaitingRoomDeadLetterQueue": {
@@ -380,8 +380,10 @@
                                 "dynamodb:UpdateItem",
                                 "dynamodb:PutItem",
                                 "dynamodb:GetItem",
-                                "dynamodb:Scan",
-                                "dynamodb:DeleteItem"
+                                "dynamodb:UpdateContinuousBackups",
+                                "dynamodb:CreateTable",
+                                "dynamodb:DeleteTable",
+                                "dynamodb:DescribeTable"
                             ],
                             "Effect": "Allow",
                             "Resource": {
@@ -560,6 +562,7 @@
         },
         "WaitingRoomVpc": {
             "Type": "AWS::EC2::VPC",
+            "DependsOn": "LambdaVpcPolicy",
             "Properties": {
                 "CidrBlock": "10.0.0.0/16",
                 "EnableDnsSupport": true,
@@ -2507,7 +2510,7 @@
                     ]
                 },
                 "Runtime": "python3.8",
-                "Timeout": 30,
+                "Timeout": 300,
                 "VpcConfig": {
                     "SecurityGroupIds": [
                         {
@@ -3013,8 +3016,10 @@
                                 "dynamodb:UpdateItem",
                                 "dynamodb:PutItem",
                                 "dynamodb:GetItem",
-                                "dynamodb:Scan",
-                                "dynamodb:DeleteItem"
+                                "dynamodb:UpdateContinuousBackups",
+                                "dynamodb:CreateTable",
+                                "dynamodb:DeleteTable",
+                                "dynamodb:DescribeTable"
                             ],
                             "Resource": [
                                 {

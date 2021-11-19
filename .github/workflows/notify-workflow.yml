@@ -46,6 +46,7 @@ jobs:
         with:
           role-to-assume: ${{ secrets.NOTIFY_ROLE }}
           aws-region: ${{ env.REGION }}
+          role-duration-seconds: 900
       - name: Invoke endpoint
         run: |
           cd deployment

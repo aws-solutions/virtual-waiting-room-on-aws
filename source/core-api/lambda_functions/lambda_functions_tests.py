@@ -7,7 +7,7 @@ This module is the unit test for the core API Lambda functions.
 
 import os
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 import json
 from botocore.response import StreamingBody
@@ -17,7 +17,8 @@ from io import StringIO
 os.environ["REDIS_HOST"] = "local"
 os.environ["REDIS_PORT"] = "1234"
 os.environ["EVENT_ID"] = "abc123"
-os.environ["TOKEN_TABLE"] = "token_table"
+# Bandit B105: not a hardcoded password
+os.environ["TOKEN_TABLE"] = "token_table" # nosec
 os.environ["SOLUTION_ID"] = "SO0166"
 os.environ["STACK_NAME"] = "vwr"
 os.environ["EVENT_BUS_NAME"] = "vwr_event_bus"
@@ -459,21 +460,25 @@ class CoreApiTestCase(unittest.TestCase):
         self.assertEqual(body["error"], self.invalid_event_id_msg)
 
     @patch.object(reset_initial_state.rc, 'getset', return_value=0)
-    @patch.object(reset_initial_state.ddb_table, 'scan',
-                  return_value={"Items": [{"request_id": "fe7a5f04-6ff0-4bd6-9c31-52088cc4e73a"}]})
-    @patch.object(reset_initial_state.ddb_table, 'delete_item',
-                  return_value={'ResponseMetadata': {'RequestId': '9KOGMPHCTEBNFOKONNM94K2QTRVV4KQNSO5AEMVJF66Q9ASUAAJG', 'HTTPStatusCode': 200}})
-    def test_reset_initial_state(self, mock_get, mock_scan, mock_delete):
+    @patch.object(reset_initial_state.ddb_client, 'describe_table',
+                  return_value={})
+    @patch.object(reset_initial_state.ddb_client, 'delete_table',
+                  return_value={})
+    @patch.object(reset_initial_state.ddb_client, 'get_waiter',
+                  return_value=MagicMock().wait)
+    @patch.object(reset_initial_state.ddb_client, 'create_table',
+                  return_value={})
+    def test_reset_initial_state(self, mock_get, mock_describe, mock_delete, mock_waiter, mock_create):
         """
         This function tests the reset_initial_state lambda function
         """
         # event_id is valid
-        mock_event_200 = {"body": json.dumps({"event_id": self.event_id})}
+        mock_event_200 = {"event_id": self.event_id}
         response = reset_initial_state.lambda_handler(mock_event_200, None)
         self.assertEqual(response["statusCode"], 200)
 
         # invalid event_id
-        mock_event_400 = {"body": json.dumps({"event_id": self.invalid_id})}
+        mock_event_400 = {"event_id": self.invalid_id}
         response = reset_initial_state.lambda_handler(mock_event_400, None)
         self.assertEqual(response["statusCode"], 400)
 

@@ -589,12 +589,18 @@
                   "statusCode": "200",
                   "responseParameters": {
                     "method.response.header.Access-Control-Allow-Origin": "'*'"
+                  },    
+                  "responseTemplates": {
+                    "application/json": "{\"message\": \"It may take a minute or two to reset counters and recreate the database. Verify that token table is available and active in DynamoDB before using the waiting room.\"}"
                   }
                 }
               },
+              "requestParameters": {
+                "integration.request.header.X-Amz-Invocation-Type": "'Event'"
+              },
               "passthroughBehavior": "when_no_match",
               "contentHandling": "CONVERT_TO_TEXT",
-              "type": "aws_proxy"
+              "type": "aws"
             }
           },
           "options": {

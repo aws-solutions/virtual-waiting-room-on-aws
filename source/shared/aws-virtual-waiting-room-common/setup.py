@@ -1,3 +1,7 @@
+"""
+This module sets up the metadata for the waiting room common library.
+"""
+
 import setuptools
 
 with open("README.md", "r", encoding="utf-8") as fh:

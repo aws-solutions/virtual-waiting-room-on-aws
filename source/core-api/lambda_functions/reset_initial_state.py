@@ -24,8 +24,7 @@ user_agent_extra = {"user_agent_extra": SOLUTION_ID}
 user_config = config.Config(**user_agent_extra)
 boto_session = boto3.session.Session()
 region = boto_session.region_name
-ddb_resource = boto3.resource('dynamodb', endpoint_url="https://dynamodb."+region+".amazonaws.com", config=user_config)
-ddb_table = ddb_resource.Table(DDB_TABLE_NAME)
+ddb_client = boto3.client('dynamodb', endpoint_url="https://dynamodb."+region+".amazonaws.com", config=user_config)
 secrets_client = boto3.client('secretsmanager', config=user_config, endpoint_url="https://secretsmanager."+region+".amazonaws.com")
 response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/redis-auth")
 redis_auth = response.get("SecretString")
@@ -37,8 +36,7 @@ def lambda_handler(event, context):
     """
 
     print(event)
-    body = json.loads(event['body'])
-    client_event_id = deep_clean(body['event_id'])
+    client_event_id = deep_clean(event['event_id'])
     response = {}
     headers = {
         'Content-Type': 'application/json',
@@ -53,23 +51,79 @@ def lambda_handler(event, context):
         rc.getset(COMPLETED_SESSION_COUNTER, 0)
         rc.getset(ABANDONED_SESSION_COUNTER, 0)
 
-        # empty table
-        response = ddb_table.scan(ProjectionExpression="request_id")
-        items = response.get("Items", [])
-        while "LastEvaluatedKey" in response:
-            response = ddb_table.scan(
-                ProjectionExpression="request_id",
-                ExclusiveStartKey=response["LastEvaluatedKey"])
-            items = items + response.get("Items", [])
-        for item in items:
-            ddb_table.delete_item(Key={"request_id": item["request_id"]})
-        response = {
-            "statusCode": 200,
-            "headers": headers,
-            "body": json.dumps({
-                "message": "Counters reset. DynamoDB table cleared."
-            })
-        }
+        try:                       
+            response = ddb_client.delete_table( TableName=DDB_TABLE_NAME )
+            waiter = ddb_client.get_waiter('table_not_exists')
+            # wait for table to get deleted
+            waiter.wait(TableName=DDB_TABLE_NAME)
+            print("Token table deleted")
+            # recreate table
+            response = ddb_client.create_table(
+                TableName= DDB_TABLE_NAME,
+                BillingMode = "PAY_PER_REQUEST",
+                AttributeDefinitions = [
+                    {
+                        "AttributeName": "request_id",
+                        "AttributeType": "S"
+                    },
+                    {
+                        "AttributeName": "expires",
+                        "AttributeType": "N"
+                    },
+                    {
+                        "AttributeName": "event_id",
+                        "AttributeType": "S"
+                    }
+                ],
+                KeySchema = [
+                    {
+                        "AttributeName": "request_id",
+                        "KeyType": "HASH"
+                    }
+                ],
+                GlobalSecondaryIndexes = [
+                    {
+                        "IndexName": "EventExpiresIndex",
+                        "KeySchema": [
+                            {
+                                "AttributeName": "event_id",
+                                "KeyType": "HASH"
+                            },
+                            {
+                                "AttributeName": "expires",
+                                "KeyType": "RANGE"
+                            }
+                        ],
+                        "Projection": {
+                            "ProjectionType": "ALL"
+                        }
+                    }
+                ],
+                SSESpecification = {
+                    "Enabled": True
+                }
+            )
+            waiter = ddb_client.get_waiter('table_exists')
+            # wait for table to get created
+            waiter.wait(TableName=DDB_TABLE_NAME)
+            print("Token table recreated")
+            # enable PITR
+            ddb_client.update_continuous_backups(
+                TableName=DDB_TABLE_NAME,
+                PointInTimeRecoverySpecification={
+                    'PointInTimeRecoveryEnabled': True
+                }
+            )
+            response = {
+                    "statusCode": 200,
+                    "headers": headers,
+                    "body": json.dumps({
+                            "message": "Counters reset. DynamoDB table recreated."
+                    })
+            }
+        except Exception as other_exception:
+            print(other_exception)
+            raise other_exception
     else:
         response = {
             "statusCode": 400,

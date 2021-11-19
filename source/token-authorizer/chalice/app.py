@@ -6,16 +6,14 @@ can be integrated with solutions for the Waiting Room.
 """
 
 import json
-import linecache
 import os.path
-import sys
 import time
 
 import requests
 from jwcrypto import jwk, jwt
 from jwcrypto.common import JWException
-from chalice import Chalice, Response
 from vwr.common.diag import print_exception
+from chalice import Chalice, Response
 
 app = Chalice(app_name='token-authorizer')
 
@@ -29,11 +27,12 @@ def get_public_key():
     This function is responsible for retrieving the
     public JWK from the closest location
     """
-    local_key_file = "/tmp/jwks.json"
+    # Bandit B108: /tmp directory is ephemeral as this is ran on Lambda
+    local_key_file = "/tmp/jwks.json" # nosec
     key = {}
     if os.path.isfile(local_key_file):
         # retrieve from the local file
-        with open(local_key_file, 'rt') as cache_file:
+        with open(local_key_file, 'rt', encoding='utf-8') as cache_file:
             key = json.loads(cache_file.read())
     else:
         # retrieve from the core API
@@ -41,7 +40,7 @@ def get_public_key():
         try:
             response = requests.get(api_endpoint)
             if response.status_code == 200:
-                with open(local_key_file, 'wt') as cache_file:
+                with open(local_key_file, 'wt', encoding='utf-8') as cache_file:
                     cache_file.write(response.text)
                 key = json.loads(response.text)
         except (OSError, RuntimeError):
