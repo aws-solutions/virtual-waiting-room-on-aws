@@ -399,18 +399,17 @@
             "Description": "Unique ID for this instance of the waiting room",
             "Type": "String",
             "MinLength": 1,
-            "ConstraintDescription": "Please enter a value for this field.",
-            "Default": "abc123"
+            "ConstraintDescription": "Please enter a value for this field."
         },
         "PrivateCoreApiEndpoint": {
             "Description": "The private core API endpoint",
             "Type": "String",
-            "ConstraintDescription": "Please enter a value for this field."        },
+            "ConstraintDescription": "Please enter a value for this field."        
+        },
         "CoreApiRegion": {
             "Description": "AWS Region where the core API is installed",
             "Type": "String",
-            "ConstraintDescription": "Please enter a value for this field.",
-            "Default": "us-west-2"
+            "ConstraintDescription": "Please enter a value for this field."
         },
         "InletStrategy": {
             "Description": "Inlet strategy to be deployed. Periodic will increment the serving number every minute. MaxSize will increment serving number based on the maximum number of transactions that the downstream commerce site can handle at a given time.",
