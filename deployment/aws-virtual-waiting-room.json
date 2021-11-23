@@ -5038,8 +5038,7 @@
             "Description": "Unique ID for this instance of the waiting room",
             "Type": "String",
             "MinLength": 1,
-            "ConstraintDescription": "Please enter a value for this field.",
-            "Default": "abc123"
+            "ConstraintDescription": "Please enter a value for this field."
         },
         "ValidityPeriod": {
             "Description": "Token validity period in seconds",
