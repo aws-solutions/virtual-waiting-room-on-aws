@@ -16,6 +16,22 @@
 #
 #  - version-code: version of the package
 
+function symbol_update {
+    TEMPLATES=`find . -name '*aws-virtual-waiting-room*.template' -type f `
+
+    echo $TEMPLATES | \
+        xargs -n 1 sed -i -e "s/%%TIMESTAMP%%/$TIMESTAMP/g"
+
+    echo $TEMPLATES | \
+        xargs -n 1 sed -i -e "s/%%BUCKET_NAME%%/$DIST_OUTPUT_BUCKET/g"
+
+    echo $TEMPLATES | \
+        xargs -n 1 sed -i -e "s/%%SOLUTION_NAME%%/$SOLUTION_NAME/g"
+
+    echo $TEMPLATES | \
+        xargs -n 1 sed -i -e "s/%%VERSION%%/$VERSION/g"
+}
+
 set -euo pipefail
 
 # only option h is allowed to display help message
@@ -325,33 +341,26 @@ echo "--------------------------------------------------------------------------
 echo "[Packing] Templates"
 echo "------------------------------------------------------------------------------"
 
-# copy all *.json to *.template
 cd $template_dir
+# copy templates
 for f in *aws-virtual-waiting-room*.json; do
     cp -- "$f" "$template_dist_dir/${f%.json}.template"
     cp -- "$f" "$build_dist_dir/${f%.json}.template"
 done
+
 # cp swagger files to regional assets
 cp aws-virtual-waiting-room-swagger-*.json $build_dist_dir
-# clean up
-rm -f $template_dist_dir/aws-virtual-waiting-room-swagger-*.template
 
-# update symbols in templates
+# update symbols in $template_dist_dir
 echo "updating template symbols"
 cd $template_dist_dir
-TEMPLATES=`find . -name '*.template' -type f `
+symbol_update
 
-echo $TEMPLATES | \
-    xargs -n 1 sed -i -e "s/%%TIMESTAMP%%/$TIMESTAMP/g"
-
-echo $TEMPLATES | \
-    xargs -n 1 sed -i -e "s/%%BUCKET_NAME%%/$DIST_OUTPUT_BUCKET/g"
-
-echo $TEMPLATES | \
-    xargs -n 1 sed -i -e "s/%%SOLUTION_NAME%%/$SOLUTION_NAME/g"
-
-echo $TEMPLATES | \
-    xargs -n 1 sed -i -e "s/%%VERSION%%/$VERSION/g"
+# update symbols in $build_dist_dir
+cd $build_dist_dir
+symbol_update
 
 # clean up
-rm -f $template_dist_dir/*.template-e
+rm -f $template_dist_dir/aws-virtual-waiting-room-swagger-*.template
+rm -f $build_dist_dir/aws-virtual-waiting-room-swagger-*.template
+find $template_dir -name '*-e' -type f | xargs rm -f
