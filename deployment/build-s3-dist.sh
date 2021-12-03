@@ -329,6 +329,7 @@ echo "--------------------------------------------------------------------------
 cd $template_dir
 for f in *aws-virtual-waiting-room*.json; do
     cp -- "$f" "$template_dist_dir/${f%.json}.template"
+    cp -- "$f" "$build_dist_dir/${f%.json}.template"
 done
 # cp swagger files to regional assets
 cp aws-virtual-waiting-room-swagger-*.json $build_dist_dir
