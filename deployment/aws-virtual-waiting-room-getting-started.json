@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
-    "Description": "(SO0166) AWS Virtual Waiting Room %%VERSION%%",
+    "Description": "AWS Virtual Waiting Room Getting Started %%VERSION%%",
     "Resources": {
         "CoreModuleStack": {
             "Type": "AWS::CloudFormation::Stack",
