@@ -16,3 +16,4 @@ deployment/aws-virtual-waiting-room-sample.json
 aws_virtual_waiting_room_common*
 deployment/pkg/
 node_modules/
+.env/
