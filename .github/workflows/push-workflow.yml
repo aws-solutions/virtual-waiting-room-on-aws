@@ -205,7 +205,7 @@ jobs:
           input_path: deployment/global-s3-assets
 
   upload-and-store-job:
-    name: Upload and store regional and global assets ## change !!
+    name: Upload and store regional and global assets
     needs:
       [
         cfn-lint-job,
@@ -231,7 +231,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@master
         with:
-          role-to-assume: ${{ secrets.MSAM_ROLE_ARN }}
+          role-to-assume: ${{ secrets.VWR_ROLE_ARN }}
           aws-region: ${{ env.REGION }}
           role-duration-seconds: 900
       - name: Restore deployment directory from cache
