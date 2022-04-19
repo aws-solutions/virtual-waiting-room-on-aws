@@ -2,12 +2,12 @@ name: Push Workflow
 
 # global environment variables to all jobs
 env:
-  REGION: us-west-2
-  SOLUTION_ORG: aws-solutions
-  SOLUTION_NAME: aws-virtual-waiting-room
-  DIST_OUTPUT_BUCKET: swr
+  REGION: us-east-1
+  DIST_OUTPUT_BUCKET: sb-poc-solutions-features
   REGIONS_TO_DEPLOY: "us-west-2 us-east-1"
-  RELEASE_BRANCH: refs/heads/main
+  RELEASE_OUTPUT_BUCKET: sb-poc-solutions-features
+  VERSION: ${{ secrets.VERSION }}
+  RELEASE_BRANCH: main # change this to main later
 
 on:
   push:
@@ -67,6 +67,10 @@ jobs:
 
   pa11y-check-job:
     runs-on: ubuntu-latest
+    needs:
+      [
+        build-job
+      ]
     name: Check HTML code with Pa11y for accessibility
     steps:
       - name: Checkout
@@ -75,8 +79,8 @@ jobs:
         run: npm install pa11y
       - name: Check with Pa11y
         run: |
-          cd source
-          find . -iname '*.html' -exec ../node_modules/pa11y/bin/pa11y.js {} \;
+          cd source/html
+          find . -iname '*.html' | xargs -I '{}' ../../node_modules/pa11y/bin/pa11y.js {}
 
   jshint-check-job:
     runs-on: ubuntu-latest
@@ -88,9 +92,10 @@ jobs:
         run: npm install jshint
       - name: Check with JShint
         run: |
-          cd source
+          cd source/html
           find . -name '*.js' -type f -print | \
-          xargs ../node_modules/jshint/bin/jshint
+            grep --invert-match "/external/" | \
+            xargs ../../node_modules/jshint/bin/jshint
 
   build-job:
     name: Run build script
@@ -108,8 +113,6 @@ jobs:
     steps:
       - name: Check out repo
         uses: actions/checkout@v2
-      - name: Set up Push variables
-        run: echo "VERSION=`git rev-parse --short HEAD`" >> $GITHUB_ENV
       - name: Update system path
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
       - name: Set up AWS environment 
@@ -141,11 +144,14 @@ jobs:
       - name: Run build script
         run: |
           cd deployment
-          ./build-s3-dist.sh $DIST_OUTPUT_BUCKET $SOLUTION_NAME $VERSION
+          if [ $GITHUB_REF_NAME == $RELEASE_BRANCH ]; then
+            ./build-s3-dist.sh $RELEASE_OUTPUT_BUCKET ${{ github.event.repository.name }} $VERSION
+          else
+            ./build-s3-dist.sh $DIST_OUTPUT_BUCKET ${{ github.event.repository.name }} $VERSION
+          fi
       - name: Run unit tests
         run: |
           cd deployment
-          pip install pkg/aws_virtual_waiting_room_common-1.0.0-py3-none-any.whl
           ./run-unit-tests.sh
       
   cfn-lint-job:
@@ -189,7 +195,7 @@ jobs:
           input_path: deployment/global-s3-assets
 
   upload-and-store-job:
-    name: Upload and store regional and global assets
+    name: Upload and store regional and global assets ## change !!
     needs:
       [
         cfn-lint-job,
@@ -204,8 +210,6 @@ jobs:
     steps:
       - name: Check out repo
         uses: actions/checkout@v2
-      - name: Set up Push variables
-        run: echo "VERSION=`git rev-parse --short HEAD`" >> $GITHUB_ENV
       - name: Install required system packages
         run: |
           pip install --upgrade --force-reinstall -r deployment/requirements.txt 2> error.txt
@@ -217,7 +221,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@master
         with:
-          role-to-assume: ${{ secrets.VWR_ROLE_ARN }}
+          role-to-assume: ${{ secrets.MSAM_ROLE_ARN }}
           aws-region: ${{ env.REGION }}
           role-duration-seconds: 900
       - name: Restore deployment directory from cache
@@ -225,11 +229,13 @@ jobs:
         id: cache-deployment
         with:
           path: deployment/
-          key: ${{ github.sha }}
-      - name: Upload to S3
-        run: |
-          cd deployment
-          ./deploy.sh -b $DIST_OUTPUT_BUCKET -s $SOLUTION_NAME -v $VERSION -r "$REGIONS_TO_DEPLOY" -a none -t dev
+          key: ${{ github.sha }} ## remove below !!
+      # - name: Upload to S3
+      #   # deploy to our test bucket if not doing a release
+      #   if: ${{github.ref_name != env.RELEASE_BRANCH}}
+      #   run: |
+      #     cd deployment
+      #     ./deploy.sh -b $DIST_OUTPUT_BUCKET -s ${{ github.event.repository.name }} -v $VERSION -r "$REGIONS_TO_DEPLOY" -a none -t dev
       - name: Zip up regional and global assets
         run: |
           cd deployment
@@ -239,5 +245,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: zipped-regional-global-assets
-          path: deployment/*.zip  
-  
+          path: deployment/*.zip

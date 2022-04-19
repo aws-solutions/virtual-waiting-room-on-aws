@@ -1,0 +1,46 @@
+name: Release Branch Test Deploy Workflow
+env:
+  REGION: us-east-1
+  TEST_OUTPUT_BUCKET: sb-poc-solutions-test
+  VERSION: ${{ secrets.VERSION }}
+on: 
+  workflow_call:
+    inputs:
+      cache_key:
+        required: true
+        type: string
+    secrets:
+      MSAM_ROLE_ARN:
+        required: true
+jobs:
+  release-branch-test-deploy-cfn:
+    name: Install VWR for test 
+    runs-on: ubuntu-latest
+    environment: push_env
+    permissions:
+      actions: read
+      id-token: write
+      contents: read
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@master
+        with:
+          role-to-assume: ${{ secrets.MSAM_ROLE_ARN }}
+          aws-region: ${{ env.REGION }}
+      - name: Restore deployment directory from cache
+        uses: actions/cache@v2
+        id: cache-deployment
+        with:
+          path: deployment/
+          key: ${{ inputs.cache_key }}
+      #upload to a separate bucket to make sure it's available 
+      # - name: Upload to S3
+      #   run: |
+      #     cd deployment
+      #     ./deploy.sh -b $TEST_OUTPUT_BUCKET -s ${{ github.event.repository.name }} -v $VERSION -r "$REGIONS_TO_DEPLOY" -a none -t dev
+      - name: Create CloudFormation stack based on last job's build
+        run: |
+          TEMPLATE="https://$TEST_OUTPUT_BUCKET-$REGION.s3.amazonaws.com/${{ github.event.repository.name }}/latest/${{ github.event.repository.name }}-release.template"
+          echo $TEMPLATE
+          response="$( aws cloudformation create-stack --stack-name MSAM-test-$VERSION --template-url $TEMPLATE --region $REGION --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND --disable-rollback )"
+          echo $response

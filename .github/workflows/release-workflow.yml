@@ -1,0 +1,64 @@
+name: Release Workflow
+on:
+  release:
+    types: [created, edited, published]
+env:
+  REGION: us-east-1
+  DIST_OUTPUT_BUCKET: sb-poc-solutions
+  SOLUTION_NAME: aws-virtual-waiting-room
+  REGIONS_TO_DEPLOY: "us-west-2 us-east-1"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    # use a specific environment for this build that has secrets defined and protection rules in place, if needed
+    environment: release_env 
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v2
+      - name: Initialize AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+            aws-access-key-id: ${{ secrets.ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.SECRET_ACCESS_KEY }}
+            aws-region: ${{ env.REGION }}
+      - name: Update system path
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Install required system packages
+        run: |
+          pip install --upgrade --force-reinstall -r deployment/requirements.txt 2> error.txt
+          if [ -s error.txt ]; then
+            echo "ERROR: System package installation failed."
+            cat error.txt
+            exit 1
+          fi
+      - name: Run build script
+        run: |
+          cd deployment
+          echo ${GITHUB_REF##*/}
+          ./build-s3-dist.sh $DIST_OUTPUT_BUCKET $SOLUTION_NAME ${GITHUB_REF##*/}
+      - name: Deploy to S3
+        run: |
+          cd deployment
+          echo ${GITHUB_REF##*/}
+          ./deploy.sh -b $DIST_OUTPUT_BUCKET -s $SOLUTION_NAME -v ${GITHUB_REF##*/} -a public-read -t release
+    
+  install_msam: 
+    needs: build-and-deploy
+    runs-on: ubuntu-latest
+    # use a specific environment for this installation that has secrets defined and protection rules in place
+    environment: test_install_env
+    steps:
+      - name: Initialize AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+            aws-access-key-id: ${{ secrets.INSTALL_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.INSTALL_SECRET_ACCESS_KEY }}
+            aws-region: ${{ env.REGION }}
+      - name: Create CloudFormation stack based on release build
+        run: |
+          TEMPLATE="https://$DIST_OUTPUT_BUCKET-us-west-2.s3-us-west-2.amazonaws.com/$SOLUTION_NAME/latest/$SOLUTION_NAME-release.template"
+          echo $TEMPLATE
+          STACK_NAME=msam-release-${GITHUB_REF##*/}
+          response="$( aws cloudformation create-stack --stack-name ${STACK_NAME//./-} --template-url $TEMPLATE --region $REGION --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND --disable-rollback )"
+          echo $response

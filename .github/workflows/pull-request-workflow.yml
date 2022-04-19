@@ -2,13 +2,15 @@ name: Pull Request Workflow
 
 # global environment variables to all jobs
 env:
-  REGION: us-west-2
-  SOLUTION_NAME: aws-virtual-waiting-room
-  DIST_OUTPUT_BUCKET: swr
+  REGION: us-east-1
+  DIST_OUTPUT_BUCKET: sb-poc-solutions-features
 
 on: 
   pull_request:
     types: [opened, edited, reopened, synchronize]
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
 
 jobs:
   clamav-scan-job:
@@ -70,9 +72,10 @@ jobs:
         run: npm install jshint
       - name: Check with JShint
         run: |
-          cd source
+          cd source/html
           find . -name '*.js' -type f -print | \
-          xargs ../node_modules/jshint/bin/jshint
+            grep --invert-match "/external/" | \
+            xargs ../../node_modules/jshint/bin/jshint
 
   build-job:
     runs-on: ubuntu-latest
@@ -119,13 +122,29 @@ jobs:
       - name: Run build script
         run: |
           cd deployment
-          ./build-s3-dist.sh $DIST_OUTPUT_BUCKET $SOLUTION_NAME $VERSION
+          ./build-s3-dist.sh $DIST_OUTPUT_BUCKET ${{ github.event.repository.name }} $VERSION
       - name: Run unit tests
         run: |
           cd deployment
-          pip install pkg/aws_virtual_waiting_room_common-1.0.0-py3-none-any.whl
           ./run-unit-tests.sh
-
+  
+  pa11y-check-job:
+    runs-on: ubuntu-latest
+    needs:
+      [
+        build-job
+      ]
+    name: Check HTML code with Pa11y for accessibility
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Pa11y
+        run: npm install pa11y
+      - name: Check with Pa11y
+        run: |
+          cd source/html
+          find . -iname '*.html' | xargs -I '{}' ../../node_modules/pa11y/bin/pa11y.js {}
+  
   cfn-lint-job:
     name: Run cfn-lint on templates
     runs-on: ubuntu-latest
