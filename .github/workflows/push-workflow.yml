@@ -82,9 +82,9 @@ jobs:
           cd source/control-panel/src
           find . -iname '*.html' | xargs -I '{}' pa11y {}
       - name: Check sample waiting site with Pa11y
-          run: |
-            cd source/sample-waiting-room-site/src
-            find . -iname '*.html' | xargs -I '{}' pa11y {}
+        run: |
+          cd source/sample-waiting-room-site/src
+          find . -iname '*.html' | xargs -I '{}' pa11y {}
 
   jshint-check-job:
     runs-on: ubuntu-latest
