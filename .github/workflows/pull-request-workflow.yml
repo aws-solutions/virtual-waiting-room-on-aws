@@ -69,13 +69,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Install JShint
-        run: npm install jshint
-      - name: Check with JShint
+        run: npm install -g jshint
+      - name: Check control panel with JShint
         run: |
-          cd source/html
+          cd source/control-panel/src
           find . -name '*.js' -type f -print | \
-            grep --invert-match "/external/" | \
-            xargs ../../node_modules/jshint/bin/jshint
+            grep --invert-match "/node_modules/" | \
+            xargs jshint
+      - name: Check sample waiting site with JShint
+        run: |
+          cd source/sample-waiting-room-site/src
+          find . -name '*.js' -type f -print | \
+            grep --invert-match "/node_modules/" | \
+            xargs jshint
 
   build-job:
     runs-on: ubuntu-latest
