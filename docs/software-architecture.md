@@ -1,8 +1,8 @@
-# AWS Virtual Waiting Room Software Architecture Views
+# Virtual Waiting Room on AWS Software Architecture Views
 
 ## Views
 
-This document describes the architectural views for the AWS Virtual Waiting Room (VWR) solution.
+This document describes the architectural views for the Virtual Waiting Room on AWS (VWR) solution.
 
 The views used in this document are:
 
@@ -223,19 +223,19 @@ The deployment view shows the relationships between the deployment units (instal
 
 ![Image of Deployment View](deployment-view.jpg)
 
-There are six CloudFormation templates available for the AWS Virtual Waiting Room. Two templates are intended for deployment together into one account's region. The remainining four templates can be deployed into the same or different regions, or separate accounts from the two primary templates. Each template is briefly described below.
+There are six CloudFormation templates available for the Virtual Waiting Room on AWS. Two templates are intended for deployment together into one account's region. The remainining four templates can be deployed into the same or different regions, or separate accounts from the two primary templates. Each template is briefly described below.
 
 #### aws-virtual-waiting-room-api-gateway-cw-logs-role.template
 
-This template is used to create and configure an IAM Role for API GAteway that allows it to send access logs to CloudWatch. The Role is configured at the account/region level, so it may or may not exist when the AWS Virtual Waiting Room is installed the first time. Run this template if no existing IAM Role for API Gateway logging has been added for the region.
+This template is used to create and configure an IAM Role for API GAteway that allows it to send access logs to CloudWatch. The Role is configured at the account/region level, so it may or may not exist when the Virtual Waiting Room on AWS is installed the first time. Run this template if no existing IAM Role for API Gateway logging has been added for the region.
 
 #### aws-virtual-waiting-room.template
 
-This is the primary template for the AWS Virtual Waiting Room. This template configured all the foundational APIs, events, Virtual Private Cloud, Elasticache and DynamoDB table. This template is always installed with a new event.
+This is the primary template for the Virtual Waiting Room on AWS. This template configured all the foundational APIs, events, Virtual Private Cloud, Elasticache and DynamoDB table. This template is always installed with a new event.
 
 #### aws-virtual-waiting-room-authorizers.template
 
-This template installs the API Gateway authorizers that can be used by the customer with AWS Virtual Waiting Room issued JSON Web Tokens. After installing this template, the customer can add the authorizers to one or more API Gateway REST APIs to only allow users access who have passed through the waiting room.
+This template installs the API Gateway authorizers that can be used by the customer with Virtual Waiting Room on AWS issued JSON Web Tokens. After installing this template, the customer can add the authorizers to one or more API Gateway REST APIs to only allow users access who have passed through the waiting room.
 #### aws-virtual-waiting-room-openid.template
 
 This is an optional template that provides a set of APIs for Open ID Connect authorization and a sample page that acts as a waiting room within the authentication flow. This template is a logical layer above the primary public and private APIs configured by aws-virtual-waiting-room.template.
@@ -253,13 +253,13 @@ The physical view shows the deployed software with configured cloud resources an
 
 ![Image of Physical View](physical-view.jpg)
 
-The previous diagram shows the significant subsystems installed for the AWS Virtual Waiting Room.
+The previous diagram shows the significant subsystems installed for the Virtual Waiting Room on AWS.
 
-The stack resources for aws-virtual-waiting-room.template are shown at the right of the diagram. This stack installs a public API and private (IAM-authorized) API used for most operations of te AWS Virtual Waiting Room. The public API is configured with a CloudFront distribution with multiple caching policies based on the API called. A DynamoDB table and EventBridge event bus is also created here. This stack installs a VPC with two availability zones, a Redis cluster in those AZs, and several Lambda functions. Lambda functions that interact with Redis are installed within the VPC and all other are installed in the shared AWS network space.
+The stack resources for aws-virtual-waiting-room.template are shown at the right of the diagram. This stack installs a public API and private (IAM-authorized) API used for most operations of te Virtual Waiting Room on AWS. The public API is configured with a CloudFront distribution with multiple caching policies based on the API called. A DynamoDB table and EventBridge event bus is also created here. This stack installs a VPC with two availability zones, a Redis cluster in those AZs, and several Lambda functions. Lambda functions that interact with Redis are installed within the VPC and all other are installed in the shared AWS network space.
 
 The stack resources for aws-virtual-waiting-room-authorizers.template are shown at the top-left of the diagram. This stack installs one IAM role and Lambda function. The Lambda function is a custom authorizer for API Gateway and may be used by the customer to protect APIs until a user has progressed through the waiting room and receives an access token.
 
-The stack resources for aws-virtual-waiting-room-sample-inlet-strategy.template are shown at the bottom-center of the diagram. These are two sample Lambda functions that are installed with either a CloudWatch schedule rule or an SNS topic used to signal the Lambda. The concept behind the inlet strategy is to determine when the serving counter of the AWS Virtual Waiting Room should move forward to accomodate more users in the web site.
+The stack resources for aws-virtual-waiting-room-sample-inlet-strategy.template are shown at the bottom-center of the diagram. These are two sample Lambda functions that are installed with either a CloudWatch schedule rule or an SNS topic used to signal the Lambda. The concept behind the inlet strategy is to determine when the serving counter of the Virtual Waiting Room on AWS should move forward to accomodate more users in the web site.
 
 The stack resources for aws-virtual-waiting-room-openid.template are shown at the middle-left of the diagram. This stack acts as an adapter to the public and private APIs and provides a set of APIs that are compatible with Open ID Connect. This stack allows a customer to use the waiting room in the AuthN/AuthZ flow when using off-the-shelf web hosting software with limited integration options.
 

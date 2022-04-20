@@ -1,21 +1,21 @@
-# AWS Virtual Waiting Room Installation Guide
+# Virtual Waiting Room on AWS Installation Guide
 
 ##  Overview
 
-The AWS Virtual Waiting Room is a solution and toolkit that helps absorb and control incoming user requests to a web site that may not be prepared for an unusually large burst of traffic. 
+The Virtual Waiting Room on AWS is a solution and toolkit that helps absorb and control incoming user requests to a web site that may not be prepared for an unusually large burst of traffic. 
 
 It is used to redirect incoming users’ browsers to a holding-area before permitting them to continue into an event, commerce or scheduling site. 
 
-The AWS Virtual Waiting Room can be integrated with new or existing web sites. The templates create a cloud infrastructure designed for temporarily absorbing traffic away from a site, and it provides options to customize and integrate a virtual waiting room with an existing web site
+The Virtual Waiting Room on AWS can be integrated with new or existing web sites. The templates create a cloud infrastructure designed for temporarily absorbing traffic away from a site, and it provides options to customize and integrate a virtual waiting room with an existing web site
 
 
-The end-to-end architecture of the AWS Virtual Waiting Room stacks, related REST APIs and event sources, and sample customer-protected sites are shown in the following diagram.
+The end-to-end architecture of the Virtual Waiting Room on AWS stacks, related REST APIs and event sources, and sample customer-protected sites are shown in the following diagram.
 
 [Image: physical-view.jpg]
 
 ## AWS Supported Regions
 
-The AWS Virtual Waiting Room pre-releases can be installed into the following regions using the supplied CloudFormation templates. Please ask if you would like installation support in more regions.
+The Virtual Waiting Room on AWS pre-releases can be installed into the following regions using the supplied CloudFormation templates. Please ask if you would like installation support in more regions.
 
 1. ap-northeast-1
 2. ap-south-1
@@ -56,7 +56,7 @@ If there is no existing APIs defined in this region, start by installing the aws
 
 This solution is installed into one or more AWS accounts using CloudFormation templates. 
 
-The AWS Virtual Waiting Room includes four CloudFormation templates that can be installed from the AWS web console. Use exactly these template URLs for installing into any of the supported regions listed above. 
+The Virtual Waiting Room on AWS includes four CloudFormation templates that can be installed from the AWS web console. Use exactly these template URLs for installing into any of the supported regions listed above. 
 
 |Template URL	|Description	|
 |---	|---	|
