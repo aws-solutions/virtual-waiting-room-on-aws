@@ -133,7 +133,7 @@ jobs:
         bandit-check-job,
         pylint-check-job,
         jshint-check-job,
-        eslint-check-job,
+        # eslint-check-job,
         codeql-check-job
       ]
     # use a specific environment for this build that has secrets defined 
