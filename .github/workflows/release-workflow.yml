@@ -4,7 +4,7 @@ on:
     types: [created, edited, published]
 env:
   REGION: us-east-1
-  DIST_OUTPUT_BUCKET: sb-poc-solutions
+  DIST_OUTPUT_BUCKET: sb-poc-solutions-features
   SOLUTION_NAME: aws-virtual-waiting-room
   REGIONS_TO_DEPLOY: "us-west-2 us-east-1"
 

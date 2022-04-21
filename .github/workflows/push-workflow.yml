@@ -5,7 +5,7 @@ env:
   REGION: us-east-1
   DIST_OUTPUT_BUCKET: sb-poc-solutions-features
   REGIONS_TO_DEPLOY: "us-west-2 us-east-1"
-  RELEASE_OUTPUT_BUCKET: sb-poc-solutions-features
+  RELEASE_OUTPUT_BUCKET: sb-poc-solutions
   VERSION: ${{ secrets.VERSION }}
   RELEASE_BRANCH: main # change this to main later
 
