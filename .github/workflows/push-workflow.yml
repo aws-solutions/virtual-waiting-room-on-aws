@@ -83,7 +83,7 @@ jobs:
         - name: Install eslint
           run: |
             npm install -g eslint
-            npm install -g --save-dev eslint eslint-plugin-vue 
+            npm install -g eslint-plugin-vue@latest --save-dev
         # - name: Check with eslint
         #   run: |
         #     cd source/html
