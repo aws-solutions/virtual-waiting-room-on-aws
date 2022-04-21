@@ -52,7 +52,6 @@ jobs:
     runs-on: ubuntu-latest
     name: Check source code with Pylint
     steps:
-      # check out repo
       - name: Checkout
         uses: actions/checkout@v2
       # check it with Pylint
