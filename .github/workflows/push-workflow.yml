@@ -81,7 +81,9 @@ jobs:
         - name: Checkout
           uses: actions/checkout@v2
         - name: Install eslint
-          run: npm install -g eslint
+          run: |
+            npm install -g eslint
+            npm install -g --save-dev eslint eslint-plugin-vue 
         # - name: Check with eslint
         #   run: |
         #     cd source/html
