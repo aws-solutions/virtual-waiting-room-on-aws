@@ -61,7 +61,7 @@ jobs:
           cd source
           ./tools/pylint.sh
 
-  jshint-check-job:
+ jshint-check-job:
     runs-on: ubuntu-latest
     name: Check source code with JShint
     steps:
@@ -69,7 +69,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Install JShint
         run: npm install -g jshint
-       - name: Check control panel with JShint
+      - name: Check control panel with JShint
         run: |
           cd source/control-panel/src
           find . -name '*.js' -type f -print | \
