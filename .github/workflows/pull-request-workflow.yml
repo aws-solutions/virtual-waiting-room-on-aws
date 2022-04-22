@@ -186,18 +186,14 @@ jobs:
         uses: actions/checkout@v2
       - name: Install Pa11y
         run: npm install -g pa11y
-      - name: Check control panel with JShint
+      - name: Check control panel with Pa11y
         run: |
           cd source/control-panel/src
-          find . -name '*.js' -type f -print | \
-            grep --invert-match "/node_modules/" | \
-            xargs jshint
-      - name: Check sample waiting site with JShint
+          find . -iname '*.html' | xargs -I '{}' pa11y {}
+      - name: Check sample waiting site with Pa11y
         run: |
           cd source/sample-waiting-room-site/src
-          find . -name '*.js' -type f -print | \
-            grep --invert-match "/node_modules/" | \
-            xargs jshint
+          find . -iname '*.html' | xargs -I '{}' pa11y {}
             
   cfn-lint-job:
     name: Run cfn-lint on templates
