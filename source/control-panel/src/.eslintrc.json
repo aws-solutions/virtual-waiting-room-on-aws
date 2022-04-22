@@ -1,0 +1,28 @@
+{
+    "env": {
+        "browser": true,
+        "es2021": true,
+        "jquery": true
+    },
+    "extends": "eslint:recommended",
+    "parserOptions": {
+        "ecmaVersion": "latest",
+        "sourceType": "module"
+    },
+    "rules": {},
+    "globals": {
+        "_": true,
+        "Cookies": true,
+        "Fuse": true,
+        "filterXSS": true,
+        "machina": true,
+        "moment": true,
+        "objectHash": true,
+        "renderjson": true,
+        "showdown": true,
+        "SVG": true,
+        "Tabulator": true,
+        "URI": true,
+        "vis": true
+    }
+}
