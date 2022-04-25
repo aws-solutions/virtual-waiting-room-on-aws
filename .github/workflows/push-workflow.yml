@@ -81,11 +81,11 @@ jobs:
         - name: Checkout
           uses: actions/checkout@v2
         - name: Install eslint
-          run: npm install -g eslint --save-dev
+          run: npm install eslint --save-dev
         - name: Install eslint vue plugin
-          run: npm install -g eslint-plugin-vue@latest --save-dev
+          run: npm install eslint-plugin-vue@latest --save-dev
         - name: Install eslint babel
-          run: npm install -g babel-eslint --save-dev
+          run: npm install babel-eslint --save-dev
         - name: Check control panel with eslint
           run: |
             cd source/control-panel/src
