@@ -10,7 +10,8 @@ export default {
     parser: '@babel/eslint-parser',
     "parserOptions": {
         "ecmaVersion": "latest",
-        "sourceType": "module"
+        "sourceType": "module",
+        "requireConfigFile": false
     },
     "plugins": [
         "vue"
