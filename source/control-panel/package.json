@@ -21,7 +21,6 @@
     "@vue/cli-plugin-eslint": "~4.5.0",
     "@vue/cli-service": "~4.5.0",
     "@vue/compiler-sfc": "^3.0.0",
-    "@babel/eslint-parser": "^7.5.4",
     "eslint": "^6.7.2",
     "eslint-plugin-vue": "^7.0.0",
     "naive-ui": "^2.19.3",
@@ -37,7 +36,6 @@
       "eslint:recommended"
     ],
     "parserOptions": {
-      "parser": "babel-eslint"
     },
     "rules": {}
   },

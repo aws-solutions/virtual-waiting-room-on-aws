@@ -7,11 +7,9 @@ export default {
         "eslint:recommended",
         "plugin:vue/essential"
     ],
-    parser: '@babel/eslint-parser',
     "parserOptions": {
         "ecmaVersion": "latest",
         "sourceType": "module",
-        "requireConfigFile": false
     },
     "plugins": [
         "vue"
