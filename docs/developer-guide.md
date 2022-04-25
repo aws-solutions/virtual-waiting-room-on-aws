@@ -1,19 +1,19 @@
-# AWS Virtual Waiting Room Developer Guide
+# Virtual Waiting Room on AWS Developer Guide
 
 
-## What is the AWS Virtual Waiting Room?
+## What is the Virtual Waiting Room on AWS?
 
-the AWS Virtual Waiting Room is a solution that, when deployed, can be used to temporarily divert and absorb web traffic from a site that not be prepared for large bursts of requests related to an event.
+The Virtual Waiting Room on AWS is a solution that, when deployed, can be used to temporarily divert and absorb web traffic from a site that not be prepared for large bursts of requests related to an event.
 
-The AWS Virtual Waiting Room is can be integrated with new or existing web sites in several different ways. The CloudFormation templates create a cloud infrastructure that can be used as-is, or customized for unique needs.
+The Virtual Waiting Room on AWS is can be integrated with new or existing web sites in several different ways. The CloudFormation templates create a cloud infrastructure that can be used as-is, or customized for unique needs.
 
-Refer to the implementation guide for details on installing an AWS Virtual Waiting Room stack in your AWS account.
+Refer to the implementation guide for details on installing an Virtual Waiting Room on AWS stack in your AWS account.
 
 ## Managing a Deployed Virtual Waiting Room
 
 ### CloudFormation stacks
 
-Adding, removing and updating the top-level subsystems of a AWS Virtual Waiting Room is performed using CloudFormation.
+Adding, removing and updating the top-level subsystems of a Virtual Waiting Room on AWS is performed using CloudFormation.
 
 |Template	|Description	|
 |---	|---	|
@@ -29,11 +29,11 @@ Each template provides a layer of functionality for building Virtual Waiting Roo
 
 ### Updating stack parameters
 
-Most of the AWS Virtual Waiting Room stacks include parameters for various settings used during configuration and while the solution is running. Any of the parameters can be changed and the stack updated in place using the existing templates.
+Most of the Virtual Waiting Room on AWS stacks include parameters for various settings used during configuration and while the solution is running. Any of the parameters can be changed and the stack updated in place using the existing templates.
 
 ### CloudWatch metrics and alarms
 
-The core stack for the AWS Virtual Waiting Room installs several CloudWatch Alarms. Navigate to the CloudWatch Console and select an alarm option on the left side of the page. The installed alarms include:
+The core stack for the Virtual Waiting Room on AWS installs several CloudWatch Alarms. Navigate to the CloudWatch Console and select an alarm option on the left side of the page. The installed alarms include:
 
 1. 4xx status codes for public and private APIs
 1. 5xx status codes for public and private APIs
@@ -155,7 +155,7 @@ These alarms will return to an OK state after one minute of no errors or throttl
 
 The purpose of a virtual waiting room is to absorb and reduce the traffic load on a web site that may not be prepared for large bursts of requests related to an event.
 
-The AWS Virtual Waiting Room is can be integrated with new or existing web sites. The CloudFormation templates create a cloud infrastructure designed for temporarily absorbing traffic away from a site. 
+The Virtual Waiting Room on AWS is can be integrated with new or existing web sites. The CloudFormation templates create a cloud infrastructure designed for temporarily absorbing traffic away from a site. 
 
 
 
@@ -199,7 +199,7 @@ The entire sample is contained by the single page. It will take the user through
 
 ## Extension Points
 
-The AWS Virtual Waiting Room is designed for extension through two mechanisms: EventBridge for uni-directional event notification and REST APIs for bi-directional communication.
+The Virtual Waiting Room on AWS is designed for extension through two mechanisms: EventBridge for uni-directional event notification and REST APIs for bi-directional communication.
 
 
 ## Events
@@ -231,7 +231,7 @@ This is an option setting in the main template.
 
 ## REST APIs
 
-There are two levels of REST APIs provided with the AWS Virtual Waiting Room. The Core APIs are the lowest layer of interaction with the solution. Other Lambda functions, EC2, and containers can act as extensions and call the Core APIs to build waiting rooms and control inlet traffic and react to events generated from the solution.
+There are two levels of REST APIs provided with the Virtual Waiting Room on AWS. The Core APIs are the lowest layer of interaction with the solution. Other Lambda functions, EC2, and containers can act as extensions and call the Core APIs to build waiting rooms and control inlet traffic and react to events generated from the solution.
 
 The Open ID Adapter provides a set of OIDC-compatible APIs that can be used with existing web hosting software that support OIDC identity providers, like AWS Elastic Load Balancers, WordPress, or as a federated identity provider for a service like Amazon Cognito.
 

@@ -3,7 +3,7 @@
 Note: If you want to use the solution without building from source, navigate to Solution Landing Page
 
 
-# AWS Virtual Waiting Room
+# Virtual Waiting Room on AWS
 Site wrapper to absorb and control user traffic flowing into smaller web sites.
 
 <a name="prerequisites-for-customization"></a>
