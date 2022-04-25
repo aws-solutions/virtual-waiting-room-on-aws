@@ -80,12 +80,12 @@ jobs:
       steps:
         - name: Checkout
           uses: actions/checkout@v2
-        - name: Install npm fetch
-          run: npm i node-fetch@2.6.1
         - name: Install eslint
           run: npm install -g eslint --save-dev
         - name: Install eslint vue plugin
           run: npm install -g eslint-plugin-vue@latest --save-dev
+        - name: Install npm fetch
+          run: npm i node-fetch@2.6.1
         - name: Install eslint babel
           run: npm install -g babel-eslint --save-dev
         - name: Check control panel with eslint
