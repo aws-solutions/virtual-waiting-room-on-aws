@@ -93,9 +93,7 @@ jobs:
             cd source/control-panel/src
             npx eslint .
         - name: Check sample waiting site with eslint
-          run: |
-            cd source/sample-waiting-room-site/src
-            npx eslint .
+          run: npx eslint source/sample-waiting-room-site/src
 
   codeql-check-job:
     runs-on: ubuntu-latest
