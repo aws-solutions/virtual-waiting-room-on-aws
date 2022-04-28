@@ -67,23 +67,7 @@ def lambda_handler(event, context):
                 response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/jwk-public")
                 # create JWK format keys
                 keypair = jwk.JWK.from_json(private_key)
-                # issued-at and not-before can be the same time (epoch seconds)
-                iat = int(time.time())
-                nbf = iat
-                # expiration (exp) is a time after iat and nbf, like 1 hour (epoch seconds)
-                exp = iat + VALIDITY_PERIOD
-
-                # create access token claims
-                claims = {
-                    'aud': EVENT_ID,
-                    'sub': request_id,
-                    'queue_position': queue_number,
-                    'token_use': 'access',
-                    'iat': iat,
-                    'nbf': nbf,
-                    'exp': exp,
-                    'iss': issuer
-                }
+                iat, nbf, exp, claims = create_claims_token(request_id, issuer, queue_number)
 
                 access_token = jwt.JWT(header={"alg": "RS256", "typ": "JWT", "kid": keypair.key_id}, claims=claims)
                 access_token.make_signed_token(keypair)
@@ -116,66 +100,8 @@ def lambda_handler(event, context):
                         "refresh_token": refresh_token.serialize(),
                         "session_status": 0
                     }
-                try:
-                    ddb_table.put_item(
-                        Item=item,
-                        ConditionExpression="attribute_not_exists(request_id)"
-                    )
-                    x = ddb_table.get_item(
-                        Key = { "event_id": EVENT_ID }
-                    )
-                    if not x:
-                        print('hi')
-                    response = {
-                        "statusCode": 200,
-                        "headers": headers,
-                        "body": json.dumps({
-                            "access_token": access_token.serialize(),
-                            "refresh_token": refresh_token.serialize(),
-                            "id_token": id_token.serialize(),
-                            "token_type": "Bearer",
-                            "expires_in": VALIDITY_PERIOD
-                        })
-                    }
-                    # write to event bus
-                    events_client.put_events(
-                        Entries=[
-                            {
-                                'Source': 'custom.waitingroom',
-                                'DetailType': 'token_generated',
-                                'Detail': json.dumps({"event_id": EVENT_ID,
-                                                      "request_id": request_id}),
-                                'EventBusName': EVENT_BUS_NAME
-                            }
-                        ]
-                    )
-                    # increment token counter
-                    rc.incr(TOKEN_COUNTER, 1)
 
-                except ClientError as e:
-                    if e.response['Error']['Code'] != 'ConditionalCheckFailedException':
-                        raise e
-                    result = ddb_table.query(KeyConditionExpression=Key('request_id').eq(request_id))
-
-                    expires = int(result['Items'][0]['expires'])
-                    cur_time = int(time.time())
-                    remaining_time = expires - cur_time
-                    response = {
-                        "statusCode": 200, 
-                        "headers": headers, 
-                        "body": json.dumps(
-                                {
-                                    "access_token": result['Items'][0]['access_token'], \
-                                    "refresh_token": result['Items'][0]['refresh_token'], \
-                                    "id_token": result['Items'][0]['id_token'], \
-                                    "token_type": "Bearer", "expires_in": remaining_time
-                                }
-                            )
-                        }
-
-                except Exception as e:
-                    print(e)
-                    raise e
+                response = save_token_dynamodb(request_id, headers, access_token, id_token, refresh_token, item)
             else:
                 response = {
                     "statusCode": 202,
@@ -195,3 +121,88 @@ def lambda_handler(event, context):
             "body": json.dumps({"error": "Invalid event or request ID"})
         }
     return response
+
+def save_token_dynamodb(request_id, headers, access_token, id_token, refresh_token, item):
+    try:
+        ddb_table.put_item(
+            Item=item,
+            ConditionExpression="attribute_not_exists(request_id)"
+        )
+        # x = ddb_table.get_item(
+        #                 Key = { "event_id": EVENT_ID }
+        #             )
+        # if not x:
+        #     print('hi')
+        response = {
+            "statusCode": 200,
+            "headers": headers,
+            "body": json.dumps({
+                "access_token": access_token.serialize(),
+                "refresh_token": refresh_token.serialize(),
+                "id_token": id_token.serialize(),
+                "token_type": "Bearer",
+                "expires_in": VALIDITY_PERIOD
+            })
+        }
+        # write to event bus
+        events_client.put_events(
+            Entries=[
+                {
+                    'Source': 'custom.waitingroom',
+                    'DetailType': 'token_generated',
+                    'Detail': json.dumps({"event_id": EVENT_ID,
+                                          "request_id": request_id}),
+                    'EventBusName': EVENT_BUS_NAME
+                }
+            ]
+        )
+        # increment token counter
+        rc.incr(TOKEN_COUNTER, 1)
+
+    except ClientError as e:
+        if e.response['Error']['Code'] != 'ConditionalCheckFailedException':
+            raise e
+        result = ddb_table.query(KeyConditionExpression=Key('request_id').eq(request_id))
+
+        expires = int(result['Items'][0]['expires'])
+        cur_time = int(time.time())
+        remaining_time = expires - cur_time
+        response = {
+            "statusCode": 200,
+            "headers": headers,
+            "body": json.dumps(
+                {
+                    "access_token": result['Items'][0]['access_token'],
+                    "refresh_token": result['Items'][0]['refresh_token'],
+                    "id_token": result['Items'][0]['id_token'],
+                    "token_type": "Bearer", "expires_in": remaining_time
+                }
+            )
+        }
+
+    except Exception as e:
+        print(e)
+        raise e
+
+    return response
+
+def create_claims_token(request_id, issuer, queue_number):
+    # issued-at and not-before can be the same time (epoch seconds)
+    iat = int(time.time())
+    nbf = iat
+    # expiration (exp) is a time after iat and nbf, like 1 hour (epoch seconds)
+    exp = iat + VALIDITY_PERIOD
+
+    # create access token claims
+    claims = {
+        'aud': EVENT_ID,
+        'sub': request_id,
+        'queue_position': queue_number,
+        'token_use': 'access',
+        'iat': iat,
+        'nbf': nbf,
+        'exp': exp,
+        'iss': issuer
+    }
+    
+    return iat, nbf, exp, claims
