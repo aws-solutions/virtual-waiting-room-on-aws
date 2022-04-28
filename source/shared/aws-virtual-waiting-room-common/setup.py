@@ -28,5 +28,5 @@ setuptools.setup(
     packages=setuptools.find_packages(where="."),
     python_requires=">=3.8",
     install_requires=[
-        'bleach',
+        'bleach~=4.1.0',
     ])
