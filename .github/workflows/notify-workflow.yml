@@ -1,8 +1,8 @@
 name: Send Artifacts Workflow
 env:
-  REGION: us-west-2
-  SOLUTION_ORG: aws-solutions
-  SOLUTION_NAME: aws-virtual-waiting-room
+  REGION: us-east-1
+  VERSION: ${{ secrets.VERSION }}
+  RELEASE_BRANCH: main
 on: 
   workflow_run:
     workflows: ["Push Workflow"]
@@ -28,7 +28,7 @@ jobs:
             cat error.txt
             exit 1
           fi
-      - name: Get artifacts
+      - name: Set up environment variables
         run: |
           export WORKFLOW_RUN_ID=${{ github.event.workflow_run.id }} 
           export COMMIT_ID=${{ github.event.workflow_run.head_sha }}
@@ -41,8 +41,16 @@ jobs:
           echo NOTIFICATION_ENDPOINT=$NOTIFICATION_ENDPOINT >> $GITHUB_ENV
           echo BRANCH=$BRANCH >> $GITHUB_ENV
           echo WORKFLOW_NAME=$WORKFLOW_NAME >> $GITHUB_ENV
+      - name: Determine pipeline type
+        run: |
+          if [ $BRANCH == $RELEASE_BRANCH ]; then
+            export PIPELINE_TYPE="release"
+          else
+            export PIPELINE_TYPE="feature"
+          fi
+          echo PIPELINE_TYPE=$PIPELINE_TYPE >> $GITHUB_ENV
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@master
+        uses: aws-actions/configure-aws-credentials@v1
         with:
           role-to-assume: ${{ secrets.NOTIFY_ROLE }}
           aws-region: ${{ env.REGION }}

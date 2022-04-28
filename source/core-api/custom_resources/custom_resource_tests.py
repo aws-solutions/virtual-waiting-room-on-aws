@@ -43,7 +43,7 @@ class CoreCustomResourcesTestCase(unittest.TestCase):
 
     def tearDown(self):
         """
-        This function is responsible for cleaning up teh test environment
+        This function is responsible for cleaning up the test environment
         """
         print("----------------------------------------------------------------")
 
