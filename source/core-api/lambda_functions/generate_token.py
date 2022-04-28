@@ -33,15 +33,15 @@ user_agent_extra = {"user_agent_extra": SOLUTION_ID}
 user_config = config.Config(**user_agent_extra)
 boto_session = boto3.session.Session()
 region = boto_session.region_name
-ddb_resource = boto3.resource('dynamodb', endpoint_url="https://dynamodb."+region+".amazonaws.com", config=user_config)
+ddb_resource = boto3.resource('dynamodb', endpoint_url=f"https://dynamodb.{region}.amazonaws.com", config=user_config)
 ddb_table = ddb_resource.Table(DDB_TABLE_NAME)
-events_client = boto3.client('events', endpoint_url="https://events."+region+".amazonaws.com", config=user_config)
+events_client = boto3.client('events', endpoint_url=f"https://events.{region}.amazonaws.com", config=user_config)
 
-secrets_client = boto3.client('secretsmanager', endpoint_url="https://secretsmanager."+region+".amazonaws.com", config=user_config)
+secrets_client = boto3.client('secretsmanager', endpoint_url=f"https://secretsmanager.{region}.amazonaws.com", config=user_config)
 response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/redis-auth")
 redis_auth = response.get("SecretString")
 rc = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, ssl=True, decode_responses=True, password=redis_auth)
-   
+
 def lambda_handler(event, context):
     """
     This function is the entry handler for Lambda.
@@ -59,8 +59,7 @@ def lambda_handler(event, context):
                   'Access-Control-Allow-Origin': '*'
             }
     if client_event_id == EVENT_ID and is_valid_rid(request_id):
-        queue_number = rc.hget(request_id, "queue_number")
-        if queue_number:
+        if queue_number := rc.hget(request_id, "queue_number"):
             if int(queue_number) <= int(rc.get(SERVING_COUNTER)):
                 # check to see if there's a valid token for this request in dynamo. if there isn't one or already expired,
                 response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/jwk-private")
@@ -89,7 +88,7 @@ def lambda_handler(event, context):
                 access_token = jwt.JWT(header={"alg": "RS256", "typ": "JWT", "kid": keypair.key_id}, claims=claims)
                 access_token.make_signed_token(keypair)
                 print(f"access token header: {access_token.serialize().split('.')[0]}")
-                
+
                 # create ID token claims
                 # Bandit B105: not a hardcoded password
                 claims["token_use"] = "id" # nosec
@@ -149,26 +148,26 @@ def lambda_handler(event, context):
                     rc.incr(TOKEN_COUNTER, 1)
 
                 except ClientError as e:
-                    if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
-                        # query the item, and calculate when it expired
-                        result = ddb_table.query(
-                            KeyConditionExpression=Key('request_id').eq(request_id))
-                        expires = int(result['Items'][0]['expires'])
-                        cur_time = int(time.time())
-                        remaining_time = expires - cur_time
-                        response = {
-                            "statusCode": 200,
-                            "headers": headers,
-                            "body": json.dumps({
-                                "access_token": result['Items'][0]['access_token'],
-                                "refresh_token": result['Items'][0]['refresh_token'],
-                                "id_token": result['Items'][0]['id_token'],
-                                "token_type": "Bearer",
-                                "expires_in": remaining_time
-                            })
-                        }
-                    else:
+                    if e.response['Error']['Code'] != 'ConditionalCheckFailedException':
                         raise e
+                    result = ddb_table.query(KeyConditionExpression=Key('request_id').eq(request_id))
+
+                    expires = int(result['Items'][0]['expires'])
+                    cur_time = int(time.time())
+                    remaining_time = expires - cur_time
+                    response = {
+                        "statusCode": 200, 
+                        "headers": headers, 
+                        "body": json.dumps(
+                                {
+                                    "access_token": result['Items'][0]['access_token'], \
+                                    "refresh_token": result['Items'][0]['refresh_token'], \
+                                    "id_token": result['Items'][0]['id_token'], \
+                                    "token_type": "Bearer", "expires_in": remaining_time
+                                }
+                            )
+                        }
+
                 except Exception as e:
                     print(e)
                     raise e
