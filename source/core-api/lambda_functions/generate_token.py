@@ -33,11 +33,11 @@ user_agent_extra = {"user_agent_extra": SOLUTION_ID}
 user_config = config.Config(**user_agent_extra)
 boto_session = boto3.session.Session()
 region = boto_session.region_name
-ddb_resource = boto3.resource('dynamodb', endpoint_url=f"https://dynamodb.{region}.amazonaws.com", config=user_config)
+ddb_resource = boto3.resource('dynamodb', endpoint_url=f'https://dynamodb.{region}.amazonaws.com', config=user_config)
 ddb_table = ddb_resource.Table(DDB_TABLE_NAME)
-events_client = boto3.client('events', endpoint_url=f"https://events.{region}.amazonaws.com", config=user_config)
+events_client = boto3.client('events', endpoint_url='https://events.{region}.amazonaws.com', config=user_config)
 
-secrets_client = boto3.client('secretsmanager', endpoint_url=f"https://secretsmanager.{region}.amazonaws.com", config=user_config)
+secrets_client = boto3.client('secretsmanager', endpoint_url=f'https://secretsmanager.{region}.amazonaws.com', config=user_config)
 response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/redis-auth")
 redis_auth = response.get("SecretString")
 rc = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, ssl=True, decode_responses=True, password=redis_auth)
@@ -121,6 +121,11 @@ def lambda_handler(event, context):
                         Item=item,
                         ConditionExpression="attribute_not_exists(request_id)"
                     )
+                    x = ddb_table.get_item(
+                        Key = { "event_id": EVENT_ID }
+                    )
+                    if not x:
+                        print('hi')
                     response = {
                         "statusCode": 200,
                         "headers": headers,
