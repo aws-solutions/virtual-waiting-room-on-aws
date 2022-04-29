@@ -4,7 +4,7 @@ name: Push Workflow
 env:
   REGION: us-east-1
   DIST_OUTPUT_BUCKET: sb-poc-solutions-features
-  REGIONS_TO_DEPLOY: "us-west-2 us-east-1"
+  REGIONS_TO_DEPLOY: "us-west-2 us-east-1 eu-west-1"
   RELEASE_OUTPUT_BUCKET: sb-poc-solutions
   VERSION: ${{ secrets.VERSION }}
   RELEASE_BRANCH: main 
@@ -254,24 +254,24 @@ jobs:
             cat error.txt
             exit 1
           fi
-      # - name: Configure AWS credentials
-      #   uses: aws-actions/configure-aws-credentials@master
-      #   with:
-      #     role-to-assume: ${{ secrets.VWR_ROLE_ARN }}
-      #     aws-region: ${{ env.REGION }}
-      #     role-duration-seconds: 900
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@master
+        with:
+          role-to-assume: ${{ secrets.VWR_ROLE_ARN }}
+          aws-region: ${{ env.REGION }}
+          role-duration-seconds: 900
       - name: Restore deployment directory from cache
         uses: actions/cache@v2
         id: cache-deployment
         with:
           path: deployment/
           key: ${{ github.sha }}
-      # - name: Upload to S3
-      #   # deploy to our test bucket if not doing a release
-      #   if: ${{github.ref_name != env.RELEASE_BRANCH}}
-      #   run: |
-      #     cd deployment
-      #     ./deploy.sh -b $DIST_OUTPUT_BUCKET -s ${{ github.event.repository.name }} -v $VERSION -r "$REGIONS_TO_DEPLOY" -a none -t dev
+      - name: Upload to S3
+        # deploy to our test bucket if not doing a release
+        if: ${{github.ref_name != env.RELEASE_BRANCH}}
+        run: |
+          cd deployment
+          ./deploy.sh -b $DIST_OUTPUT_BUCKET -s ${{ github.event.repository.name }} -v $VERSION -r "$REGIONS_TO_DEPLOY"
       - name: Zip up regional and global assets
         run: |
           cd deployment
