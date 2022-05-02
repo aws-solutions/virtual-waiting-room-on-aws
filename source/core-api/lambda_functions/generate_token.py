@@ -43,6 +43,7 @@ response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/redis
 redis_auth = response.get("SecretString")
 rc = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, ssl=True, decode_responses=True, password=redis_auth)
 
+
 def lambda_handler(event, context):
     """
     This function is the entry handler for Lambda.
@@ -63,22 +64,26 @@ def lambda_handler(event, context):
     if client_event_id == EVENT_ID and is_valid_rid(request_id):
         if queue_number := rc.hget(request_id, "queue_number"):
             if int(queue_number) <= int(rc.get(SERVING_COUNTER)):
-                response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/jwk-public")
-                if ddb_table.get_item(Key={"request_id": request_id}):
-                    print('hi')
-                    return response
-                
-                iat = int(time.time())  # issued-at and not-before can be the same time (epoch seconds)
+                # response = secrets_client.get_secret_value(
+                    # SecretId=f"{SECRET_NAME_PREFIX}/jwk-public")
+                if item := ddb_table.get_item(Key={"request_id": request_id}):
+                    return item
+
+                # issued-at and not-before can be the same time (epoch seconds)
+                iat = int(time.time())
                 nbf = iat
-                exp = iat + VALIDITY_PERIOD # expiration (exp) is a time after iat and nbf, like 1 hour (epoch seconds)
-                claims = create_claims(request_id, issuer, queue_number, iat, nbf, exp)
+                # expiration (exp) is a time after iat and nbf, like 1 hour (epoch seconds)
+                exp = iat + VALIDITY_PERIOD
+                claims = create_claims(
+                    request_id, issuer, queue_number, iat, nbf, exp)
 
                 keypair = create_jwk_keypair()
                 access_token = make_jwt_token(keypair, claims, "access")
                 id_token = make_jwt_token(keypair, claims, "id")
                 refresh_token = make_jwt_token(keypair, claims, "refresh")
 
-                response = save_token_dynamodb(request_id, queue_number, headers, iat, nbf, exp, access_token, id_token, refresh_token)
+                response = save_token_dynamodb(
+                    request_id, queue_number, headers, iat, nbf, exp, access_token, id_token, refresh_token)
             else:
                 response = {
                     "statusCode": HTTPStatus.ACCEPTED.value,
@@ -100,20 +105,22 @@ def lambda_handler(event, context):
 
     return response
 
+
 def create_claims(request_id, issuer, queue_number, iat, nbf, exp) -> dict:
     return {
-        'aud': EVENT_ID, 
-        'sub': request_id, 
-        'queue_position': queue_number, 
-        'token_use': 'access', 
-        'iat': iat, 
-        'nbf': nbf, 
-        'exp': exp, 
+        'aud': EVENT_ID,
+        'sub': request_id,
+        'queue_position': queue_number,
+        'token_use': 'access',
+        'iat': iat,
+        'nbf': nbf,
+        'exp': exp,
         'iss': issuer
     }
 
+
 def make_jwt_token(keypair, claims, token_use) -> jwt.JWT:
-    # create jwt claims token 
+    # create jwt claims token
     # Bandit B105: not a hardcoded password
     claims["token_use"] = token_use  # nosec
     jwt_token = jwt.JWT(
@@ -123,14 +130,17 @@ def make_jwt_token(keypair, claims, token_use) -> jwt.JWT:
 
     jwt_token.make_signed_token(keypair)
     print(f"{token_use} token header: {jwt_token.serialize().split('.')[0]}")
-    
+
     return jwt_token
 
+
 def create_jwk_keypair() -> jwk.JWK:
-    response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/jwk-private")
+    response = secrets_client.get_secret_value(
+        SecretId=f"{SECRET_NAME_PREFIX}/jwk-private")
     private_key = response.get("SecretString")
     # create JWK format keys
     return jwk.JWK.from_json(private_key)
+
 
 def save_token_dynamodb(request_id, queue_number, headers, iat, nbf, exp, access_token, id_token, refresh_token):
     # save claims info and tokens in dynamo
@@ -141,9 +151,9 @@ def save_token_dynamodb(request_id, queue_number, headers, iat, nbf, exp, access
         "not_before": nbf,
         "expires": exp,
         "queue_number": queue_number,
-        "access_token": access_token.serialize(), #scrub
-        "id_token": id_token.serialize(),#scrub
-        "refresh_token": refresh_token.serialize(),#scrub
+        "access_token": access_token.serialize(),  # scrub
+        "id_token": id_token.serialize(),  # scrub
+        "refresh_token": refresh_token.serialize(),  # scrub
         "session_status": 0
     }
 
@@ -165,6 +175,8 @@ def save_token_dynamodb(request_id, queue_number, headers, iat, nbf, exp, access
         }
 
         write_to_eventbus(request_id)
+        # increment token counter
+        rc.incr(TOKEN_COUNTER, 1)
     except ClientError as e:
         response = handle_client_errors(e, request_id, headers)
     except Exception as e:
@@ -172,6 +184,7 @@ def save_token_dynamodb(request_id, queue_number, headers, iat, nbf, exp, access
         raise e
 
     return response
+
 
 def write_to_eventbus(request_id) -> None:
     # write to event bus
@@ -190,8 +203,7 @@ def write_to_eventbus(request_id) -> None:
             }
         ]
     )
-    # increment token counter
-    rc.incr(TOKEN_COUNTER, 1)
+
 
 def handle_client_errors(e, request_id, headers):
     if e.response['Error']['Code'] != 'ConditionalCheckFailedException':
@@ -203,13 +215,13 @@ def handle_client_errors(e, request_id, headers):
     cur_time = int(time.time())
     remaining_time = expires - cur_time
     result = {
-        "statusCode": HTTPStatus.OK.value, 
-        "headers": headers, 
+        "statusCode": HTTPStatus.OK.value,
+        "headers": headers,
         "body": json.dumps(
             {
-                "access_token": result['Items'][0]['access_token'], \
-                "refresh_token": result['Items'][0]['refresh_token'], \
-                "id_token": result['Items'][0]['id_token'], \
+                "access_token": result['Items'][0]['access_token'],
+                "refresh_token": result['Items'][0]['refresh_token'],
+                "id_token": result['Items'][0]['id_token'],
                 "token_type": "Bearer", "expires_in": remaining_time
             }
         )
