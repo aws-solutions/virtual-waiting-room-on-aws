@@ -100,7 +100,7 @@ def lambda_handler(event, context):
 
     return response
 
-def create_claims(request_id, issuer, queue_number, iat, nbf, exp):
+def create_claims(request_id, issuer, queue_number, iat, nbf, exp) -> dict:
     return {
         'aud': EVENT_ID, 
         'sub': request_id, 
@@ -117,7 +117,7 @@ def make_jwt_token(keypair, claims, token_use) -> jwt.JWT:
     # Bandit B105: not a hardcoded password
     claims["token_use"] = token_use  # nosec
     jwt_token = jwt.JWT(
-        header={"alg": "RS256", "typ": "JWT", "kid": keypair.key_id}, 
+        header={"alg": "RS256", "typ": "JWT", "kid": keypair.key_id},
         claims=claims,
     )
 
@@ -126,7 +126,7 @@ def make_jwt_token(keypair, claims, token_use) -> jwt.JWT:
     
     return jwt_token
 
-def create_jwk_keypair():
+def create_jwk_keypair() -> jwk.JWK:
     response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/jwk-private")
     private_key = response.get("SecretString")
     # create JWK format keys
@@ -141,9 +141,9 @@ def save_token_dynamodb(request_id, queue_number, headers, iat, nbf, exp, access
         "not_before": nbf,
         "expires": exp,
         "queue_number": queue_number,
-        "access_token": access_token.serialize(),
-        "id_token": id_token.serialize(),
-        "refresh_token": refresh_token.serialize(),
+        "access_token": access_token.serialize(), #scrub
+        "id_token": id_token.serialize(),#scrub
+        "refresh_token": refresh_token.serialize(),#scrub
         "session_status": 0
     }
 
@@ -170,6 +170,7 @@ def save_token_dynamodb(request_id, queue_number, headers, iat, nbf, exp, access
     except Exception as e:
         print(e)
         raise e
+
     return response
 
 def write_to_eventbus(request_id) -> None:
