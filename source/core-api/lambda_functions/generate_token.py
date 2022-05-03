@@ -256,24 +256,22 @@ def handle_client_errors(e, request_id, headers, keypair):
         raise e
     record = ddb_table.query(KeyConditionExpression=Key('request_id').eq(request_id))
 
-    expires = int(response['Items'][0]['expires'])
+    expires = int(record['Items'][0]['expires'])
     cur_time = int(time.time())
     remaining_time = expires - cur_time
 
     claims = create_claims_from_record(record)
     (access_token, refresh_token, id_token) = create_tokens(keypair, claims)
-    response = {
-        "statusCode": HTTPStatus.OK.value,
-        "headers": headers,
+    return {
+        "statusCode": HTTPStatus.OK.value, 
+        "headers": headers, 
         "body": json.dumps(
             {
-                "access_token" : access_token.serialize(),
-                "refresh_token": refresh_token.serialize(),
-                "id_token": id_token.serialize(),
+                "access_token": access_token.serialize(),
+                "refresh_token": refresh_token.serialize(), 
+                "id_token": id_token.serialize(), 
                 "token_type": "Bearer", 
                 "expires_in": remaining_time
             }
         )
     }
-
-    return response
