@@ -133,11 +133,7 @@ def make_jwt_token(keypair, claims, token_use) -> jwt.JWT:
     """
     # Bandit B105: not a hardcoded password
     claims["token_use"] = token_use  # nosec
-    jwt_token = jwt.JWT(
-        header={"alg": "RS256", "typ": "JWT", "kid": keypair.key_id},
-        claims=claims,
-    )
-
+    jwt_token = jwt.JWT(header={"alg": "RS256", "typ": "JWT", "kid": keypair.key_id}, claims=claims)
     jwt_token.make_signed_token(keypair)
     print(f"{token_use} token header: {jwt_token.serialize().split('.')[0]}")
 
@@ -165,7 +161,7 @@ def create_claims_from_record(record):
         record['Items'][0]['queue_number'], 
         record['Items'][0]['issued_at'], 
         record['Items'][0]['not_before'], 
-        record['Items'][0]['expires'],
+        record['Items'][0]['expires']
     )
 
 
