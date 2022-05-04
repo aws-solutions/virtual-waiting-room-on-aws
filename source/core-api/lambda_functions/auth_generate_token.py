@@ -37,7 +37,7 @@ user_agent_extra = {"user_agent_extra": SOLUTION_ID}
 user_config = config.Config(**user_agent_extra)
 ddb_resource = boto3.resource('dynamodb', endpoint_url=f'https://dynamodb.{region}.amazonaws.com', config=user_config)
 ddb_table = ddb_resource.Table(DDB_TABLE_NAME)
-events_client = boto3.client('events', endpoint_url='https://events.{region}.amazonaws.com', config=user_config)
+events_client = boto3.client('events', endpoint_url=f'https://events.{region}.amazonaws.com', config=user_config)
 
 secrets_client = boto3.client('secretsmanager', endpoint_url=f'https://secretsmanager.{region}.amazonaws.com', config=user_config)
 response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/redis-auth")
