@@ -65,6 +65,7 @@ def lambda_handler(event, context):
         if queue_number := rc.hget(request_id, "queue_number"):
             if int(queue_number) <= int(rc.get(SERVING_COUNTER)):
                 keypair = create_jwk_keypair()
+                # record for the request_id is in the ddb_table
                 if record := ddb_table.get_item(Key={"request_id": request_id}):
                     claims = create_claims_from_record(record)
                     (access_token, refresh_token, id_token) = create_tokens(keypair, claims)
@@ -73,11 +74,27 @@ def lambda_handler(event, context):
                     
                     return response
 
+                # record for the request_id is not in ddb_table, create and save record to ddb_table
                 iat = int(time.time())  # issued-at and not-before can be the same time (epoch seconds)
                 nbf = iat
                 exp = iat + VALIDITY_PERIOD # expiration (exp) is a time after iat and nbf, like 1 hour (epoch seconds)
                 claims = create_claims(request_id, issuer, queue_number, iat, nbf, exp)
-                response = save_record_to_dynamodb(request_id, queue_number, headers, iat, nbf, exp, issuer, keypair, claims)
+                record = {
+                    "event_id": EVENT_ID,
+                    "request_id": request_id,
+                    "issued_at": iat,
+                    "not_before": nbf,
+                    "expires": exp,
+                    "queue_number": queue_number,
+                    'iss': issuer,
+                    "session_status": 0
+                }
+
+                response, is_item_put = save_record_to_dynamodb(record, request_id, keypair, claims, headers)
+                if is_item_put:
+                    write_to_eventbus(request_id)
+                    # increment token counter
+                    rc.incr(TOKEN_COUNTER, 1)
             else:
                 response = {
                     "statusCode": HTTPStatus.ACCEPTED.value,
@@ -99,6 +116,7 @@ def lambda_handler(event, context):
     
     return response
 
+
 def create_jwk_keypair() -> jwk.JWK:
     """
     Create JWK key object
@@ -107,63 +125,6 @@ def create_jwk_keypair() -> jwk.JWK:
     private_key = response.get("SecretString")
     # create JWK format keys
     return jwk.JWK.from_json(private_key)
-
-
-def create_claims_from_record(record):
-    """
-    Parse DynamoDB table record and create claims
-    """
-    return create_claims(
-        record['Items'][0]['request_id'], 
-        record['Items'][0]['issuer'], 
-        record['Items'][0]['queue_number'], 
-        record['Items'][0]['issued_at'], 
-        record['Items'][0]['not_before'], 
-        record['Items'][0]['expires'],
-    )
-
-
-def create_return_response(headers, status_code, expiry_time, access_token, refresh_token, id_token):
-    return {
-        "statusCode": status_code, 
-        "headers": headers, 
-        "body": json.dumps(
-            {
-                "access_token": access_token.serialize(),
-                "refresh_token": refresh_token.serialize(), 
-                "id_token": id_token.serialize(), 
-                "token_type": "Bearer", 
-                "expires_in": expiry_time
-            }
-        )
-    }
-
-
-def create_tokens(keypair, claims):
-    """
-    Create access, refresh and id tokens 
-    """
-    access_token = make_jwt_token(keypair, claims, "access")
-    refresh_token = make_jwt_token(keypair, claims, "refresh")
-    id_token = make_jwt_token(keypair, claims, "id")
-
-    return (access_token, refresh_token, id_token)
-
-
-def create_claims(request_id, issuer, queue_number, iat, nbf, exp):
-    """
-    Create claims
-    """
-    return {
-        'aud': EVENT_ID,
-        'sub': request_id,
-        'queue_position': queue_number,
-        'token_use': 'access',
-        'iat': iat,
-        'nbf': nbf,
-        'exp': exp,
-        'iss': issuer
-    }
 
 
 def make_jwt_token(keypair, claims, token_use) -> jwt.JWT:
@@ -183,21 +144,52 @@ def make_jwt_token(keypair, claims, token_use) -> jwt.JWT:
     return jwt_token
 
 
-def save_record_to_dynamodb(request_id, queue_number, headers, iat, nbf, exp, issuer, keypair, claims):
+def create_tokens(keypair, claims):
+    """
+    Create access, refresh and id tokens 
+    """
+    access_token = make_jwt_token(keypair, claims, "access")
+    refresh_token = make_jwt_token(keypair, claims, "refresh")
+    id_token = make_jwt_token(keypair, claims, "id")
+
+    return (access_token, refresh_token, id_token)
+
+
+def create_claims_from_record(record):
+    """
+    Parse DynamoDB table record and create claims
+    """
+    return create_claims(
+        record['Items'][0]['request_id'], 
+        record['Items'][0]['issuer'], 
+        record['Items'][0]['queue_number'], 
+        record['Items'][0]['issued_at'], 
+        record['Items'][0]['not_before'], 
+        record['Items'][0]['expires'],
+    )
+
+
+def create_claims(request_id, issuer, queue_number, iat, nbf, exp):
+    """
+    Create claims
+    """
+    return {
+        'aud': EVENT_ID,
+        'sub': request_id,
+        'queue_position': queue_number,
+        'token_use': 'access',
+        'iat': iat,
+        'nbf': nbf,
+        'exp': exp,
+        'iss': issuer
+    }
+
+
+def save_record_to_dynamodb(record, request_id, keypair, claims, headers):
     """
     Save record to Dyanamo DB
     """
-    record = {
-        "event_id": EVENT_ID,
-        "request_id": request_id,
-        "issued_at": iat,
-        "not_before": nbf,
-        "expires": exp,
-        "queue_number": queue_number,
-        'iss': issuer,
-        "session_status": 0
-    }
-
+    is_item_put = False
     try:
         ddb_table.put_item(
             Item=record,
@@ -205,17 +197,14 @@ def save_record_to_dynamodb(request_id, queue_number, headers, iat, nbf, exp, is
         )
         (access_token, refresh_token, id_token) = create_tokens(keypair, claims)    
         response = create_return_response(headers, HTTPStatus.OK.value, VALIDITY_PERIOD, access_token, refresh_token, id_token)
-
-        write_to_eventbus(request_id)
-        # increment token counter
-        rc.incr(TOKEN_COUNTER, 1)
+        is_item_put = True
     except ClientError as e:
         response = handle_client_errors(e, request_id, headers, keypair)
     except Exception as e:
         print(e)
         raise e
 
-    return response
+    return response, is_item_put
 
 
 def write_to_eventbus(request_id) -> None:
@@ -243,6 +232,7 @@ def handle_client_errors(e, request_id, headers, keypair):
     """
     Handle client-error when put_item fails
     Exception occurs if the token already exists in the database
+    Unlikely situation
     """
     if e.response['Error']['Code'] != 'ConditionalCheckFailedException':
         raise e
@@ -256,3 +246,20 @@ def handle_client_errors(e, request_id, headers, keypair):
     (access_token, refresh_token, id_token) = create_tokens(keypair, claims)
 
     return create_return_response(headers, HTTPStatus.OK.value, remaining_time, access_token, refresh_token, id_token)
+
+
+def create_return_response(headers, status_code, expiry_time, access_token, refresh_token, id_token):
+    return {
+        "statusCode": status_code, 
+        "headers": headers, 
+        "body": json.dumps(
+            {
+                "access_token": access_token.serialize(),
+                "refresh_token": refresh_token.serialize(), 
+                "id_token": id_token.serialize(), 
+                "token_type": "Bearer", 
+                "expires_in": expiry_time
+            }
+        )
+    }
+    
