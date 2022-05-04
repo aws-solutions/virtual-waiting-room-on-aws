@@ -13,6 +13,7 @@ import json
 import redis
 import boto3
 from jwcrypto import jwk, jwt
+from http  import HTTPStatus
 from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
 from botocore import config
@@ -34,11 +35,11 @@ boto_session = boto3.session.Session()
 region = boto_session.region_name
 user_agent_extra = {"user_agent_extra": SOLUTION_ID}
 user_config = config.Config(**user_agent_extra)
-ddb_resource = boto3.resource('dynamodb', endpoint_url="https://dynamodb."+region+".amazonaws.com", config=user_config)
+ddb_resource = boto3.resource('dynamodb', endpoint_url=f'https://dynamodb.{region}.amazonaws.com', config=user_config)
 ddb_table = ddb_resource.Table(DDB_TABLE_NAME)
-events_client = boto3.client('events', endpoint_url="https://events."+region+".amazonaws.com", config=user_config)
+events_client = boto3.client('events', endpoint_url='https://events.{region}.amazonaws.com', config=user_config)
 
-secrets_client = boto3.client('secretsmanager', endpoint_url="https://secretsmanager."+region+".amazonaws.com", config=user_config)
+secrets_client = boto3.client('secretsmanager', endpoint_url=f'https://secretsmanager.{region}.amazonaws.com', config=user_config)
 response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/redis-auth")
 redis_auth = response.get("SecretString")
 rc = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, ssl=True, decode_responses=True, password=redis_auth)
@@ -66,133 +67,198 @@ def lambda_handler(event, context):
         'Access-Control-Allow-Origin': '*'
     }
     if client_event_id == EVENT_ID and is_valid_rid(request_id):
-        queue_number = rc.hget(request_id, "queue_number")
-        if queue_number:
+        if queue_number := rc.hget(request_id, "queue_number"):
             if int(queue_number) <= int(rc.get(SERVING_COUNTER)):
-                response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/jwk-private")
-                private_key = response.get("SecretString")
-                # create JWK format keys
-                keypair = jwk.JWK.from_json(private_key)
-                # issued-at and not-before can be the same time (epoch seconds)
-                iat = int(time.time())
+                keypair = create_jwk_keypair()
+                if record := ddb_table.get_item(Key={"request_id": request_id}):
+                    claims = create_claims_from_record(record)
+                    (access_token, refresh_token, id_token) = create_tokens(keypair, claims)
+                    response = create_return_response(
+                        headers, HTTPStatus.OK.value, record['Items'][0]['expires'], access_token, refresh_token, id_token)
+                    
+                    return response
+
+                iat = int(time.time())  # issued-at and not-before can be the same time (epoch seconds)
                 nbf = iat
-                # expiration (exp) is a time after iat and nbf, like 1 hour (epoch seconds)
-                exp = iat + VALIDITY_PERIOD
-
-                # create access token claims
-                claims = {
-                    'aud': EVENT_ID,
-                    'sub': request_id,
-                    'queue_position': queue_number,
-                    'token_use': 'access',
-                    'iat': iat,
-                    'nbf': nbf,
-                    'exp': exp,
-                    'iss': issuer
-                }
-
-                access_token = jwt.JWT(header={"alg": "RS256", "typ": "JWT"}, claims=claims)
-                access_token.make_signed_token(keypair)
-                print(f"access token header: {access_token.serialize().split('.')[0]}")
-                
-                # create ID token claims
-                # Bandit B105: not a hardcoded password
-                claims["token_use"] = "id" # nosec
-                id_token = jwt.JWT(header={"alg": "RS256", "typ": "JWT"}, claims=claims)
-                id_token.make_signed_token(keypair)
-                print(f"id token header: {id_token.serialize().split('.')[0]}")
-
-                # create refresh token claims
-                # Bandit B105: not a hardcoded password
-                claims["token_use"]="refresh" # nosec
-                refresh_token = jwt.JWT(header={"alg": "RS256", "typ": "JWT"}, claims=claims)
-                refresh_token.make_signed_token(keypair)
-                print(f"refresh token header: {refresh_token.serialize().split('.')[0]}")
-
-                # save claims info and tokens in dynamo
-                item = {
-                        "event_id": EVENT_ID,
-                        "request_id": request_id,
-                        "issued_at": iat,
-                        "not_before": nbf,
-                        "expires": exp,
-                        "queue_number": queue_number,
-                        "access_token": access_token.serialize(),
-                        "id_token": id_token.serialize(),
-                        "refresh_token": refresh_token.serialize(),
-                        "session_status": 0
-                    }
-                try:
-                    ddb_table.put_item(
-                        Item=item,
-                        ConditionExpression="attribute_not_exists(request_id)"
-                        )
-                    response = {
-                        "statusCode": 200,
-                        "headers": headers,
-                        "body": json.dumps({
-                            "access_token": access_token.serialize(),
-                            "refresh_token": refresh_token.serialize(),
-                            "id_token": id_token.serialize(),
-                            "token_type": "Bearer",
-                            "expires_in": VALIDITY_PERIOD
-                        })
-                    }
-                    # write to event bus
-                    events_client.put_events(
-                        Entries=[
-                            {
-                                'Source': 'custom.waitingroom',
-                                'DetailType': 'token_generated',
-                                'Detail': json.dumps({"event_id": EVENT_ID,
-                                            "request_id": request_id}),
-                                'EventBusName': EVENT_BUS_NAME
-                            }
-                        ]
-                    )
-                    # increment token counter
-                    rc.incr(TOKEN_COUNTER, 1)
-                # exception occurs if the token already exists in the database
-                except ClientError as e:
-                    if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
-                        # query the item, and calculate when it expired
-                        result = ddb_table.query(
-                            KeyConditionExpression=Key('request_id').eq(request_id))
-                        expires = int(result['Items'][0]['expires'])
-                        cur_time = int(time.time())
-                        remaining_time = expires - cur_time
-                        response = { 
-                            "statusCode": 200,
-                            "headers": headers,
-                            "body": json.dumps({
-                                "access_token":result['Items'][0]['access_token'],
-                                "refresh_token":result['Items'][0]['refresh_token'],
-                                "id_token":result['Items'][0]['id_token'],
-                                "token_type":"Bearer", 
-                                "expires_in":remaining_time
-                            })
-                        }
-                    else:
-                        raise e
-                except Exception as e:
-                    print(e)
-                    raise e
+                exp = iat + VALIDITY_PERIOD # expiration (exp) is a time after iat and nbf, like 1 hour (epoch seconds)
+                claims = create_claims(request_id, issuer, queue_number, iat, nbf, exp)
+                response = save_record_to_dynamodb(request_id, queue_number, headers, iat, nbf, exp, issuer, keypair, claims)
             else:
-                response = { 
-                    "statusCode": 202,
+                response = {
+                    "statusCode": HTTPStatus.ACCEPTED.value,
                     "headers": headers,
                     "body": json.dumps({"error": "Request ID not being served yet"})
                 }
         else:
             response = {
-                "statusCode": 404,
+                "statusCode": HTTPStatus.NOT_FOUND.value,
                 "headers": headers,
                 "body": json.dumps({"error": "Invalid request ID"})
             }
     else:
-        response = { 
-                "statusCode": 400,
-                "headers": headers,
-                "body": json.dumps({"error": "Invalid event or request ID"})
-            }
+        response = {
+            "statusCode": HTTPStatus.BAD_REQUEST.value,
+            "headers": headers,
+            "body": json.dumps({"error": "Invalid event or request ID"})
+        }
+    
     return response
+
+def create_jwk_keypair() -> jwk.JWK:
+    """
+    Create JWK key object
+    """
+    response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/jwk-private")
+    private_key = response.get("SecretString")
+    # create JWK format keys
+    return jwk.JWK.from_json(private_key)
+
+
+def create_claims_from_record(record):
+    """
+    Parse DynamoDB table record and create claims
+    """
+    return create_claims(
+        record['Items'][0]['request_id'], 
+        record['Items'][0]['issuer'], 
+        record['Items'][0]['queue_number'], 
+        record['Items'][0]['issued_at'], 
+        record['Items'][0]['not_before'], 
+        record['Items'][0]['expires'],
+    )
+
+
+def create_return_response(headers, status_code, expiry_time, access_token, refresh_token, id_token):
+    return {
+        "statusCode": status_code, 
+        "headers": headers, 
+        "body": json.dumps(
+            {
+                "access_token": access_token.serialize(),
+                "refresh_token": refresh_token.serialize(), 
+                "id_token": id_token.serialize(), 
+                "token_type": "Bearer", 
+                "expires_in": expiry_time
+            }
+        )
+    }
+
+
+def create_tokens(keypair, claims):
+    """
+    Create access, refresh and id tokens 
+    """
+    access_token = make_jwt_token(keypair, claims, "access")
+    refresh_token = make_jwt_token(keypair, claims, "refresh")
+    id_token = make_jwt_token(keypair, claims, "id")
+
+    return (access_token, refresh_token, id_token)
+
+
+def create_claims(request_id, issuer, queue_number, iat, nbf, exp):
+    """
+    Create claims
+    """
+    return {
+        'aud': EVENT_ID,
+        'sub': request_id,
+        'queue_position': queue_number,
+        'token_use': 'access',
+        'iat': iat,
+        'nbf': nbf,
+        'exp': exp,
+        'iss': issuer
+    }
+
+
+def make_jwt_token(keypair, claims, token_use) -> jwt.JWT:
+    """
+    create jwt claims token
+    """
+    # Bandit B105: not a hardcoded password
+    claims["token_use"] = token_use  # nosec
+    jwt_token = jwt.JWT(
+        header={"alg": "RS256", "typ": "JWT"},
+        claims=claims,
+    )
+
+    jwt_token.make_signed_token(keypair)
+    print(f"{token_use} token header: {jwt_token.serialize().split('.')[0]}")
+
+    return jwt_token
+
+
+def save_record_to_dynamodb(request_id, queue_number, headers, iat, nbf, exp, issuer, keypair, claims):
+    """
+    Save record to Dyanamo DB
+    """
+    record = {
+        "event_id": EVENT_ID,
+        "request_id": request_id,
+        "issued_at": iat,
+        "not_before": nbf,
+        "expires": exp,
+        "queue_number": queue_number,
+        'iss': issuer,
+        "session_status": 0
+    }
+
+    try:
+        ddb_table.put_item(
+            Item=record,
+            ConditionExpression="attribute_not_exists(request_id)"
+        )
+        (access_token, refresh_token, id_token) = create_tokens(keypair, claims)    
+        response = create_return_response(headers, HTTPStatus.OK.value, VALIDITY_PERIOD, access_token, refresh_token, id_token)
+
+        write_to_eventbus(request_id)
+        # increment token counter
+        rc.incr(TOKEN_COUNTER, 1)
+    except ClientError as e:
+        response = handle_client_errors(e, request_id, headers, keypair)
+    except Exception as e:
+        print(e)
+        raise e
+
+    return response
+
+
+def write_to_eventbus(request_id) -> None:
+    """
+    write to event bus
+    """
+    events_client.put_events(
+        Entries=[
+            {
+                'Source': 'custom.waitingroom',
+                'DetailType': 'token_generated',
+                'Detail': json.dumps(
+                    {
+                        "event_id": EVENT_ID,
+                        "request_id": request_id
+                    }
+                ),
+                'EventBusName': EVENT_BUS_NAME
+            }
+        ]
+    )
+
+
+def handle_client_errors(e, request_id, headers, keypair):
+    """
+    Handle client-error when put_item fails
+    Exception occurs if the token already exists in the database
+    """
+    if e.response['Error']['Code'] != 'ConditionalCheckFailedException':
+        raise e
+    record = ddb_table.query(KeyConditionExpression=Key('request_id').eq(request_id))
+
+    expires = int(record['Items'][0]['expires'])
+    cur_time = int(time.time())
+    remaining_time = expires - cur_time
+
+    claims = create_claims_from_record(record)
+    (access_token, refresh_token, id_token) = create_tokens(keypair, claims)
+
+    return create_return_response(headers, HTTPStatus.OK.value, remaining_time, access_token, refresh_token, id_token)
+

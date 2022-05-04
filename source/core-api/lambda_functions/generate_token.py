@@ -68,14 +68,16 @@ def lambda_handler(event, context):
                 if record := ddb_table.get_item(Key={"request_id": request_id}):
                     claims = create_claims_from_record(record)
                     (access_token, refresh_token, id_token) = create_tokens(keypair, claims)
-                    response = create_return_response(headers, HTTPStatus.OK.value, record['Items'][0]['expires'], access_token, refresh_token, id_token)
+                    response = create_return_response(
+                        headers, HTTPStatus.OK.value, record['Items'][0]['expires'], access_token, refresh_token, id_token)
+                    
                     return response
 
                 iat = int(time.time())  # issued-at and not-before can be the same time (epoch seconds)
                 nbf = iat
                 exp = iat + VALIDITY_PERIOD # expiration (exp) is a time after iat and nbf, like 1 hour (epoch seconds)
                 claims = create_claims(request_id, issuer, queue_number, iat, nbf, exp)
-                response = save_record_dynamodb(request_id, queue_number, headers, iat, nbf, exp, issuer, keypair, claims)
+                response = save_record_to_dynamodb(request_id, queue_number, headers, iat, nbf, exp, issuer, keypair, claims)
             else:
                 response = {
                     "statusCode": HTTPStatus.ACCEPTED.value,
@@ -97,16 +99,14 @@ def lambda_handler(event, context):
     
     return response
 
-
-def create_tokens(keypair, claims):
+def create_jwk_keypair() -> jwk.JWK:
     """
-    Create access, refresh and id tokens 
+    Create JWK key object
     """
-    access_token = make_jwt_token(keypair, claims, "access")
-    refresh_token = make_jwt_token(keypair, claims, "refresh")
-    id_token = make_jwt_token(keypair, claims, "id")
-
-    return (access_token, refresh_token, id_token)
+    response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/jwk-private")
+    private_key = response.get("SecretString")
+    # create JWK format keys
+    return jwk.JWK.from_json(private_key)
 
 
 def create_claims_from_record(record):
@@ -121,6 +121,33 @@ def create_claims_from_record(record):
         record['Items'][0]['not_before'], 
         record['Items'][0]['expires'],
     )
+
+
+def create_return_response(headers, status_code, expiry_time, access_token, refresh_token, id_token):
+    return {
+        "statusCode": status_code, 
+        "headers": headers, 
+        "body": json.dumps(
+            {
+                "access_token": access_token.serialize(),
+                "refresh_token": refresh_token.serialize(), 
+                "id_token": id_token.serialize(), 
+                "token_type": "Bearer", 
+                "expires_in": expiry_time
+            }
+        )
+    }
+
+
+def create_tokens(keypair, claims):
+    """
+    Create access, refresh and id tokens 
+    """
+    access_token = make_jwt_token(keypair, claims, "access")
+    refresh_token = make_jwt_token(keypair, claims, "refresh")
+    id_token = make_jwt_token(keypair, claims, "id")
+
+    return (access_token, refresh_token, id_token)
 
 
 def create_claims(request_id, issuer, queue_number, iat, nbf, exp):
@@ -156,17 +183,7 @@ def make_jwt_token(keypair, claims, token_use) -> jwt.JWT:
     return jwt_token
 
 
-def create_jwk_keypair() -> jwk.JWK:
-    """
-    Create JWK key object
-    """
-    response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/jwk-private")
-    private_key = response.get("SecretString")
-    # create JWK format keys
-    return jwk.JWK.from_json(private_key)
-
-
-def save_record_dynamodb(request_id, queue_number, headers, iat, nbf, exp, issuer, keypair, claims):
+def save_record_to_dynamodb(request_id, queue_number, headers, iat, nbf, exp, issuer, keypair, claims):
     """
     Save record to Dyanamo DB
     """
@@ -239,18 +256,3 @@ def handle_client_errors(e, request_id, headers, keypair):
     (access_token, refresh_token, id_token) = create_tokens(keypair, claims)
 
     return create_return_response(headers, HTTPStatus.OK.value, remaining_time, access_token, refresh_token, id_token)
-
-def create_return_response(headers, status_code, expiry_time, access_token, refresh_token, id_token):
-    return {
-        "statusCode": status_code, 
-        "headers": headers, 
-        "body": json.dumps(
-            {
-                "access_token": access_token.serialize(),
-                "refresh_token": refresh_token.serialize(), 
-                "id_token": id_token.serialize(), 
-                "token_type": "Bearer", 
-                "expires_in": expiry_time
-            }
-        )
-    }
