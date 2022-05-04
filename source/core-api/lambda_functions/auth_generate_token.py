@@ -254,6 +254,9 @@ def handle_client_errors(e, request_id, headers, keypair):
 
 
 def create_return_response(headers, status_code, expiry_time, access_token, refresh_token, id_token):
+    """
+    Create a response message to return
+    """
     return {
         "statusCode": status_code, 
         "headers": headers, 
