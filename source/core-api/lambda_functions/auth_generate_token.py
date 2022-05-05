@@ -71,7 +71,8 @@ def lambda_handler(event, context):
             if int(queue_number) <= int(rc.get(SERVING_COUNTER)):
                 keypair = create_jwk_keypair()
                 # record for the request_id is in the ddb_table
-                if record := ddb_table.get_item(Key={"request_id": request_id}):
+                record = ddb_table.get_item(Key={"request_id": request_id})
+                if 'Item' in record:
                     claims = create_claims_from_record(record)
                     (access_token, refresh_token, id_token) = create_tokens(keypair, claims)
                     response = create_return_response(
@@ -91,7 +92,7 @@ def lambda_handler(event, context):
                     "not_before": nbf,
                     "expires": exp,
                     "queue_number": queue_number,
-                    'iss': issuer,
+                    'issuer': issuer,
                     "session_status": 0
                 }
 
@@ -161,12 +162,12 @@ def create_claims_from_record(record):
     Parse DynamoDB table record and create claims
     """
     return create_claims(
-        record['Items'][0]['request_id'], 
-        record['Items'][0]['issuer'], 
-        record['Items'][0]['queue_number'], 
-        record['Items'][0]['issued_at'], 
-        record['Items'][0]['not_before'], 
-        record['Items'][0]['expires']
+        record['Item']['request_id'], 
+        record['Item']['issuer'], 
+        record['Item']['queue_number'], 
+        record['Item']['issued_at'], 
+        record['Item']['not_before'], 
+        record['Item']['expires']
     )
 
 
