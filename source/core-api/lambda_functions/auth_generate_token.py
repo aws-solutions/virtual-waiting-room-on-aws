@@ -14,7 +14,6 @@ import redis
 import boto3
 from jwcrypto import jwk, jwt
 from http  import HTTPStatus
-from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
 from botocore import config
 from counters import SERVING_COUNTER, TOKEN_COUNTER
@@ -238,7 +237,7 @@ def handle_client_errors(e, request_id, headers, keypair):
     """
     if e.response['Error']['Code'] != 'ConditionalCheckFailedException':
         raise e
-        
+
     record = ddb_table.get_item(Key={'request_id': request_id})
     expires = int(record['Item']['expires'])
     cur_time = int(time.time())
