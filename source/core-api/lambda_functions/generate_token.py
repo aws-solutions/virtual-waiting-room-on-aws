@@ -13,7 +13,6 @@ import redis
 import boto3
 from jwcrypto import jwk, jwt
 from http import HTTPStatus
-from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
 from botocore import config
 from counters import SERVING_COUNTER, TOKEN_COUNTER
@@ -65,7 +64,7 @@ def lambda_handler(event, context):
         if queue_number := rc.hget(request_id, "queue_number"):
             if int(queue_number) <= int(rc.get(SERVING_COUNTER)):
                 keypair = create_jwk_keypair()
-                # record for the request_id is in the ddb_table
+                # request_id is in the ddb_table
                 record = ddb_table.get_item(Key={"request_id": request_id})
                 if 'Item' in record:
                     claims = create_claims_from_record(record)
@@ -75,7 +74,7 @@ def lambda_handler(event, context):
                     
                     return response
 
-                # record for the request_id is not in ddb_table, create and save record to ddb_table
+                # request_id is not in ddb_table, create and save record to ddb_table
                 iat = int(time.time())  # issued-at and not-before can be the same time (epoch seconds)
                 nbf = iat
                 exp = iat + VALIDITY_PERIOD # expiration (exp) is a time after iat and nbf, like 1 hour (epoch seconds)
@@ -91,7 +90,7 @@ def lambda_handler(event, context):
                     "session_status": 0
                 }
 
-                response, is_item_put = save_record_to_dynamodb(record, request_id, keypair, claims, headers)
+                (response, is_item_put) = save_record_to_dynamodb(record, request_id, keypair, claims, headers)
                 if is_item_put:
                     write_to_eventbus(request_id)
                     # increment token counter
@@ -233,9 +232,8 @@ def handle_client_errors(e, request_id, headers, keypair):
     """
     if e.response['Error']['Code'] != 'ConditionalCheckFailedException':
         raise e
-    # record = ddb_table.query(KeyConditionExpression=Key('request_id').eq(request_id))
+    
     record = ddb_table.get_item(Key={'request_id': request_id})
-
     expires = int(record['Item']['expires'])
     cur_time = int(time.time())
     remaining_time = expires - cur_time
