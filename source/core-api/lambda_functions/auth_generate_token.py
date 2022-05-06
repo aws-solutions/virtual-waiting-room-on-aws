@@ -75,7 +75,7 @@ def lambda_handler(event, context):
                     claims = create_claims_from_record(record)
                     (access_token, refresh_token, id_token) = create_tokens(keypair, claims)
                     response = create_return_response(
-                        headers, HTTPStatus.OK.value, record['Items'][0]['expires'], access_token, refresh_token, id_token)
+                        headers, HTTPStatus.OK.value, record['Item']['expires'], access_token, refresh_token, id_token)
                     
                     return response
 
