@@ -1,3 +1,10 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+"""
+This module contains helper methods for generating tokens.
+"""
+
 import json
 from jwcrypto import jwk, jwt
 
@@ -39,11 +46,12 @@ def make_jwt_token(claims, keypair, token_use, is_header_key_id) -> jwt.JWS:
     return jwt_token
 
 
-def create_claims_from_record(record):
+def create_claims_from_record(EVENT_ID, record):
     """
     Parse DynamoDB table record and create claims
     """
     return create_claims(
+        EVENT_ID,
         record['Item']['request_id'], 
         record['Item']['issuer'], 
         record['Item']['queue_number'], 

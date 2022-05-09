@@ -71,7 +71,7 @@ def lambda_handler(event, context):
 
                 record = ddb_table.get_item(Key={"request_id": request_id})
                 if 'Item' in record:
-                    claims = token_helper.create_claims_from_record(record)
+                    claims = token_helper.create_claims_from_record(EVENT_ID, record)
                     (access_token, refresh_token, id_token) = token_helper.create_tokens(claims, keypair, False)
                     expires = int(record['Item']['expires'])
                     cur_time = int(time.time())
