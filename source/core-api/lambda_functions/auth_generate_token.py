@@ -12,13 +12,12 @@ import time
 import json
 import redis
 import boto3
-from jwcrypto import jwk, jwt
 from http  import HTTPStatus
-from botocore.exceptions import ClientError
 from botocore import config
 from counters import SERVING_COUNTER, TOKEN_COUNTER
 from vwr.common.sanitize import deep_clean
 from vwr.common.validate import is_valid_rid
+import token_helper
 
 # connection info and other globals
 REDIS_HOST = os.environ["REDIS_HOST"]
@@ -68,22 +67,34 @@ def lambda_handler(event, context):
     if client_event_id == EVENT_ID and is_valid_rid(request_id):
         if queue_number := rc.hget(request_id, "queue_number"):
             if int(queue_number) <= int(rc.get(SERVING_COUNTER)):
-                keypair = create_jwk_keypair()
-                # request_id is in the ddb_table
+                keypair = token_helper.create_jwk_keypair(secrets_client, SECRET_NAME_PREFIX)
+
                 record = ddb_table.get_item(Key={"request_id": request_id})
                 if 'Item' in record:
-                    claims = create_claims_from_record(record)
-                    (access_token, refresh_token, id_token) = create_tokens(keypair, claims)
-                    response = create_return_response(
-                        headers, HTTPStatus.OK.value, record['Item']['expires'], access_token, refresh_token, id_token)
-                    
-                    return response
+                    claims = token_helper.create_claims_from_record(record)
+                    (access_token, refresh_token, id_token) = token_helper.create_tokens(claims, keypair, False)
+                    expires = int(record['Item']['expires'])
+                    cur_time = int(time.time())
+
+                    return {
+                        "statusCode": HTTPStatus.OK.value, 
+                        "headers": headers, 
+                        "body": json.dumps(
+                            {
+                                "access_token": access_token.serialize(),
+                                "refresh_token": refresh_token.serialize(), 
+                                "id_token": id_token.serialize(), 
+                                "token_type": "Bearer", 
+                                "expires_in": expires - cur_time
+                            }
+                        )
+                    }
 
                 # request_id is not in ddb_table, create and save record to ddb_table
                 iat = int(time.time())  # issued-at and not-before can be the same time (epoch seconds)
                 nbf = iat
                 exp = iat + VALIDITY_PERIOD # expiration (exp) is a time after iat and nbf, like 1 hour (epoch seconds)
-                claims = create_claims(request_id, issuer, queue_number, iat, nbf, exp)
+                claims = token_helper.create_claims(EVENT_ID, request_id, issuer, queue_number, iat, nbf, exp)
                 record = {
                     "event_id": EVENT_ID,
                     "request_id": request_id,
@@ -95,11 +106,29 @@ def lambda_handler(event, context):
                     "session_status": 0
                 }
 
-                (response, is_item_put) = save_record_to_dynamodb(record, request_id, keypair, claims, headers)
-                if is_item_put:
-                    write_to_eventbus(request_id)
-                    # increment token counter
-                    rc.incr(TOKEN_COUNTER, 1)
+                try:
+                    ddb_table.put_item(Item=record)
+                except Exception as e:
+                    print(e)
+                    raise e
+                
+                (access_token, refresh_token, id_token) = token_helper.create_tokens(claims, keypair, True)
+                token_helper.write_to_eventbus(events_client, EVENT_ID, EVENT_BUS_NAME, request_id)
+                rc.incr(TOKEN_COUNTER, 1)
+
+                response = {
+                    "statusCode": HTTPStatus.OK.value, 
+                    "headers": headers, 
+                    "body": json.dumps(
+                        {
+                            "access_token": access_token.serialize(),
+                            "refresh_token": refresh_token.serialize(), 
+                            "id_token": id_token.serialize(), 
+                            "token_type": "Bearer", 
+                            "expires_in": VALIDITY_PERIOD
+                        }
+                    )
+                }
             else:
                 response = {
                     "statusCode": HTTPStatus.ACCEPTED.value,
@@ -120,150 +149,3 @@ def lambda_handler(event, context):
         }
     
     return response
-
-
-def create_jwk_keypair() -> jwk.JWK:
-    """
-    Create JWK key object
-    """
-    response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/jwk-private")
-    private_key = response.get("SecretString")
-    # create JWK format keys
-    return jwk.JWK.from_json(private_key)
-
-
-def make_jwt_token(keypair, claims, token_use) -> jwt.JWT:
-    """
-    create jwt claims token
-    """
-    # Bandit B105: not a hardcoded password
-    claims["token_use"] = token_use  # nosec
-    jwt_token = jwt.JWT(header={"alg": "RS256", "typ": "JWT"}, claims=claims)
-    jwt_token.make_signed_token(keypair)
-    print(f"{token_use} token header: {jwt_token.serialize().split('.')[0]}")
-
-    return jwt_token
-
-
-def create_tokens(keypair, claims):
-    """
-    Create access, refresh and id tokens 
-    """
-    access_token = make_jwt_token(keypair, claims, "access")
-    refresh_token = make_jwt_token(keypair, claims, "refresh")
-    id_token = make_jwt_token(keypair, claims, "id")
-
-    return (access_token, refresh_token, id_token)
-
-
-def create_claims_from_record(record):
-    """
-    Parse DynamoDB table record and create claims
-    """
-    return create_claims(
-        record['Item']['request_id'], 
-        record['Item']['issuer'], 
-        record['Item']['queue_number'], 
-        record['Item']['issued_at'], 
-        record['Item']['not_before'], 
-        record['Item']['expires']
-    )
-
-
-def create_claims(request_id, issuer, queue_number, iat, nbf, exp):
-    """
-    Create claims
-    """
-    return {
-        'aud': EVENT_ID,
-        'sub': request_id,
-        'queue_position': queue_number,
-        'token_use': 'access',
-        'iat': iat,
-        'nbf': nbf,
-        'exp': exp,
-        'iss': issuer
-    }
-
-
-def save_record_to_dynamodb(record, request_id, keypair, claims, headers):
-    """
-    Save record to Dyanamo DB
-    """
-    is_item_put = False
-    try:
-        ddb_table.put_item(
-            Item=record,
-            ConditionExpression="attribute_not_exists(request_id)"
-        )
-        (access_token, refresh_token, id_token) = create_tokens(keypair, claims)    
-        response = create_return_response(headers, HTTPStatus.OK.value, VALIDITY_PERIOD, access_token, refresh_token, id_token)
-        is_item_put = True
-    except ClientError as e:
-        response = handle_client_errors(e, request_id, headers, keypair)
-    except Exception as e:
-        print(e)
-        raise e
-
-    return response, is_item_put
-
-
-def write_to_eventbus(request_id) -> None:
-    """
-    write to event bus
-    """
-    events_client.put_events(
-        Entries=[
-            {
-                'Source': 'custom.waitingroom',
-                'DetailType': 'token_generated',
-                'Detail': json.dumps(
-                    {
-                        "event_id": EVENT_ID,
-                        "request_id": request_id
-                    }
-                ),
-                'EventBusName': EVENT_BUS_NAME
-            }
-        ]
-    )
-
-
-def handle_client_errors(e, request_id, headers, keypair):
-    """
-    Handle client-error when put_item fails
-    Exception occurs if the token already exists in the database
-    Unlikely situation
-    """
-    if e.response['Error']['Code'] != 'ConditionalCheckFailedException':
-        raise e
-
-    record = ddb_table.get_item(Key={'request_id': request_id})
-    expires = int(record['Item']['expires'])
-    cur_time = int(time.time())
-    remaining_time = expires - cur_time
-
-    claims = create_claims_from_record(record)
-    (access_token, refresh_token, id_token) = create_tokens(keypair, claims)
-
-    return create_return_response(headers, HTTPStatus.OK.value, remaining_time, access_token, refresh_token, id_token)
-
-
-def create_return_response(headers, status_code, expiry_time, access_token, refresh_token, id_token):
-    """
-    Create a response message to return
-    """
-    return {
-        "statusCode": status_code, 
-        "headers": headers, 
-        "body": json.dumps(
-            {
-                "access_token": access_token.serialize(),
-                "refresh_token": refresh_token.serialize(), 
-                "id_token": id_token.serialize(), 
-                "token_type": "Bearer", 
-                "expires_in": expiry_time
-            }
-        )
-    }
-    
