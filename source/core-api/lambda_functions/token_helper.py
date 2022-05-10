@@ -55,9 +55,9 @@ def create_claims_from_record(EVENT_ID, record):
         record['Item']['request_id'], 
         record['Item']['issuer'], 
         record['Item']['queue_number'], 
-        record['Item']['issued_at'], 
-        record['Item']['not_before'], 
-        record['Item']['expires']
+        int(record['Item']['issued_at']), 
+        int(record['Item']['not_before']), 
+        int(record['Item']['expires'])
     )
 
 
