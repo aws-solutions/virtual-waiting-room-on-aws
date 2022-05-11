@@ -399,7 +399,9 @@
                                         {
                                             "Ref": "SampleWebContentBucket"
                                         },
-                                        ".s3.amazonaws.com"
+                                        {
+                                            "Fn::Sub": ".s3.${AWS::Region}.amazonaws.com"
+                                        }
                                     ]
                                 ]
                             },
