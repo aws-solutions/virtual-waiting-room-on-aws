@@ -745,9 +745,7 @@
                                         {
                                             "Ref": "OpenIDWebContentBucket"
                                         },
-                                        {
-                                            "Fn::Sub": ".s3.${AWS::Region}.amazonaws.com"
-                                        }
+                                        ".s3.amazonaws.com"
                                     ]
                                 ]
                             },
