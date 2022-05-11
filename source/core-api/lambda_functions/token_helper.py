@@ -18,7 +18,7 @@ def create_jwk_keypair(secrets_client, SECRET_NAME_PREFIX) -> jwk.JWK:
     return jwk.JWK.from_json(private_key)
 
 
-def create_tokens(claims, keypair, is_header_key_id=True):
+def create_tokens(claims, keypair, is_header_key_id):
     """
     Create access, refresh and id tokens 
     """
@@ -29,9 +29,9 @@ def create_tokens(claims, keypair, is_header_key_id=True):
     return (access_token, refresh_token, id_token)
 
 
-def make_jwt_token(claims, keypair, token_use, is_header_key_id) -> jwt.JWS:
+def make_jwt_token(claims, keypair, token_use, is_header_key_id) -> jwt.JWT:
     """
-    create jwt claims token
+    create signed jwt claims token
     """
     # Bandit B105: not a hardcoded password
     claims["token_use"] = token_use  # nosec
