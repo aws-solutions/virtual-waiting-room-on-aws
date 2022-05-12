@@ -94,7 +94,6 @@ def lambda_handler(event, context):
                 iat = int(time.time())  # issued-at and not-before can be the same time (epoch seconds)
                 nbf = iat
                 exp = iat + VALIDITY_PERIOD # expiration (exp) is a time after iat and nbf, like 1 hour (epoch seconds)
-                claims = token_helper.create_claims(EVENT_ID, request_id, issuer, queue_number, iat, nbf, exp)
                 record = {
                     "event_id": EVENT_ID,
                     "request_id": request_id,
@@ -111,8 +110,9 @@ def lambda_handler(event, context):
                 except Exception as e:
                     print(e)
                     raise e
-                
-                (access_token, refresh_token, id_token) = token_helper.create_tokens(claims, keypair, True)
+
+                claims = token_helper.create_claims(EVENT_ID, request_id, issuer, queue_number, iat, nbf, exp)
+                (access_token, refresh_token, id_token) = token_helper.create_tokens(claims, keypair, False)
                 token_helper.write_to_eventbus(events_client, EVENT_ID, EVENT_BUS_NAME, request_id)
                 rc.incr(TOKEN_COUNTER, 1)
 
