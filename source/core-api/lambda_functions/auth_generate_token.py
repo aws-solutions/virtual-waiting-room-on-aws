@@ -69,11 +69,11 @@ def lambda_handler(event, context):
             if int(queue_number) <= int(rc.get(SERVING_COUNTER)):
                 keypair = token_helper.create_jwk_keypair(secrets_client, SECRET_NAME_PREFIX)
 
-                record = ddb_table.get_item(Key={"request_id": request_id})
-                if 'Item' in record:
-                    claims = token_helper.create_claims_from_record(EVENT_ID, record)
+                item = ddb_table.get_item(Key={"request_id": request_id})
+                if 'Item' in item:
+                    claims = token_helper.create_claims_from_record(EVENT_ID, item)
                     (access_token, refresh_token, id_token) = token_helper.create_tokens(claims, keypair, False)
-                    expires = int(record['Item']['expires'])
+                    expires = int(item['Item']['expires'])
                     cur_time = int(time.time())
 
                     return {
@@ -94,7 +94,7 @@ def lambda_handler(event, context):
                 iat = int(time.time())  # issued-at and not-before can be the same time (epoch seconds)
                 nbf = iat
                 exp = iat + VALIDITY_PERIOD # expiration (exp) is a time after iat and nbf, like 1 hour (epoch seconds)
-                record = {
+                item = {
                     "event_id": EVENT_ID,
                     "request_id": request_id,
                     "issued_at": iat,
@@ -106,7 +106,7 @@ def lambda_handler(event, context):
                 }
 
                 try:
-                    ddb_table.put_item(Item=record)
+                    ddb_table.put_item(Item=item)
                 except Exception as e:
                     print(e)
                     raise e

@@ -46,18 +46,18 @@ def make_jwt_token(claims, keypair, token_use, is_header_key_id) -> jwt.JWT:
     return jwt_token
 
 
-def create_claims_from_record(EVENT_ID, record):
+def create_claims_from_record(EVENT_ID, item):
     """
     Parse DynamoDB table item and create claims
     """
     return create_claims(
         EVENT_ID,
-        record['Item']['request_id'], 
-        record['Item']['issuer'], 
-        record['Item']['queue_number'], 
-        int(record['Item']['issued_at']), 
-        int(record['Item']['not_before']), 
-        int(record['Item']['expires'])
+        item['Item']['request_id'], 
+        item['Item']['issuer'], 
+        item['Item']['queue_number'], 
+        int(item['Item']['issued_at']), 
+        int(item['Item']['not_before']), 
+        int(item['Item']['expires'])
     )
 
 
