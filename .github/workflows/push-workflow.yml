@@ -271,7 +271,7 @@ jobs:
         if: ${{github.ref_name != env.RELEASE_BRANCH}}
         run: |
           cd deployment
-          ./deploy.sh -b $DIST_OUTPUT_BUCKET -s ${{ github.event.repository.name }} -v $VERSION -r "$REGIONS_TO_DEPLOY" -a none -t dev
+          ./deploy.sh -b $DIST_OUTPUT_BUCKET -s ${{ github.event.repository.name }} -v $VERSION -r "$REGIONS_TO_DEPLOY"
       - name: Zip up regional and global assets
         run: |
           cd deployment
