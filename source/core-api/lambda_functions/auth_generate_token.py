@@ -12,13 +12,12 @@ import time
 import json
 import redis
 import boto3
-from jwcrypto import jwk, jwt
-from boto3.dynamodb.conditions import Key
-from botocore.exceptions import ClientError
+from http  import HTTPStatus
 from botocore import config
 from counters import SERVING_COUNTER, TOKEN_COUNTER
 from vwr.common.sanitize import deep_clean
 from vwr.common.validate import is_valid_rid
+import token_helper
 
 # connection info and other globals
 REDIS_HOST = os.environ["REDIS_HOST"]
@@ -34,11 +33,11 @@ boto_session = boto3.session.Session()
 region = boto_session.region_name
 user_agent_extra = {"user_agent_extra": SOLUTION_ID}
 user_config = config.Config(**user_agent_extra)
-ddb_resource = boto3.resource('dynamodb', endpoint_url="https://dynamodb."+region+".amazonaws.com", config=user_config)
+ddb_resource = boto3.resource('dynamodb', endpoint_url=f'https://dynamodb.{region}.amazonaws.com', config=user_config)
 ddb_table = ddb_resource.Table(DDB_TABLE_NAME)
-events_client = boto3.client('events', endpoint_url="https://events."+region+".amazonaws.com", config=user_config)
+events_client = boto3.client('events', endpoint_url=f'https://events.{region}.amazonaws.com', config=user_config)
 
-secrets_client = boto3.client('secretsmanager', endpoint_url="https://secretsmanager."+region+".amazonaws.com", config=user_config)
+secrets_client = boto3.client('secretsmanager', endpoint_url=f'https://secretsmanager.{region}.amazonaws.com', config=user_config)
 response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/redis-auth")
 redis_auth = response.get("SecretString")
 rc = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, ssl=True, decode_responses=True, password=redis_auth)
@@ -66,133 +65,87 @@ def lambda_handler(event, context):
         'Access-Control-Allow-Origin': '*'
     }
     if client_event_id == EVENT_ID and is_valid_rid(request_id):
-        queue_number = rc.hget(request_id, "queue_number")
-        if queue_number:
+        if queue_number := rc.hget(request_id, "queue_number"):
             if int(queue_number) <= int(rc.get(SERVING_COUNTER)):
-                response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/jwk-private")
-                private_key = response.get("SecretString")
-                # create JWK format keys
-                keypair = jwk.JWK.from_json(private_key)
-                # issued-at and not-before can be the same time (epoch seconds)
-                iat = int(time.time())
-                nbf = iat
-                # expiration (exp) is a time after iat and nbf, like 1 hour (epoch seconds)
-                exp = iat + VALIDITY_PERIOD
+                keypair = token_helper.create_jwk_keypair(secrets_client, SECRET_NAME_PREFIX)
 
-                # create access token claims
-                claims = {
-                    'aud': EVENT_ID,
-                    'sub': request_id,
-                    'queue_position': queue_number,
-                    'token_use': 'access',
-                    'iat': iat,
-                    'nbf': nbf,
-                    'exp': exp,
-                    'iss': issuer
+                item = ddb_table.get_item(Key={"request_id": request_id})
+                if 'Item' in item:
+                    claims = token_helper.create_claims_from_record(EVENT_ID, item)
+                    (access_token, refresh_token, id_token) = token_helper.create_tokens(claims, keypair, False)
+                    expires = int(item['Item']['expires'])
+                    cur_time = int(time.time())
+
+                    return {
+                        "statusCode": HTTPStatus.OK.value, 
+                        "headers": headers, 
+                        "body": json.dumps(
+                            {
+                                "access_token": access_token.serialize(),
+                                "refresh_token": refresh_token.serialize(), 
+                                "id_token": id_token.serialize(), 
+                                "token_type": "Bearer", 
+                                "expires_in": expires - cur_time
+                            }
+                        )
+                    }
+
+                # request_id is not in ddb_table, create and save record to ddb_table
+                iat = int(time.time())  # issued-at and not-before can be the same time (epoch seconds)
+                nbf = iat
+                exp = iat + VALIDITY_PERIOD # expiration (exp) is a time after iat and nbf, like 1 hour (epoch seconds)
+                item = {
+                    "event_id": EVENT_ID,
+                    "request_id": request_id,
+                    "issued_at": iat,
+                    "not_before": nbf,
+                    "expires": exp,
+                    "queue_number": queue_number,
+                    'issuer': issuer,
+                    "session_status": 0
                 }
 
-                access_token = jwt.JWT(header={"alg": "RS256", "typ": "JWT"}, claims=claims)
-                access_token.make_signed_token(keypair)
-                print(f"access token header: {access_token.serialize().split('.')[0]}")
-                
-                # create ID token claims
-                # Bandit B105: not a hardcoded password
-                claims["token_use"] = "id" # nosec
-                id_token = jwt.JWT(header={"alg": "RS256", "typ": "JWT"}, claims=claims)
-                id_token.make_signed_token(keypair)
-                print(f"id token header: {id_token.serialize().split('.')[0]}")
-
-                # create refresh token claims
-                # Bandit B105: not a hardcoded password
-                claims["token_use"]="refresh" # nosec
-                refresh_token = jwt.JWT(header={"alg": "RS256", "typ": "JWT"}, claims=claims)
-                refresh_token.make_signed_token(keypair)
-                print(f"refresh token header: {refresh_token.serialize().split('.')[0]}")
-
-                # save claims info and tokens in dynamo
-                item = {
-                        "event_id": EVENT_ID,
-                        "request_id": request_id,
-                        "issued_at": iat,
-                        "not_before": nbf,
-                        "expires": exp,
-                        "queue_number": queue_number,
-                        "access_token": access_token.serialize(),
-                        "id_token": id_token.serialize(),
-                        "refresh_token": refresh_token.serialize(),
-                        "session_status": 0
-                    }
                 try:
-                    ddb_table.put_item(
-                        Item=item,
-                        ConditionExpression="attribute_not_exists(request_id)"
-                        )
-                    response = {
-                        "statusCode": 200,
-                        "headers": headers,
-                        "body": json.dumps({
-                            "access_token": access_token.serialize(),
-                            "refresh_token": refresh_token.serialize(),
-                            "id_token": id_token.serialize(),
-                            "token_type": "Bearer",
-                            "expires_in": VALIDITY_PERIOD
-                        })
-                    }
-                    # write to event bus
-                    events_client.put_events(
-                        Entries=[
-                            {
-                                'Source': 'custom.waitingroom',
-                                'DetailType': 'token_generated',
-                                'Detail': json.dumps({"event_id": EVENT_ID,
-                                            "request_id": request_id}),
-                                'EventBusName': EVENT_BUS_NAME
-                            }
-                        ]
-                    )
-                    # increment token counter
-                    rc.incr(TOKEN_COUNTER, 1)
-                # exception occurs if the token already exists in the database
-                except ClientError as e:
-                    if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
-                        # query the item, and calculate when it expired
-                        result = ddb_table.query(
-                            KeyConditionExpression=Key('request_id').eq(request_id))
-                        expires = int(result['Items'][0]['expires'])
-                        cur_time = int(time.time())
-                        remaining_time = expires - cur_time
-                        response = { 
-                            "statusCode": 200,
-                            "headers": headers,
-                            "body": json.dumps({
-                                "access_token":result['Items'][0]['access_token'],
-                                "refresh_token":result['Items'][0]['refresh_token'],
-                                "id_token":result['Items'][0]['id_token'],
-                                "token_type":"Bearer", 
-                                "expires_in":remaining_time
-                            })
-                        }
-                    else:
-                        raise e
+                    ddb_table.put_item(Item=item)
                 except Exception as e:
                     print(e)
                     raise e
+
+                claims = token_helper.create_claims(EVENT_ID, request_id, issuer, queue_number, iat, nbf, exp)
+                (access_token, refresh_token, id_token) = token_helper.create_tokens(claims, keypair, False)
+                token_helper.write_to_eventbus(events_client, EVENT_ID, EVENT_BUS_NAME, request_id)
+                rc.incr(TOKEN_COUNTER, 1)
+
+                response = {
+                    "statusCode": HTTPStatus.OK.value, 
+                    "headers": headers, 
+                    "body": json.dumps(
+                        {
+                            "access_token": access_token.serialize(),
+                            "refresh_token": refresh_token.serialize(), 
+                            "id_token": id_token.serialize(), 
+                            "token_type": "Bearer", 
+                            "expires_in": VALIDITY_PERIOD
+                        }
+                    )
+                }
             else:
-                response = { 
-                    "statusCode": 202,
+                response = {
+                    "statusCode": HTTPStatus.ACCEPTED.value,
                     "headers": headers,
                     "body": json.dumps({"error": "Request ID not being served yet"})
                 }
         else:
             response = {
-                "statusCode": 404,
+                "statusCode": HTTPStatus.NOT_FOUND.value,
                 "headers": headers,
                 "body": json.dumps({"error": "Invalid request ID"})
             }
     else:
-        response = { 
-                "statusCode": 400,
-                "headers": headers,
-                "body": json.dumps({"error": "Invalid event or request ID"})
-            }
+        response = {
+            "statusCode": HTTPStatus.BAD_REQUEST.value,
+            "headers": headers,
+            "body": json.dumps({"error": "Invalid event or request ID"})
+        }
+    
     return response
