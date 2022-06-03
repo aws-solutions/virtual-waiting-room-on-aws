@@ -2087,6 +2087,9 @@
                         "STACK_NAME": {
                             "Ref": "AWS::StackName"
                         },
+                        "EVENT_ID": {
+                            "Ref": "EventId"
+                        },
                         "SOLUTION_ID": {
                             "Fn::FindInMap": [
                                 "SolutionId",

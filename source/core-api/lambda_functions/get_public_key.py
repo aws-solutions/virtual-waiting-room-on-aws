@@ -32,13 +32,12 @@ def lambda_handler(event, context):
         'Access-Control-Allow-Origin': '*'
     }
 
-    body = json.loads(event['body'])
-    client_event_id = deep_clean(body['event_id'])
+    client_event_id = deep_clean(event['queryStringParameters']['event_id'])
     if client_event_id != EVENT_ID:
         return {
             "statusCode": 400,
             "headers": headers,
-            "error": "Invalid event ID"
+            "body": json.dumps({"error": "Invalid request ID"})
         }
 
     response = {}
