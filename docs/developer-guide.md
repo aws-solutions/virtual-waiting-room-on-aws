@@ -326,7 +326,7 @@ The “Content-Type” header is always set to “application/json” with these
     8. Status codes:  
         200: Success  
         202: Request ID not processed yet  
-        404: Invalid event or request ID 
+        400: Invalid event or request ID 
 5. `/serving_num`
     1. Description: Returns the current serving position in the queue. Requests with an equal or lower position in the waiting room can request tokens from the API.
     2. Authorization: NONE
@@ -340,7 +340,7 @@ The “Content-Type” header is always set to “application/json” with these
         }`
     8. Status codes:  
         200: Success  
-        404: Invalid event ID
+        400: Invalid event ID
 6. `/waiting_num`
     1. Description: Returns the number users currently queued in the waiting room and have not been issued a token yet.
     2. Authorization: NONE
@@ -354,7 +354,7 @@ The “Content-Type” header is always set to “application/json” with these
         }`
     8. Status codes:  
         200: Success  
-        404: Invalid event ID
+        400: Invalid event ID
 
 ## Private REST APIs
 
