@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
-    "Description": "AWS Virtual Waiting Room Inlet Strategies %%VERSION%%",
+    "Description": "Virtual Waiting Room on AWS Inlet Strategies %%VERSION%%",
     "Mappings": {
         "SourceCode": {
             "General": {

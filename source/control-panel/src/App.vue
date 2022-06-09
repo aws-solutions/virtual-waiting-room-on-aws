@@ -46,7 +46,7 @@ export default {
     return model;
   },
   created() {
-    document.title = "AWS Virtual Waiting Room Control Panel";
+    document.title = "Virtual Waiting Room on AWS Control Panel";
   },
   components: { Banner, Configuration, Controls, Counters },
   methods: {

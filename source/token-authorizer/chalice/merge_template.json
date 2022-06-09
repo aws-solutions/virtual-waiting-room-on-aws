@@ -1,5 +1,5 @@
 {
-    "Description": "AWS Virtual Waiting Room API Gateway Authorizers %%VERSION%%",
+    "Description": "Virtual Waiting Room on AWS API Gateway Authorizers %%VERSION%%",
     "Parameters": {
         "PublicAPIEndpoint": {
             "Description": "Public endpoint for the virtual waiting room APIs",

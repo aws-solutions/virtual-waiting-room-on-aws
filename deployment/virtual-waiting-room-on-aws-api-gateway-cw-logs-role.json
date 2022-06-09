@@ -1,6 +1,6 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "AWS Virtual Waiting Room API Gateway CW Logs Role %%VERSION%%",
+  "Description": "Virtual Waiting Room on AWS API Gateway CW Logs Role %%VERSION%%",
   "Resources": {
     "CloudWatchRole": {
       "Type": "AWS::IAM::Role",

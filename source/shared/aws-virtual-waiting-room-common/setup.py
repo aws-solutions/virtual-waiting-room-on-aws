@@ -12,7 +12,7 @@ setuptools.setup(
     version="1.0.0",
     author="AWS Solutions PDX",
     author_email="aws-solutions-pdx@amazon.com",
-    description="Common Python modules for AWS Virtual Waiting Room",
+    description="Common Python modules for Virtual Waiting Room on AWS",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/aws-solutions/aws-virtual-waiting-room",

@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
-    "Description": "(SO0166) AWS Virtual Waiting Room %%VERSION%%",
+    "Description": "(SO0166) Virtual Waiting Room on AWS %%VERSION%%",
     "Mappings": {
         "SourceCode": {
             "General": {
