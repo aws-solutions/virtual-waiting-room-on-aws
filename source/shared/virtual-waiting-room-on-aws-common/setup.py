@@ -8,7 +8,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="aws-virtual-waiting-room-common",
+    name="virtual-waiting-room-on-aws-common",
     version="1.0.0",
     author="AWS Solutions PDX",
     author_email="aws-solutions-pdx@amazon.com",

@@ -3,4 +3,4 @@ CONTRIBUTING.md:50
 
 ^dist/
 
-source/shared/aws-virtual-waiting-room-common/setup.py:14
+source/shared/virtual-waiting-room-on-aws-common/setup.py:14

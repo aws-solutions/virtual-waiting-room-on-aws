@@ -129,7 +129,7 @@
                         "Name": "AWS::Include",
                         "Parameters": {
                             "Location": {
-                                "Fn::Sub": "s3://%%BUCKET_NAME%%-${AWS::Region}/%%SOLUTION_NAME%%/%%VERSION%%/aws-virtual-waiting-room-swagger-public-api.json"
+                                "Fn::Sub": "s3://%%BUCKET_NAME%%-${AWS::Region}/%%SOLUTION_NAME%%/%%VERSION%%/virtual-waiting-room-on-aws-swagger-public-api.json"
                             }
                         }
                     }
@@ -147,7 +147,7 @@
                         "Name": "AWS::Include",
                         "Parameters": {
                             "Location": {
-                                "Fn::Sub": "s3://%%BUCKET_NAME%%-${AWS::Region}/%%SOLUTION_NAME%%/%%VERSION%%/aws-virtual-waiting-room-swagger-private-api.json"
+                                "Fn::Sub": "s3://%%BUCKET_NAME%%-${AWS::Region}/%%SOLUTION_NAME%%/%%VERSION%%/virtual-waiting-room-on-aws-swagger-private-api.json"
                             }
                         }
                     }
@@ -822,7 +822,7 @@
                                         "KeyPrefix"
                                     ]
                                 },
-                                "aws-virtual-waiting-room-redis-layer-%%TIMESTAMP%%.zip"
+                                "virtual-waiting-room-on-aws-redis-layer-%%TIMESTAMP%%.zip"
                             ]
                         ]
                     }
@@ -869,7 +869,7 @@
                                         "KeyPrefix"
                                     ]
                                 },
-                                "aws-virtual-waiting-room-jwcrypto-layer-%%TIMESTAMP%%.zip"
+                                "virtual-waiting-room-on-aws-jwcrypto-layer-%%TIMESTAMP%%.zip"
                             ]
                         ]
                     }
@@ -912,7 +912,7 @@
                                         "KeyPrefix"
                                     ]
                                 },
-                                "aws-virtual-waiting-room-%%TIMESTAMP%%.zip"
+                                "virtual-waiting-room-on-aws-%%TIMESTAMP%%.zip"
                             ]
                         ]
                     }
@@ -1024,7 +1024,7 @@
                                         "KeyPrefix"
                                     ]
                                 },
-                                "aws-virtual-waiting-room-%%TIMESTAMP%%.zip"
+                                "virtual-waiting-room-on-aws-%%TIMESTAMP%%.zip"
                             ]
                         ]
                     }
@@ -1174,7 +1174,7 @@
                                         "KeyPrefix"
                                     ]
                                 },
-                                "aws-virtual-waiting-room-%%TIMESTAMP%%.zip"
+                                "virtual-waiting-room-on-aws-%%TIMESTAMP%%.zip"
                             ]
                         ]
                     }
@@ -1281,7 +1281,7 @@
                                         "KeyPrefix"
                                     ]
                                 },
-                                "aws-virtual-waiting-room-%%TIMESTAMP%%.zip"
+                                "virtual-waiting-room-on-aws-%%TIMESTAMP%%.zip"
                             ]
                         ]
                     }
@@ -1388,7 +1388,7 @@
                                         "KeyPrefix"
                                     ]
                                 },
-                                "aws-virtual-waiting-room-%%TIMESTAMP%%.zip"
+                                "virtual-waiting-room-on-aws-%%TIMESTAMP%%.zip"
                             ]
                         ]
                     }
@@ -1524,7 +1524,7 @@
                                         "KeyPrefix"
                                     ]
                                 },
-                                "aws-virtual-waiting-room-%%TIMESTAMP%%.zip"
+                                "virtual-waiting-room-on-aws-%%TIMESTAMP%%.zip"
                             ]
                         ]
                     }
@@ -1661,7 +1661,7 @@
                                         "KeyPrefix"
                                     ]
                                 },
-                                "aws-virtual-waiting-room-%%TIMESTAMP%%.zip"
+                                "virtual-waiting-room-on-aws-%%TIMESTAMP%%.zip"
                             ]
                         ]
                     }
@@ -1791,7 +1791,7 @@
                                         "KeyPrefix"
                                     ]
                                 },
-                                "aws-virtual-waiting-room-%%TIMESTAMP%%.zip"
+                                "virtual-waiting-room-on-aws-%%TIMESTAMP%%.zip"
                             ]
                         ]
                     }
@@ -1941,7 +1941,7 @@
                                         "KeyPrefix"
                                     ]
                                 },
-                                "aws-virtual-waiting-room-%%TIMESTAMP%%.zip"
+                                "virtual-waiting-room-on-aws-%%TIMESTAMP%%.zip"
                             ]
                         ]
                     }
@@ -2077,7 +2077,7 @@
                                         "KeyPrefix"
                                     ]
                                 },
-                                "aws-virtual-waiting-room-%%TIMESTAMP%%.zip"
+                                "virtual-waiting-room-on-aws-%%TIMESTAMP%%.zip"
                             ]
                         ]
                     }
@@ -2184,7 +2184,7 @@
                                         "KeyPrefix"
                                     ]
                                 },
-                                "aws-virtual-waiting-room-%%TIMESTAMP%%.zip"
+                                "virtual-waiting-room-on-aws-%%TIMESTAMP%%.zip"
                             ]
                         ]
                     }
@@ -2320,7 +2320,7 @@
                                         "KeyPrefix"
                                     ]
                                 },
-                                "aws-virtual-waiting-room-%%TIMESTAMP%%.zip"
+                                "virtual-waiting-room-on-aws-%%TIMESTAMP%%.zip"
                             ]
                         ]
                     }
@@ -2462,7 +2462,7 @@
                                         "KeyPrefix"
                                     ]
                                 },
-                                "aws-virtual-waiting-room-%%TIMESTAMP%%.zip"
+                                "virtual-waiting-room-on-aws-%%TIMESTAMP%%.zip"
                             ]
                         ]
                     }
@@ -3202,7 +3202,7 @@
                                         "KeyPrefix"
                                     ]
                                 },
-                                "aws-virtual-waiting-room-custom-resources-%%TIMESTAMP%%.zip"
+                                "virtual-waiting-room-on-aws-custom-resources-%%TIMESTAMP%%.zip"
                             ]
                         ]
                     }
@@ -3357,7 +3357,7 @@
                                         "KeyPrefix"
                                     ]
                                 },
-                                "aws-virtual-waiting-room-custom-resources-%%TIMESTAMP%%.zip"
+                                "virtual-waiting-room-on-aws-custom-resources-%%TIMESTAMP%%.zip"
                             ]
                         ]
                     }
@@ -3514,7 +3514,7 @@
                                         "KeyPrefix"
                                     ]
                                 },
-                                "aws-virtual-waiting-room-custom-resources-%%TIMESTAMP%%.zip"
+                                "virtual-waiting-room-on-aws-custom-resources-%%TIMESTAMP%%.zip"
                             ]
                         ]
                     }
@@ -3755,7 +3755,7 @@
                                         "KeyPrefix"
                                     ]
                                 },
-                                "aws-virtual-waiting-room-custom-resources-%%TIMESTAMP%%.zip"
+                                "virtual-waiting-room-on-aws-custom-resources-%%TIMESTAMP%%.zip"
                             ]
                         ]
                     }

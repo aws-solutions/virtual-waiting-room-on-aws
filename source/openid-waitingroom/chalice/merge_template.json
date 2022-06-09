@@ -354,7 +354,7 @@
                                         "KeyPrefix"
                                     ]
                                 },
-                                "aws-virtual-waiting-room-openid-%%TIMESTAMP%%.zip"
+                                "virtual-waiting-room-on-aws-openid-%%TIMESTAMP%%.zip"
                             ]
                         ]
                     }
@@ -451,7 +451,7 @@
                                         "KeyPrefix"
                                     ]
                                 },
-                                "aws-virtual-waiting-room-openid-custom-resources-%%TIMESTAMP%%.zip"
+                                "virtual-waiting-room-on-aws-openid-custom-resources-%%TIMESTAMP%%.zip"
                             ]
                         ]
                     }
@@ -540,7 +540,7 @@
                                         "KeyPrefix"
                                     ]
                                 },
-                                "aws-virtual-waiting-room-openid-custom-resources-%%TIMESTAMP%%.zip"
+                                "virtual-waiting-room-on-aws-openid-custom-resources-%%TIMESTAMP%%.zip"
                             ]
                         ]
                     }
@@ -629,7 +629,7 @@
                                         "KeyPrefix"
                                     ]
                                 },
-                                "aws-virtual-waiting-room-openid-custom-resources-%%TIMESTAMP%%.zip"
+                                "virtual-waiting-room-on-aws-openid-custom-resources-%%TIMESTAMP%%.zip"
                             ]
                         ]
                     }

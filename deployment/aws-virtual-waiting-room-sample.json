@@ -22,52 +22,37 @@
     },
     "EndpointURL": {
       "Value": {
-        "Fn::Sub": "https://${RestAPI}.execute-api.${AWS::Region}.${AWS::URLSuffix}/oidc/"
+        "Fn::Sub": "https://${RestAPI}.execute-api.${AWS::Region}.${AWS::URLSuffix}/store/"
       }
     },
-    "IssuerURL": {
+    "WaitingRoomURL": {
       "Value": {
-        "Fn::Sub": "https://${RestAPI}.execute-api.${AWS::Region}.${AWS::URLSuffix}/oidc"
+        "Fn::Sub": [
+          "https://${CloudFrontDomainName}/waiting-room-site/index.html?eventId=${EventID}&publicApiUrl=${PublicAPIEndpoint}&commerceApiUrl=https://${RestAPI}.execute-api.${AWS::Region}.amazonaws.com/store",
+          {
+            "CloudFrontDomainName": {
+              "Fn::GetAtt": [
+                "SampleWebContentCloudFront",
+                "DomainName"
+              ]
+            }
+          }
+        ]
       }
     },
-    "AuthorizationURL": {
+    "ControlPanelURL": {
       "Value": {
-        "Fn::Sub": "https://${RestAPI}.execute-api.${AWS::Region}.${AWS::URLSuffix}/oidc/authorize"
-      }
-    },
-    "TokenURL": {
-      "Value": {
-        "Fn::Sub": "https://${RestAPI}.execute-api.${AWS::Region}.${AWS::URLSuffix}/oidc/token"
-      }
-    },
-    "UserInfoURL": {
-      "Value": {
-        "Fn::Sub": "https://${RestAPI}.execute-api.${AWS::Region}.${AWS::URLSuffix}/oidc/userInfo"
-      }
-    },
-    "PublicKeysURL": {
-      "Value": {
-        "Fn::Sub": "https://${RestAPI}.execute-api.${AWS::Region}.${AWS::URLSuffix}/oidc/.well-known/jwks.json"
-      }
-    },
-    "ConfigurationURL": {
-      "Value": {
-        "Fn::Sub": "https://${RestAPI}.execute-api.${AWS::Region}.${AWS::URLSuffix}/oidc/.well-known/openid-configuration"
-      }
-    },
-    "ClientID": {
-      "Value": {
-        "Fn::Sub": "${EventID}"
-      }
-    },
-    "ClientSecretID": {
-      "Value": {
-        "Fn::Sub": "${AWS::StackName}/client_secret"
-      }
-    },
-    "WaitingRoomWebContentBucket": {
-      "Value": {
-        "Fn::Sub": "${OpenIDWebContentBucket}"
+        "Fn::Sub": [
+          "https://${CloudFrontDomainName}/control-panel/index.html?eventId=${EventID}&publicApiUrl=${PublicAPIEndpoint}&privateApiUrl=${PrivateAPIEndpoint}&regionName=${AWS::Region}",
+          {
+            "CloudFrontDomainName": {
+              "Fn::GetAtt": [
+                "SampleWebContentCloudFront",
+                "DomainName"
+              ]
+            }
+          }
+        ]
       }
     }
   },
@@ -109,28 +94,6 @@
                 {
                   "Effect": "Allow",
                   "Action": [
-                    "secretsmanager:GetRandomPassword"
-                  ],
-                  "Resource": "*",
-                  "Sid": "7f4d0d18346e0a497d35bb42c95877d2f7f2708e"
-                },
-                {
-                  "Effect": "Allow",
-                  "Action": [
-                    "secretsmanager:GetSecretValue",
-                    "secretsmanager:CreateSecret",
-                    "secretsmanager:DeleteSecret"
-                  ],
-                  "Resource": [
-                    {
-                      "Fn::Sub": "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AWS::StackName}/*"
-                    }
-                  ],
-                  "Sid": "f2c267d1780ff10a49a7578694f091cdeb88c73a"
-                },
-                {
-                  "Effect": "Allow",
-                  "Action": [
                     "s3:PutObject",
                     "s3:ListBucket",
                     "s3:DeleteObject"
@@ -138,7 +101,7 @@
                   "Resource": [
                     {
                       "Fn::GetAtt": [
-                        "OpenIDWebContentBucket",
+                        "SampleWebContentBucket",
                         "Arn"
                       ]
                     },
@@ -148,7 +111,7 @@
                         [
                           {
                             "Fn::GetAtt": [
-                              "OpenIDWebContentBucket",
+                              "SampleWebContentBucket",
                               "Arn"
                             ]
                           },
@@ -173,50 +136,33 @@
                   "Resource": {
                     "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*"
                   }
-                },
-                {
-                  "Effect": "Allow",
-                  "Action": [
-                    "execute-api:Invoke"
-                  ],
-                  "Resource": "arn:aws:execute-api:*:*:*/*/POST/generate_token"
                 }
               ]
             },
             "PolicyName": "DefaultRolePolicy"
           }
         ]
-      },
-      "Metadata": {
-        "cfn_nag": {
-          "rules_to_suppress": [
-            {
-              "id": "W11",
-              "reason": "Resource * is required for the GetRandomPassword action."
-            }
-          ]
-        }
       }
     },
     "RestAPI": {
       "Type": "AWS::Serverless::Api",
       "Properties": {
         "EndpointConfiguration": "EDGE",
-        "StageName": "oidc",
+        "StageName": "store",
         "DefinitionBody": {
           "swagger": "2.0",
           "info": {
             "version": "1.0",
             "title": {
-              "Fn::Sub": "${AWS::StackName}-openid-waiting-room-api"
+              "Fn::Sub": "${AWS::StackName}-sample-protected-api"
             },
-            "description": "Waiting Room Open ID Adapter API"
+            "description": "Waiting Room Sample Protected API"
           },
           "schemes": [
             "https"
           ],
           "paths": {
-            "/authorize": {
+            "/checkout": {
               "get": {
                 "consumes": [
                   "application/json"
@@ -246,13 +192,16 @@
                   "contentHandling": "CONVERT_TO_TEXT",
                   "type": "aws_proxy"
                 },
-                "summary": "This is the authorize endpoint"
-              }
-            },
-            "/token": {
-              "post": {
+                "summary": "This function represents a /checkout API endpoint.",
+                "security": [
+                  {
+                    "WaitingRoomAuthorizer": []
+                  }
+                ]
+              },
+              "options": {
                 "consumes": [
-                  "application/x-www-form-urlencoded"
+                  "application/json"
                 ],
                 "produces": [
                   "application/json"
@@ -262,27 +211,53 @@
                     "description": "200 response",
                     "schema": {
                       "$ref": "#/definitions/Empty"
+                    },
+                    "headers": {
+                      "Access-Control-Allow-Methods": {
+                        "type": "string"
+                      },
+                      "Access-Control-Allow-Origin": {
+                        "type": "string"
+                      },
+                      "Access-Control-Allow-Headers": {
+                        "type": "string"
+                      },
+                      "Access-Control-Expose-Headers": {
+                        "type": "string"
+                      },
+                      "Access-Control-Max-Age": {
+                        "type": "string"
+                      },
+                      "Access-Control-Allow-Credentials": {
+                        "type": "string"
+                      }
                     }
                   }
                 },
                 "x-amazon-apigateway-integration": {
                   "responses": {
                     "default": {
-                      "statusCode": "200"
+                      "statusCode": "200",
+                      "responseParameters": {
+                        "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+                        "method.response.header.Access-Control-Allow-Origin": "'*'",
+                        "method.response.header.Access-Control-Allow-Headers": "'*,Authorization,Content-Type,X-Amz-Date,X-Amz-Security-Token,X-Api-Key'",
+                        "method.response.header.Access-Control-Expose-Headers": "'*'",
+                        "method.response.header.Access-Control-Max-Age": "'600'",
+                        "method.response.header.Access-Control-Allow-Credentials": "'true'"
+                      }
                     }
                   },
-                  "uri": {
-                    "Fn::Sub": "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${APIHandler.Arn}/invocations"
+                  "requestTemplates": {
+                    "application/json": "{\"statusCode\": 200}"
                   },
                   "passthroughBehavior": "when_no_match",
-                  "httpMethod": "POST",
-                  "contentHandling": "CONVERT_TO_TEXT",
-                  "type": "aws_proxy"
-                },
-                "summary": "This is the token endpoint"
+                  "type": "mock",
+                  "contentHandling": "CONVERT_TO_TEXT"
+                }
               }
             },
-            "/userInfo": {
+            "/search": {
               "get": {
                 "consumes": [
                   "application/json"
@@ -312,10 +287,72 @@
                   "contentHandling": "CONVERT_TO_TEXT",
                   "type": "aws_proxy"
                 },
-                "summary": "This is the userInfo endpoint"
+                "summary": "This function represents a /search API endpoint.",
+                "security": [
+                  {
+                    "WaitingRoomAuthorizer": []
+                  }
+                ]
+              },
+              "options": {
+                "consumes": [
+                  "application/json"
+                ],
+                "produces": [
+                  "application/json"
+                ],
+                "responses": {
+                  "200": {
+                    "description": "200 response",
+                    "schema": {
+                      "$ref": "#/definitions/Empty"
+                    },
+                    "headers": {
+                      "Access-Control-Allow-Methods": {
+                        "type": "string"
+                      },
+                      "Access-Control-Allow-Origin": {
+                        "type": "string"
+                      },
+                      "Access-Control-Allow-Headers": {
+                        "type": "string"
+                      },
+                      "Access-Control-Expose-Headers": {
+                        "type": "string"
+                      },
+                      "Access-Control-Max-Age": {
+                        "type": "string"
+                      },
+                      "Access-Control-Allow-Credentials": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "x-amazon-apigateway-integration": {
+                  "responses": {
+                    "default": {
+                      "statusCode": "200",
+                      "responseParameters": {
+                        "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+                        "method.response.header.Access-Control-Allow-Origin": "'*'",
+                        "method.response.header.Access-Control-Allow-Headers": "'*,Authorization,Content-Type,X-Amz-Date,X-Amz-Security-Token,X-Api-Key'",
+                        "method.response.header.Access-Control-Expose-Headers": "'*'",
+                        "method.response.header.Access-Control-Max-Age": "'600'",
+                        "method.response.header.Access-Control-Allow-Credentials": "'true'"
+                      }
+                    }
+                  },
+                  "requestTemplates": {
+                    "application/json": "{\"statusCode\": 200}"
+                  },
+                  "passthroughBehavior": "when_no_match",
+                  "type": "mock",
+                  "contentHandling": "CONVERT_TO_TEXT"
+                }
               }
             },
-            "/.well-known/openid-configuration": {
+            "/layaway": {
               "get": {
                 "consumes": [
                   "application/json"
@@ -345,11 +382,14 @@
                   "contentHandling": "CONVERT_TO_TEXT",
                   "type": "aws_proxy"
                 },
-                "summary": "This endpoint is used for auto-configuration of sites"
-              }
-            },
-            "/.well-known/jwks.json": {
-              "get": {
+                "summary": "This function represents a /layaway API endpoint.",
+                "security": [
+                  {
+                    "WaitingRoomAuthorizer": []
+                  }
+                ]
+              },
+              "options": {
                 "consumes": [
                   "application/json"
                 ],
@@ -361,24 +401,50 @@
                     "description": "200 response",
                     "schema": {
                       "$ref": "#/definitions/Empty"
+                    },
+                    "headers": {
+                      "Access-Control-Allow-Methods": {
+                        "type": "string"
+                      },
+                      "Access-Control-Allow-Origin": {
+                        "type": "string"
+                      },
+                      "Access-Control-Allow-Headers": {
+                        "type": "string"
+                      },
+                      "Access-Control-Expose-Headers": {
+                        "type": "string"
+                      },
+                      "Access-Control-Max-Age": {
+                        "type": "string"
+                      },
+                      "Access-Control-Allow-Credentials": {
+                        "type": "string"
+                      }
                     }
                   }
                 },
                 "x-amazon-apigateway-integration": {
                   "responses": {
                     "default": {
-                      "statusCode": "200"
+                      "statusCode": "200",
+                      "responseParameters": {
+                        "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+                        "method.response.header.Access-Control-Allow-Origin": "'*'",
+                        "method.response.header.Access-Control-Allow-Headers": "'*,Authorization,Content-Type,X-Amz-Date,X-Amz-Security-Token,X-Api-Key'",
+                        "method.response.header.Access-Control-Expose-Headers": "'*'",
+                        "method.response.header.Access-Control-Max-Age": "'600'",
+                        "method.response.header.Access-Control-Allow-Credentials": "'true'"
+                      }
                     }
                   },
-                  "uri": {
-                    "Fn::Sub": "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${APIHandler.Arn}/invocations"
+                  "requestTemplates": {
+                    "application/json": "{\"statusCode\": 200}"
                   },
                   "passthroughBehavior": "when_no_match",
-                  "httpMethod": "POST",
-                  "contentHandling": "CONVERT_TO_TEXT",
-                  "type": "aws_proxy"
-                },
-                "summary": "This endpoint is used for retrieval of public keys to verify tokens"
+                  "type": "mock",
+                  "contentHandling": "CONVERT_TO_TEXT"
+                }
               }
             }
           },
@@ -405,24 +471,23 @@
             "video/ogg",
             "video/mpeg",
             "video/webm"
-          ]
-        },
-        "AccessLogSetting": {
-          "DestinationArn": {
-            "Fn::GetAtt": [
-              "ApiAccessLogGroup",
-              "Arn"
-            ]
-          },
-          "Format": "{ \"requestId\":\"$context.requestId\", \"ip\": \"$context.identity.sourceIp\", \"caller\":\"$context.identity.caller\", \"user\":\"$context.identity.user\",\"requestTime\":\"$context.requestTime\", \"httpMethod\":\"$context.httpMethod\",\"resourcePath\":\"$context.resourcePath\", \"status\":\"$context.status\",\"protocol\":\"$context.protocol\", \"responseLength\":\"$context.responseLength\" }"
-        },
-        "MethodSettings": [
-          {
-            "HttpMethod": "*",
-            "LoggingLevel": "ERROR",
-            "ResourcePath": "/*"
+          ],
+          "securityDefinitions": {
+            "WaitingRoomAuthorizer": {
+              "in": "header",
+              "type": "apiKey",
+              "name": "Authorization",
+              "x-amazon-apigateway-authtype": "custom",
+              "x-amazon-apigateway-authorizer": {
+                "type": "token",
+                "authorizerUri": {
+                  "Fn::Sub": "arn:aws:apigateway:${APIGatewayRegion}:lambda:path/2015-03-31/functions/${AuthorizerARN}/invocations"
+                },
+                "authorizerResultTtlInSeconds": 300
+              }
+            }
           }
-        ]
+        }
       }
     },
     "APIHandler": {
@@ -459,13 +524,13 @@
                     "KeyPrefix"
                   ]
                 },
-                "virtual-waiting-room-on-aws-openid-%%TIMESTAMP%%.zip"
+                "aws-virtual-waiting-room-sample-%%TIMESTAMP%%.zip"
               ]
             ]
           }
         },
         "Tags": {
-          "aws-chalice": "version=1.26.6:stage=dev:app=openid-waitingroom"
+          "aws-chalice": "version=1.26.6:stage=dev:app=core-api-authorizers-sample"
         },
         "Tracing": "PassThrough",
         "Timeout": 60,
@@ -478,38 +543,6 @@
         },
         "Environment": {
           "Variables": {
-            "REDIRECT_URIS_SECRET_ID": {
-              "Fn::Sub": "${AWS::StackName}/redirect_uris"
-            },
-            "WWW_RESOURCES_URL": {
-              "Fn::Join": [
-                "",
-                [
-                  "https://",
-                  {
-                    "Fn::GetAtt": [
-                      "OpenIDWebContentCloudFront",
-                      "DomainName"
-                    ]
-                  }
-                ]
-              ]
-            },
-            "WAITING_ROOM_EVENT_ID": {
-              "Fn::Sub": "${EventID}"
-            },
-            "PUBLIC_API_ENDPOINT": {
-              "Fn::Sub": "${PublicAPIEndpoint}"
-            },
-            "PRIVATE_API_ENDPOINT": {
-              "Fn::Sub": "${PrivateAPIEndpoint}"
-            },
-            "CLIENT_SECRET_ID": {
-              "Fn::Sub": "${AWS::StackName}/client_secret"
-            },
-            "API_REGION": {
-              "Fn::Sub": "${APIRegion}"
-            },
             "SOLUTION_ID": {
               "Fn::FindInMap": [
                 "SolutionId",
@@ -555,292 +588,24 @@
         }
       }
     },
-    "ApiAccessLogGroup": {
-      "Type": "AWS::Logs::LogGroup",
+    "AuthorizerInvokePermission": {
+      "Type": "AWS::Lambda::Permission",
       "Properties": {
-        "RetentionInDays": 30
-      },
-      "Metadata": {
-        "cfn_nag": {
-          "rules_to_suppress": [
+        "FunctionName": {
+          "Ref": "AuthorizerARN"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Sub": [
+            "arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${RestAPIId}/*",
             {
-              "id": "W84",
-              "reason": "Log group data is always encrypted in CloudWatch Logs. Using KMS to encrypt is optional."
+              "RestAPIId": {
+                "Ref": "RestAPI"
+              }
             }
           ]
         }
-      }
-    },
-    "4XXErrorOpenIDApiAlarm": {
-      "Type": "AWS::CloudWatch::Alarm",
-      "Properties": {
-        "AlarmDescription": "4xx errors > 0",
-        "ComparisonOperator": "GreaterThanThreshold",
-        "EvaluationPeriods": 1,
-        "DatapointsToAlarm": 1,
-        "MetricName": "4XXError",
-        "Namespace": "AWS/ApiGateway",
-        "Dimensions": [
-          {
-            "Name": "ApiName",
-            "Value": {
-              "Fn::Sub": "${AWS::StackName}-openid-waiting-room-api"
-            }
-          }
-        ],
-        "Period": 60,
-        "Statistic": "Maximum",
-        "Threshold": 0,
-        "TreatMissingData": "notBreaching"
-      }
-    },
-    "5XXErrorOpenIDApiAlarm": {
-      "Type": "AWS::CloudWatch::Alarm",
-      "Properties": {
-        "AlarmDescription": "5xx errors > 0",
-        "ComparisonOperator": "GreaterThanThreshold",
-        "EvaluationPeriods": 1,
-        "DatapointsToAlarm": 1,
-        "MetricName": "5XXError",
-        "Namespace": "AWS/ApiGateway",
-        "Dimensions": [
-          {
-            "Name": "ApiName",
-            "Value": {
-              "Fn::Sub": "${AWS::StackName}-openid-waiting-room-api"
-            }
-          }
-        ],
-        "Period": 60,
-        "Statistic": "Maximum",
-        "Threshold": 0,
-        "TreatMissingData": "notBreaching"
-      }
-    },
-    "APIHandlerErrorsAlarm": {
-      "Type": "AWS::CloudWatch::Alarm",
-      "Properties": {
-        "AlarmDescription": "Errors > 0",
-        "ComparisonOperator": "GreaterThanThreshold",
-        "EvaluationPeriods": 1,
-        "DatapointsToAlarm": 1,
-        "MetricName": "Errors",
-        "Namespace": "AWS/Lambda",
-        "Dimensions": [
-          {
-            "Name": "FunctionName",
-            "Value": {
-              "Ref": "APIHandler"
-            }
-          }
-        ],
-        "Period": 60,
-        "Statistic": "Maximum",
-        "Threshold": 0,
-        "TreatMissingData": "notBreaching"
-      }
-    },
-    "APIHandlerThrottlesAlarm": {
-      "Type": "AWS::CloudWatch::Alarm",
-      "Properties": {
-        "AlarmDescription": "Throttles > 0",
-        "ComparisonOperator": "GreaterThanThreshold",
-        "EvaluationPeriods": 1,
-        "DatapointsToAlarm": 1,
-        "MetricName": "Throttles",
-        "Namespace": "AWS/Lambda",
-        "Dimensions": [
-          {
-            "Name": "FunctionName",
-            "Value": {
-              "Ref": "APIHandler"
-            }
-          }
-        ],
-        "Period": 60,
-        "Statistic": "Maximum",
-        "Threshold": 0,
-        "TreatMissingData": "notBreaching"
-      }
-    },
-    "GenerateClientSecretFunction": {
-      "Type": "AWS::Serverless::Function",
-      "Properties": {
-        "Runtime": "python3.8",
-        "Handler": "generate_client_secret.handler",
-        "CodeUri": {
-          "Bucket": {
-            "Fn::Join": [
-              "-",
-              [
-                {
-                  "Fn::FindInMap": [
-                    "SourceCode",
-                    "General",
-                    "S3Bucket"
-                  ]
-                },
-                {
-                  "Ref": "AWS::Region"
-                }
-              ]
-            ]
-          },
-          "Key": {
-            "Fn::Join": [
-              "/",
-              [
-                {
-                  "Fn::FindInMap": [
-                    "SourceCode",
-                    "General",
-                    "KeyPrefix"
-                  ]
-                },
-                "virtual-waiting-room-on-aws-openid-custom-resources-%%TIMESTAMP%%.zip"
-              ]
-            ]
-          }
-        },
-        "Tracing": "PassThrough",
-        "Timeout": 60,
-        "MemorySize": 1024,
-        "Role": {
-          "Fn::GetAtt": [
-            "DefaultRole",
-            "Arn"
-          ]
-        },
-        "Environment": {
-          "Variables": {
-            "SOLUTION_ID": {
-              "Fn::FindInMap": [
-                "SolutionId",
-                "UserAgent",
-                "Extra"
-              ]
-            }
-          }
-        }
-      },
-      "Metadata": {
-        "cfn_nag": {
-          "rules_to_suppress": [
-            {
-              "id": "W89",
-              "reason": "Lambda does not need to be in the Waiting Room VPC."
-            },
-            {
-              "id": "W92",
-              "reason": "Lambda does not require ReservedConcurrentExecutions."
-            }
-          ]
-        }
-      }
-    },
-    "GenerateClientSecretResource": {
-      "Type": "AWS::CloudFormation::CustomResource",
-      "Properties": {
-        "ServiceToken": {
-          "Fn::GetAtt": [
-            "GenerateClientSecretFunction",
-            "Arn"
-          ]
-        },
-        "SecretPrefix": {
-          "Ref": "AWS::StackName"
-        },
-        "Timestamp": "%%TIMESTAMP%%"
-      }
-    },
-    "GenerateRedirectURIsSecretFunction": {
-      "Type": "AWS::Serverless::Function",
-      "Properties": {
-        "Runtime": "python3.8",
-        "Handler": "generate_redirect_uris_secret.handler",
-        "CodeUri": {
-          "Bucket": {
-            "Fn::Join": [
-              "-",
-              [
-                {
-                  "Fn::FindInMap": [
-                    "SourceCode",
-                    "General",
-                    "S3Bucket"
-                  ]
-                },
-                {
-                  "Ref": "AWS::Region"
-                }
-              ]
-            ]
-          },
-          "Key": {
-            "Fn::Join": [
-              "/",
-              [
-                {
-                  "Fn::FindInMap": [
-                    "SourceCode",
-                    "General",
-                    "KeyPrefix"
-                  ]
-                },
-                "virtual-waiting-room-on-aws-openid-custom-resources-%%TIMESTAMP%%.zip"
-              ]
-            ]
-          }
-        },
-        "Tracing": "PassThrough",
-        "Timeout": 60,
-        "MemorySize": 1024,
-        "Role": {
-          "Fn::GetAtt": [
-            "DefaultRole",
-            "Arn"
-          ]
-        },
-        "Environment": {
-          "Variables": {
-            "SOLUTION_ID": {
-              "Fn::FindInMap": [
-                "SolutionId",
-                "UserAgent",
-                "Extra"
-              ]
-            }
-          }
-        }
-      },
-      "Metadata": {
-        "cfn_nag": {
-          "rules_to_suppress": [
-            {
-              "id": "W89",
-              "reason": "Lambda does not need to be in the Waiting Room VPC."
-            },
-            {
-              "id": "W92",
-              "reason": "Lambda does not require ReservedConcurrentExecutions."
-            }
-          ]
-        }
-      }
-    },
-    "GenerateRedirectURIsSecretResource": {
-      "Type": "AWS::CloudFormation::CustomResource",
-      "Properties": {
-        "ServiceToken": {
-          "Fn::GetAtt": [
-            "GenerateRedirectURIsSecretFunction",
-            "Arn"
-          ]
-        },
-        "SecretPrefix": {
-          "Ref": "AWS::StackName"
-        },
-        "Timestamp": "%%TIMESTAMP%%"
       }
     },
     "BucketLoaderFunction": {
@@ -877,7 +642,7 @@
                     "KeyPrefix"
                   ]
                 },
-                "virtual-waiting-room-on-aws-openid-custom-resources-%%TIMESTAMP%%.zip"
+                "aws-virtual-waiting-room-sample-custom-resources-%%TIMESTAMP%%.zip"
               ]
             ]
           }
@@ -928,7 +693,7 @@
           ]
         },
         "BucketName": {
-          "Ref": "OpenIDWebContentBucket"
+          "Ref": "SampleWebContentBucket"
         },
         "APIs": {
           "public_api": {
@@ -936,24 +701,27 @@
           },
           "private_api": {
             "Fn::Sub": "${PrivateAPIEndpoint}"
+          },
+          "sample_api": {
+            "Fn::Sub": "https://${RestAPI}.execute-api.${AWS::Region}.${AWS::URLSuffix}/store"
           }
         },
         "Timestamp": "%%TIMESTAMP%%"
       }
     },
-    "OpenIDWebContentBucketOAI": {
+    "SampleWebContentBucketOAI": {
       "Type": "AWS::CloudFront::CloudFrontOriginAccessIdentity",
       "Properties": {
         "CloudFrontOriginAccessIdentityConfig": {
-          "Comment": "OAI for Open ID web content"
+          "Comment": "OAI for sample web content"
         }
       }
     },
-    "OpenIDWebContentCloudFront": {
+    "SampleWebContentCloudFront": {
       "Type": "AWS::CloudFront::Distribution",
       "Properties": {
         "DistributionConfig": {
-          "Comment": "CDN for Open ID web content",
+          "Comment": "CDN for Virtual Waiting Room sample web content",
           "DefaultRootObject": "index.html",
           "DefaultCacheBehavior": {
             "TargetOriginId": "origin-www-bucket",
@@ -992,7 +760,7 @@
                   "",
                   [
                     {
-                      "Ref": "OpenIDWebContentBucket"
+                      "Ref": "SampleWebContentBucket"
                     },
                     {
                       "Fn::Sub": ".s3.${AWS::Region}.amazonaws.com"
@@ -1008,7 +776,7 @@
                     [
                       "origin-access-identity/cloudfront/",
                       {
-                        "Ref": "OpenIDWebContentBucketOAI"
+                        "Ref": "SampleWebContentBucketOAI"
                       }
                     ]
                   ]
@@ -1026,7 +794,7 @@
                 "",
                 [
                   {
-                    "Ref": "OpenIDWebLoggingBucket"
+                    "Ref": "SampleWebLoggingBucket"
                   },
                   ".s3.amazonaws.com"
                 ]
@@ -1048,57 +816,11 @@
         }
       }
     },
-    "OpenIDWebLoggingBucketPolicy": {
+    "SampleWebContentBucketPolicy": {
       "Type": "AWS::S3::BucketPolicy",
       "Properties": {
         "Bucket": {
-          "Ref": "OpenIDWebLoggingBucket"
-        },
-        "PolicyDocument": {
-          "Version": "2012-10-17",
-          "Id": "PolicyForLoggingPrivateContent",
-          "Statement": [
-            {
-              "Effect": "Deny",
-              "Principal": "*",
-              "Action": "s3:*",
-              "Resource": [
-                {
-                  "Fn::Join": [
-                    "",
-                    [
-                      {
-                        "Fn::GetAtt": [
-                          "OpenIDWebLoggingBucket",
-                          "Arn"
-                        ]
-                      },
-                      "/*"
-                    ]
-                  ]
-                },
-                {
-                  "Fn::GetAtt": [
-                    "OpenIDWebLoggingBucket",
-                    "Arn"
-                  ]
-                }
-              ],
-              "Condition": {
-                "Bool": {
-                  "aws:SecureTransport": "false"
-                }
-              }
-            }
-          ]
-        }
-      }
-    },
-    "OpenIDWebContentBucketPolicy": {
-      "Type": "AWS::S3::BucketPolicy",
-      "Properties": {
-        "Bucket": {
-          "Ref": "OpenIDWebContentBucket"
+          "Ref": "SampleWebContentBucket"
         },
         "PolicyDocument": {
           "Version": "2012-10-17",
@@ -1109,28 +831,26 @@
               "Principal": {
                 "CanonicalUser": {
                   "Fn::GetAtt": [
-                    "OpenIDWebContentBucketOAI",
+                    "SampleWebContentBucketOAI",
                     "S3CanonicalUserId"
                   ]
                 }
               },
               "Action": "s3:GetObject",
-              "Resource": [
-                {
-                  "Fn::Join": [
-                    "",
-                    [
-                      {
-                        "Fn::GetAtt": [
-                          "OpenIDWebContentBucket",
-                          "Arn"
-                        ]
-                      },
-                      "/*"
-                    ]
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    {
+                      "Fn::GetAtt": [
+                        "SampleWebContentBucket",
+                        "Arn"
+                      ]
+                    },
+                    "/*"
                   ]
-                }
-              ]
+                ]
+              }
             },
             {
               "Effect": "Deny",
@@ -1143,7 +863,7 @@
                     [
                       {
                         "Fn::GetAtt": [
-                          "OpenIDWebContentBucket",
+                          "SampleWebContentBucket",
                           "Arn"
                         ]
                       },
@@ -1153,7 +873,7 @@
                 },
                 {
                   "Fn::GetAtt": [
-                    "OpenIDWebContentBucket",
+                    "SampleWebContentBucket",
                     "Arn"
                   ]
                 }
@@ -1168,7 +888,53 @@
         }
       }
     },
-    "OpenIDWebContentBucket": {
+    "SampleWebLoggingBucketPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {
+          "Ref": "SampleWebLoggingBucket"
+        },
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Id": "PolicyForCloudFrontPrivateLogging",
+          "Statement": [
+            {
+              "Effect": "Deny",
+              "Principal": "*",
+              "Action": "s3:*",
+              "Resource": [
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "SampleWebLoggingBucket",
+                          "Arn"
+                        ]
+                      },
+                      "/*"
+                    ]
+                  ]
+                },
+                {
+                  "Fn::GetAtt": [
+                    "SampleWebLoggingBucket",
+                    "Arn"
+                  ]
+                }
+              ],
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": "false"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "SampleWebContentBucket": {
       "Type": "AWS::S3::Bucket",
       "Properties": {
         "CorsConfiguration": {
@@ -1197,13 +963,13 @@
         },
         "LoggingConfiguration": {
           "DestinationBucketName": {
-            "Ref": "OpenIDWebLoggingBucket"
+            "Ref": "SampleWebLoggingBucket"
           },
           "LogFilePrefix": "www/"
         }
       }
     },
-    "OpenIDWebLoggingBucket": {
+    "SampleWebLoggingBucket": {
       "Type": "AWS::S3::Bucket",
       "DeletionPolicy": "Retain",
       "UpdateReplacePolicy": "Retain",
@@ -1248,18 +1014,22 @@
       }
     }
   },
-  "Description": "Virtual Waiting Room on AWS OpenID Adapter %%VERSION%%",
+  "Description": "Virtual Waiting Room on AWS API Sample %%VERSION%%",
   "Parameters": {
+    "AuthorizerARN": {
+      "Description": "ARN of the API Gateway Lambda Authorizer",
+      "Type": "String"
+    },
+    "APIGatewayRegion": {
+      "Description": "AWS Region name of the API Gateway",
+      "Type": "String"
+    },
     "PublicAPIEndpoint": {
       "Description": "Public endpoint URL for the virtual waiting room APIs",
       "Type": "String"
     },
     "PrivateAPIEndpoint": {
       "Description": "Private endpoint URL for the virtual waiting room APIs",
-      "Type": "String"
-    },
-    "APIRegion": {
-      "Description": "AWS region name for the public and private waiting room APIs",
       "Type": "String"
     },
     "EventID": {

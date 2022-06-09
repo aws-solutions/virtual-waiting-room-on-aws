@@ -83,7 +83,7 @@
                     "KeyPrefix"
                   ]
                 },
-                "virtual-waiting-room-on-aws-authorizers-%%TIMESTAMP%%.zip"
+                "aws-virtual-waiting-room-authorizers-%%TIMESTAMP%%.zip"
               ]
             ]
           }
@@ -169,7 +169,7 @@
                     "KeyPrefix"
                   ]
                 },
-                "virtual-waiting-room-on-aws-jwcrypto-layer-%%TIMESTAMP%%.zip"
+                "aws-virtual-waiting-room-jwcrypto-layer-%%TIMESTAMP%%.zip"
               ]
             ]
           }

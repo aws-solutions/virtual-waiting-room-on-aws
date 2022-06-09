@@ -17,7 +17,7 @@
         "AuthorizersModuleStack": {
             "Type": "AWS::CloudFormation::Stack",
             "Properties": {
-                "TemplateURL": {"Fn::Sub": "https://%%BUCKET_NAME%%-${AWS::Region}.s3.amazonaws.com/%%SOLUTION_NAME%%/%%VERSION%%/aws-virtual-waiting-room-authorizers.template"},
+                "TemplateURL": {"Fn::Sub": "https://%%BUCKET_NAME%%-${AWS::Region}.s3.amazonaws.com/%%SOLUTION_NAME%%/%%VERSION%%/virtual-waiting-room-on-aws-authorizers.template"},
                 "Parameters": {
                     "PublicAPIEndpoint": {
                         "Fn::GetAtt": [
@@ -38,7 +38,7 @@
         "SampleModuleStack": {
             "Type": "AWS::CloudFormation::Stack",
             "Properties": {
-                "TemplateURL": {"Fn::Sub": "https://%%BUCKET_NAME%%-${AWS::Region}.s3.amazonaws.com/%%SOLUTION_NAME%%/%%VERSION%%/aws-virtual-waiting-room-sample.template"},
+                "TemplateURL": {"Fn::Sub": "https://%%BUCKET_NAME%%-${AWS::Region}.s3.amazonaws.com/%%SOLUTION_NAME%%/%%VERSION%%/virtual-waiting-room-on-aws-sample.template"},
                 "Parameters": {
                     "AuthorizerARN": {
                         "Fn::GetAtt": [

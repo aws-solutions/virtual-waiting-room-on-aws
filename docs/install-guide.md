@@ -47,9 +47,9 @@ If you have existing APIs defined in this region:
 Select any API
 Select Settings at the bottom left of the page
 Check for a value in the **CloudWatch log role ARN** field
-If there is no ARN, start by installing the aws-virtual-waiting-room-api-gateway-cw-logs-role.template
+If there is no ARN, start by installing the virtual-waiting-room-on-aws-api-gateway-cw-logs-role.template
 If there is an ARN here, skip this step and start with the aws-virtual-waiting-room.template
-If there is no existing APIs defined in this region, start by installing the aws-virtual-waiting-room-api-gateway-cw-logs-role.template
+If there is no existing APIs defined in this region, start by installing the virtual-waiting-room-on-aws-api-gateway-cw-logs-role.template
 
 
 ## Installation
@@ -60,12 +60,12 @@ The Virtual Waiting Room on AWS includes four CloudFormation templates that can 
 
 |Template URL	|Description	|
 |---	|---	|
-|https://aws-virtual-waiting-room-us-west-2.s3.us-west-2.amazonaws.com/aws-virtual-waiting-room/v1.0.0/aws-virtual-waiting-room-api-gateway-cw-logs-role.template	|Use this template to add a default role ARN to API Gateway at the account-level for CloudWatch logging permissions	|
-|https://aws-virtual-waiting-room-us-west-2.s3-us-west-2.amazonaws.com/aws-virtual-waiting-room/v1.0.0/aws-virtual-waiting-room.template	|This is the core public and private REST APIs and cloud services for creating waiting room events	|
-|https://aws-virtual-waiting-room-us-west-2.s3.us-west-2.amazonaws.com/aws-virtual-waiting-room/v1.0.0/aws-virtual-waiting-room-openid.template	|Open ID identity provider for waiting room integration with authorization interfaces	|
-|https://aws-virtual-waiting-room-us-west-2.s3.us-west-2.amazonaws.com/aws-virtual-waiting-room/v1.0.0/aws-virtual-waiting-room-authorizers.template	|Lambda authorizer designed for waiting room-issued tokens and intended for protecting end-users' APIs	|
-|https://aws-virtual-waiting-room-us-west-2.s3-us-west-2.amazonaws.com/aws-virtual-waiting-room/v1.0.0/aws-virtual-waiting-room-sample-inlet-strategy.template	|Sample inlet strategies intended for use between a commerce/reservation site and the waiting room. Inlet strategies help encapsulate logic to determine when to allow more users into the target site.	|
-|https://aws-virtual-waiting-room-us-west-2.s3.us-west-2.amazonaws.com/aws-virtual-waiting-room/v1.0.0/aws-virtual-waiting-room-sample.template	|Minimal web and API Gateway configuration for  a waiting room and commerce site	|
+|https://virtual-waiting-room-on-aws-us-west-2.s3.us-west-2.amazonaws.com/aws-virtual-waiting-room/v1.0.0/virtual-waiting-room-on-aws-api-gateway-cw-logs-role.template	|Use this template to add a default role ARN to API Gateway at the account-level for CloudWatch logging permissions	|
+|https://virtual-waiting-room-on-aws-us-west-2.s3-us-west-2.amazonaws.com/aws-virtual-waiting-room/v1.0.0/aws-virtual-waiting-room.template	|This is the core public and private REST APIs and cloud services for creating waiting room events	|
+|https://virtual-waiting-room-on-aws-us-west-2.s3.us-west-2.amazonaws.com/aws-virtual-waiting-room/v1.0.0/virtual-waiting-room-on-aws-openid.template	|Open ID identity provider for waiting room integration with authorization interfaces	|
+|https://virtual-waiting-room-on-aws-us-west-2.s3.us-west-2.amazonaws.com/aws-virtual-waiting-room/v1.0.0/virtual-waiting-room-on-aws-authorizers.template	|Lambda authorizer designed for waiting room-issued tokens and intended for protecting end-users' APIs	|
+|https://virtual-waiting-room-on-aws-us-west-2.s3-us-west-2.amazonaws.com/aws-virtual-waiting-room/v1.0.0/virtual-waiting-room-on-aws-sample-inlet-strategy.template	|Sample inlet strategies intended for use between a commerce/reservation site and the waiting room. Inlet strategies help encapsulate logic to determine when to allow more users into the target site.	|
+|https://virtual-waiting-room-on-aws-us-west-2.s3.us-west-2.amazonaws.com/aws-virtual-waiting-room/v1.0.0/virtual-waiting-room-on-aws-sample.template	|Minimal web and API Gateway configuration for  a waiting room and commerce site	|
 
 Each template provides a layer of functionality for building Virtual Waiting Rooms.
 
@@ -75,9 +75,9 @@ Install the main (also referred to as Core) template where you will need the wai
 
 If this is the first time installing, or you are not sure what to install, include the authorizers, sample inlet strategies and sample waiting room code templates. This will allow you to see a minimal waiting room with a simple flow.
 
-1. aws-virtual-waiting-room-authorizers.template
-2. aws-virtual-waiting-room-sample-inlet-strategy.template
-3. aws-virtual-waiting-room-sample.template
+1. virtual-waiting-room-on-aws-authorizers.template
+2. virtual-waiting-room-on-aws-sample-inlet-strategy.template
+3. virtual-waiting-room-on-aws-sample.template
 
 The authorizers template will request parameters that are outputs of the installation of the main template. This is also tru for the inlet strategies template. You can find these values by navigating to the previously installed CloudFormation stack and choosing the Output tab.
 
@@ -144,7 +144,7 @@ Call the `increment_serving_counter` API again to move the serving position forw
 
 ## Configure the Open ID Adapter
 
-Install the Open ID adapter stack using the template named aws-virtual-waiting-room-openid.template
+Install the Open ID adapter stack using the template named virtual-waiting-room-on-aws-openid.template
 The Open ID stack will request parameters from the core API stack
 
 This sample uses the following AWS resources:
