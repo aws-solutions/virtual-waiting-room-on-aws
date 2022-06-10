@@ -15,10 +15,10 @@ setuptools.setup(
     description="Common Python modules for Virtual Waiting Room on AWS",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/aws-solutions/aws-virtual-waiting-room",
+    url="https://github.com/aws-solutions/virtual-waiting-room-on-aws",
     project_urls={
         "Bug Tracker":
-        "https://github.com/aws-solutions/aws-virtual-waiting-room/issues",
+        "https://github.com/aws-solutions/virtual-waiting-room-on-aws/issues",
     },
     classifiers=[
         "Programming Language :: Python :: 3",

@@ -229,7 +229,7 @@ There are six CloudFormation templates available for the Virtual Waiting Room on
 
 This template is used to create and configure an IAM Role for API GAteway that allows it to send access logs to CloudWatch. The Role is configured at the account/region level, so it may or may not exist when the Virtual Waiting Room on AWS is installed the first time. Run this template if no existing IAM Role for API Gateway logging has been added for the region.
 
-#### aws-virtual-waiting-room.template
+#### virtual-waiting-room-on-aws.template
 
 This is the primary template for the Virtual Waiting Room on AWS. This template configured all the foundational APIs, events, Virtual Private Cloud, Elasticache and DynamoDB table. This template is always installed with a new event.
 
@@ -238,7 +238,7 @@ This is the primary template for the Virtual Waiting Room on AWS. This template 
 This template installs the API Gateway authorizers that can be used by the customer with Virtual Waiting Room on AWS issued JSON Web Tokens. After installing this template, the customer can add the authorizers to one or more API Gateway REST APIs to only allow users access who have passed through the waiting room.
 #### virtual-waiting-room-on-aws-openid.template
 
-This is an optional template that provides a set of APIs for Open ID Connect authorization and a sample page that acts as a waiting room within the authentication flow. This template is a logical layer above the primary public and private APIs configured by aws-virtual-waiting-room.template.
+This is an optional template that provides a set of APIs for Open ID Connect authorization and a sample page that acts as a waiting room within the authentication flow. This template is a logical layer above the primary public and private APIs configured by virtual-waiting-room-on-aws.template.
 
 #### virtual-waiting-room-on-aws-sample-inlet-strategy.template
 
@@ -255,7 +255,7 @@ The physical view shows the deployed software with configured cloud resources an
 
 The previous diagram shows the significant subsystems installed for the Virtual Waiting Room on AWS.
 
-The stack resources for aws-virtual-waiting-room.template are shown at the right of the diagram. This stack installs a public API and private (IAM-authorized) API used for most operations of te Virtual Waiting Room on AWS. The public API is configured with a CloudFront distribution with multiple caching policies based on the API called. A DynamoDB table and EventBridge event bus is also created here. This stack installs a VPC with two availability zones, a Redis cluster in those AZs, and several Lambda functions. Lambda functions that interact with Redis are installed within the VPC and all other are installed in the shared AWS network space.
+The stack resources for virtual-waiting-room-on-aws.template are shown at the right of the diagram. This stack installs a public API and private (IAM-authorized) API used for most operations of te Virtual Waiting Room on AWS. The public API is configured with a CloudFront distribution with multiple caching policies based on the API called. A DynamoDB table and EventBridge event bus is also created here. This stack installs a VPC with two availability zones, a Redis cluster in those AZs, and several Lambda functions. Lambda functions that interact with Redis are installed within the VPC and all other are installed in the shared AWS network space.
 
 The stack resources for virtual-waiting-room-on-aws-authorizers.template are shown at the top-left of the diagram. This stack installs one IAM role and Lambda function. The Lambda function is a custom authorizer for API Gateway and may be used by the customer to protect APIs until a user has progressed through the waiting room and receives an access token.
 

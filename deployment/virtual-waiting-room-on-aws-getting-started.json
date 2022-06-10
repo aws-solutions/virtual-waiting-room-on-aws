@@ -5,7 +5,7 @@
         "CoreModuleStack": {
             "Type": "AWS::CloudFormation::Stack",
             "Properties": {
-                "TemplateURL": {"Fn::Sub": "https://%%BUCKET_NAME%%-${AWS::Region}.s3.amazonaws.com/%%SOLUTION_NAME%%/%%VERSION%%/aws-virtual-waiting-room.template"},
+                "TemplateURL": {"Fn::Sub": "https://%%BUCKET_NAME%%-${AWS::Region}.s3.amazonaws.com/%%SOLUTION_NAME%%/%%VERSION%%/virtual-waiting-room-on-aws.template"},
                 "Parameters": {
                     "EventId": {"Ref": "EventId"},
                     "ValidityPeriod": {"Ref": "ValidityPeriod"},

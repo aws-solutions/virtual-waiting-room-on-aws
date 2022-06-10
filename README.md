@@ -1,4 +1,4 @@
-**[🚀 Solution Landing Page](https://aws.amazon.com/solutions/implementations/aws-virtual-waiting-room/)** | **[📜 Solution Implementation Guide](https://docs.aws.amazon.com/solutions/latest/aws-virtual-waiting-room/welcome.html)** | **[🚧 Feature request](https://github.com/aws-solutions/aws-virtual-waiting-room/issues/new?assignees=&labels=feature-request%2C+enhancement&template=feature_request.md&title=)** | **[🐛 Bug Report](https://github.com/aws-solutions/aws-virtual-waiting-room/issues/new?assignees=&labels=bug%2C+triage&template=bug_report.md&title=)**
+**[🚀 Solution Landing Page](https://aws.amazon.com/solutions/implementations/virtual-waiting-room-on-aws/)** | **[📜 Solution Implementation Guide](https://docs.aws.amazon.com/solutions/latest/virtual-waiting-room-on-aws/welcome.html)** | **[🚧 Feature request](https://github.com/aws-solutions/virtual-waiting-room-on-aws/issues/new?assignees=&labels=feature-request%2C+enhancement&template=feature_request.md&title=)** | **[🐛 Bug Report](https://github.com/aws-solutions/virtual-waiting-room-on-aws/issues/new?assignees=&labels=bug%2C+triage&template=bug_report.md&title=)**
 
 Note: If you want to use the solution without building from source, navigate to Solution Landing Page
 
@@ -66,7 +66,7 @@ chmod +x ./run-unit-tests.sh
 │   ├── virtual-waiting-room-on-aws-sample.json    [ Base template for sample site ]
 │   ├── virtual-waiting-room-on-aws-swagger-private-api.json   [ Swagger file for private API ]
 │   ├── virtual-waiting-room-on-aws-swagger-public-api.json    [ Swagger file for public API ]
-│   ├── aws-virtual-waiting-room.json   [ Base template for core API ]
+│   ├── virtual-waiting-room-on-aws.json   [ Base template for core API ]
 │   ├── build-s3-dist.sh    [ Script for building distributables and preparing the CloudFormation templates ]
 │   ├── deploy.sh   [ Script for building distributables and preparing the CloudFormation templates ]
 │   ├── docker_build.sh   [ Script for building jwcrypto library ]

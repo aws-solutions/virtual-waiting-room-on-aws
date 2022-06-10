@@ -17,7 +17,7 @@
 #  - version-code: version of the package
 
 function symbol_update {
-    TEMPLATES=`find . -name '*aws-virtual-waiting-room*.template' -type f `
+    TEMPLATES=`find . -name '*virtual-waiting-room-on-aws*.template' -type f `
 
     echo $TEMPLATES | \
         xargs -n 1 sed -i -e "s/%%TIMESTAMP%%/$TIMESTAMP/g"
@@ -40,11 +40,11 @@ while getopts ':h' OPTION; do
     h)
       echo
       echo "script usage: $(basename $0) DIST_OUTPUT_BUCKET SOLUTION_NAME VERSION"
-      echo "example usage: ./$(basename $0) mybucket aws-virtual-waiting-room v1.0.0"
+      echo "example usage: ./$(basename $0) mybucket virtual-waiting-room-on-aws v1.0.0"
       echo
       echo "If no arguments are passed in, the following default values are used:"
       echo "DIST_OUTPUT_BUCKET=rodeolabz"
-      echo "SOLUTION_NAME=aws-virtual-waiting-room"
+      echo "SOLUTION_NAME=virtual-waiting-room-on-aws"
       echo "VERSION=v1.0.0"
       echo
       echo "You may export export these variables in your environment and call the script using those variables:"
@@ -73,8 +73,8 @@ if [ -z "$1" ]
 fi
 if [ -z "$2" ] 
   then
-    echo "Setting default solution name to aws-virtual-waiting-room."
-    SOLUTION_NAME='aws-virtual-waiting-room'
+    echo "Setting default solution name to virtual-waiting-room-on-aws."
+    SOLUTION_NAME='virtual-waiting-room-on-aws'
 fi
 
 if [ -z "$3" ]
@@ -343,7 +343,7 @@ echo "--------------------------------------------------------------------------
 
 cd $template_dir
 # copy templates
-for f in *aws-virtual-waiting-room*.json; do
+for f in *virtual-waiting-room-on-aws*.json; do
     cp -- "$f" "$template_dist_dir/${f%.json}.template"
     cp -- "$f" "$build_dist_dir/${f%.json}.template"
 done

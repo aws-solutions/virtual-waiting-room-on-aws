@@ -16,7 +16,7 @@ from urllib.parse import urlparse
 API_REGION = os.environ.get('AWS_DEFAULT_REGION')
 NOTIFICATION_ENDPOINT = os.environ.get('NOTIFICATION_ENDPOINT')
 
-SOLUTION_NAME = 'aws-virtual-waiting-room'
+SOLUTION_NAME = 'virtual-waiting-room-on-aws'
 PAYLOAD = {}
 PAYLOAD['solution_name'] = SOLUTION_NAME
 PAYLOAD['branch'] = os.environ.get('BRANCH')
