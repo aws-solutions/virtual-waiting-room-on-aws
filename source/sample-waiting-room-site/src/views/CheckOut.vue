@@ -10,7 +10,7 @@ SPDX-License-Identifier: Apache-2.0
     <div class="text-center lead mb-2">Secure Check Out System</div>
     <div class="text-center mb-2">
       You can complete the purchase of your widget now! This component will
-      request an authentication token from the AWS Virtual Waiting Room API and
+      request an authentication token from the Virtual Waiting Room on AWS API and
       call the site's protected API to finish.
     </div>
     <div class="d-flex flex-column justify-content-center">

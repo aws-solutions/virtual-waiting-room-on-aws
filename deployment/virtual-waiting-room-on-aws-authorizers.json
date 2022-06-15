@@ -1,0 +1,204 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": "AWS::Serverless-2016-10-31",
+  "Outputs": {
+    "ApiGatewayAuthorizerArn": {
+      "Value": {
+        "Fn::GetAtt": [
+          "ApiGatewayAuthorizer",
+          "Arn"
+        ]
+      }
+    }
+  },
+  "Resources": {
+    "DefaultRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": "arn:*:logs:*:*:*"
+                }
+              ]
+            },
+            "PolicyName": "DefaultRolePolicy"
+          }
+        ]
+      }
+    },
+    "ApiGatewayAuthorizer": {
+      "Type": "AWS::Serverless::Function",
+      "Properties": {
+        "Runtime": "python3.8",
+        "Handler": "app.api_gateway_authorizer",
+        "CodeUri": {
+          "Bucket": {
+            "Fn::Join": [
+              "-",
+              [
+                {
+                  "Fn::FindInMap": [
+                    "SourceCode",
+                    "General",
+                    "S3Bucket"
+                  ]
+                },
+                {
+                  "Ref": "AWS::Region"
+                }
+              ]
+            ]
+          },
+          "Key": {
+            "Fn::Join": [
+              "/",
+              [
+                {
+                  "Fn::FindInMap": [
+                    "SourceCode",
+                    "General",
+                    "KeyPrefix"
+                  ]
+                },
+                "virtual-waiting-room-on-aws-authorizers-%%TIMESTAMP%%.zip"
+              ]
+            ]
+          }
+        },
+        "Tags": {
+          "aws-chalice": "version=1.26.6:stage=dev:app=token-authorizer"
+        },
+        "Tracing": "PassThrough",
+        "Timeout": 60,
+        "MemorySize": 1024,
+        "Role": {
+          "Fn::GetAtt": [
+            "DefaultRole",
+            "Arn"
+          ]
+        },
+        "Environment": {
+          "Variables": {
+            "PUBLIC_API_ENDPOINT": {
+              "Fn::Sub": "${PublicAPIEndpoint}"
+            },
+            "WAITING_ROOM_EVENT_ID": {
+              "Fn::Sub": "${WaitingRoomEventID}"
+            },
+            "ISSUER": {
+              "Fn::Sub": "${IssuerURI}"
+            }
+          }
+        },
+        "Layers": [
+          {
+            "Fn::Sub": "${JWCryptoLayer}"
+          }
+        ]
+      },
+      "Metadata": {
+        "cfn_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "W89",
+              "reason": "Lambda does not need to be in the Waiting Room VPC."
+            },
+            {
+              "id": "W92",
+              "reason": "Lambda does not require ReservedConcurrentExecutions."
+            }
+          ]
+        }
+      }
+    },
+    "JWCryptoLayer": {
+      "Type": "AWS::Serverless::LayerVersion",
+      "Properties": {
+        "CompatibleRuntimes": [
+          "python3.8"
+        ],
+        "ContentUri": {
+          "Bucket": {
+            "Fn::Join": [
+              "-",
+              [
+                {
+                  "Fn::FindInMap": [
+                    "SourceCode",
+                    "General",
+                    "S3Bucket"
+                  ]
+                },
+                {
+                  "Ref": "AWS::Region"
+                }
+              ]
+            ]
+          },
+          "Key": {
+            "Fn::Join": [
+              "/",
+              [
+                {
+                  "Fn::FindInMap": [
+                    "SourceCode",
+                    "General",
+                    "KeyPrefix"
+                  ]
+                },
+                "virtual-waiting-room-on-aws-jwcrypto-layer-%%TIMESTAMP%%.zip"
+              ]
+            ]
+          }
+        },
+        "Description": "JWCrypto Layer for Authorizers"
+      }
+    }
+  },
+  "Description": "Virtual Waiting Room on AWS API Gateway Authorizers %%VERSION%%",
+  "Parameters": {
+    "PublicAPIEndpoint": {
+      "Description": "Public endpoint for the virtual waiting room APIs",
+      "Type": "String"
+    },
+    "WaitingRoomEventID": {
+      "Description": "Event ID of waiting room",
+      "Type": "String"
+    },
+    "IssuerURI": {
+      "Description": "Issuer URI of the public keys and tokens",
+      "Type": "String"
+    }
+  },
+  "Mappings": {
+    "SourceCode": {
+      "General": {
+        "S3Bucket": "%%BUCKET_NAME%%",
+        "KeyPrefix": "%%SOLUTION_NAME%%/%%VERSION%%"
+      }
+    }
+  }
+}

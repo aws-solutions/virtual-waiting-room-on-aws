@@ -7,7 +7,7 @@ This module creates S3 buckets with a region suffix.
 import time
 import boto3
 
-ROOT_BUCKET_NAME = "aws-virtual-waiting-room"
+ROOT_BUCKET_NAME = "virtual-waiting-room-on-aws"
 
 
 regions = ['ap-northeast-1', 'ap-south-1', 'ap-southeast-1', 'ca-central-1', \

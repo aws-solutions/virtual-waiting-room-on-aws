@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
-    "Description": "AWS Virtual Waiting Room Inlet Strategies %%VERSION%%",
+    "Description": "Virtual Waiting Room on AWS Inlet Strategies %%VERSION%%",
     "Mappings": {
         "SourceCode": {
             "General": {
@@ -43,7 +43,7 @@
                                         "KeyPrefix"
                                     ]
                                 },
-                                "aws-virtual-waiting-room-sample-inlet-strategies-%%TIMESTAMP%%.zip"
+                                "virtual-waiting-room-on-aws-sample-inlet-strategies-%%TIMESTAMP%%.zip"
                             ]
                         ]
                     }
@@ -234,7 +234,7 @@
                                         "KeyPrefix"
                                     ]
                                 },
-                                "aws-virtual-waiting-room-sample-inlet-strategies-%%TIMESTAMP%%.zip"
+                                "virtual-waiting-room-on-aws-sample-inlet-strategies-%%TIMESTAMP%%.zip"
                             ]
                         ]
                     }

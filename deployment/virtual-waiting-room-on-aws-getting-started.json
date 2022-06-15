@@ -1,11 +1,11 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
-    "Description": "AWS Virtual Waiting Room Getting Started %%VERSION%%",
+    "Description": "Virtual Waiting Room on AWS Getting Started %%VERSION%%",
     "Resources": {
         "CoreModuleStack": {
             "Type": "AWS::CloudFormation::Stack",
             "Properties": {
-                "TemplateURL": {"Fn::Sub": "https://%%BUCKET_NAME%%-${AWS::Region}.s3.amazonaws.com/%%SOLUTION_NAME%%/%%VERSION%%/aws-virtual-waiting-room.template"},
+                "TemplateURL": {"Fn::Sub": "https://%%BUCKET_NAME%%-${AWS::Region}.s3.amazonaws.com/%%SOLUTION_NAME%%/%%VERSION%%/virtual-waiting-room-on-aws.template"},
                 "Parameters": {
                     "EventId": {"Ref": "EventId"},
                     "ValidityPeriod": {"Ref": "ValidityPeriod"},
@@ -17,7 +17,7 @@
         "AuthorizersModuleStack": {
             "Type": "AWS::CloudFormation::Stack",
             "Properties": {
-                "TemplateURL": {"Fn::Sub": "https://%%BUCKET_NAME%%-${AWS::Region}.s3.amazonaws.com/%%SOLUTION_NAME%%/%%VERSION%%/aws-virtual-waiting-room-authorizers.template"},
+                "TemplateURL": {"Fn::Sub": "https://%%BUCKET_NAME%%-${AWS::Region}.s3.amazonaws.com/%%SOLUTION_NAME%%/%%VERSION%%/virtual-waiting-room-on-aws-authorizers.template"},
                 "Parameters": {
                     "PublicAPIEndpoint": {
                         "Fn::GetAtt": [
@@ -38,7 +38,7 @@
         "SampleModuleStack": {
             "Type": "AWS::CloudFormation::Stack",
             "Properties": {
-                "TemplateURL": {"Fn::Sub": "https://%%BUCKET_NAME%%-${AWS::Region}.s3.amazonaws.com/%%SOLUTION_NAME%%/%%VERSION%%/aws-virtual-waiting-room-sample.template"},
+                "TemplateURL": {"Fn::Sub": "https://%%BUCKET_NAME%%-${AWS::Region}.s3.amazonaws.com/%%SOLUTION_NAME%%/%%VERSION%%/virtual-waiting-room-on-aws-sample.template"},
                 "Parameters": {
                     "AuthorizerARN": {
                         "Fn::GetAtt": [

@@ -1,5 +1,5 @@
 {
-    "Description": "AWS Virtual Waiting Room API Sample %%VERSION%%",
+    "Description": "Virtual Waiting Room on AWS API Sample %%VERSION%%",
     "Parameters": {
         "AuthorizerARN": {
             "Description": "ARN of the API Gateway Lambda Authorizer",
@@ -213,7 +213,7 @@
                                         "KeyPrefix"
                                     ]
                                 },
-                                "aws-virtual-waiting-room-sample-%%TIMESTAMP%%.zip"
+                                "virtual-waiting-room-on-aws-sample-%%TIMESTAMP%%.zip"
                             ]
                         ]
                     }
@@ -279,7 +279,7 @@
                                         "KeyPrefix"
                                     ]
                                 },
-                                "aws-virtual-waiting-room-sample-custom-resources-%%TIMESTAMP%%.zip"
+                                "virtual-waiting-room-on-aws-sample-custom-resources-%%TIMESTAMP%%.zip"
                             ]
                         ]
                     }

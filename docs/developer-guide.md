@@ -17,12 +17,12 @@ Adding, removing and updating the top-level subsystems of a Virtual Waiting Room
 
 |Template	|Description	|
 |---	|---	|
-|aws-virtual-waiting-room-api-gateway-cw-logs-role.template	|Use this template to add a default role ARN to API Gateway at the account-level for CloudWatch logging permissions	|
-|aws-virtual-waiting-room.template	|This is the core security, public and private REST APIs, storage configuration and logic for creating waiting room events	|
-|aws-virtual-waiting-room-openid.template	|Open ID identity provider for waiting room integration with authorization interfaces	|
-|aws-virtual-waiting-room-authorizers.template	|Lambda authorizer designed for waiting room-issued tokens and intended for protecting end-users' APIs	|
-|aws-virtual-waiting-room-sample-inlet-strategy.template	|Sample inlet strategies intended for use between a commerce/reservation site and the waiting room. Inlet strategies help encapsulate logic to determine when to allow more users into the target site.	|
-|aws-virtual-waiting-room-sample.template	|Minimal web and API Gateway configuration for  a waiting room and commerce site	|
+|virtual-waiting-room-on-aws-api-gateway-cw-logs-role.template	|Use this template to add a default role ARN to API Gateway at the account-level for CloudWatch logging permissions	|
+|virtual-waiting-room-on-aws.template	|This is the core security, public and private REST APIs, storage configuration and logic for creating waiting room events	|
+|virtual-waiting-room-on-aws-openid.template	|Open ID identity provider for waiting room integration with authorization interfaces	|
+|virtual-waiting-room-on-aws-authorizers.template	|Lambda authorizer designed for waiting room-issued tokens and intended for protecting end-users' APIs	|
+|virtual-waiting-room-on-aws-sample-inlet-strategy.template	|Sample inlet strategies intended for use between a commerce/reservation site and the waiting room. Inlet strategies help encapsulate logic to determine when to allow more users into the target site.	|
+|virtual-waiting-room-on-aws-sample.template	|Minimal web and API Gateway configuration for  a waiting room and commerce site	|
 
 Each template provides a layer of functionality for building Virtual Waiting Rooms and integrating it with a web site.
 
