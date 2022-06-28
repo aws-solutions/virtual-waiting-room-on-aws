@@ -3450,9 +3450,15 @@
                                 {
                                     "Effect": "Allow",
                                     "Action": [
-                                        "logs:*"
+                                        "logs:CreateLogGroup",
+                                        "logs:CreateLogStream",
+                                        "logs:DescribeLogGroups",
+                                        "logs:DescribeLogStreams",
+                                        "logs:PutLogEvents",
+                                        "logs:GetLogEvents",
+                                        "logs:FilterLogEvents"
                                     ],
-                                    "Resource": "arn:aws:logs:*:*:*"
+                                    "Resource": { "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*" }
                                 }
                             ]
                         }
@@ -3472,7 +3478,7 @@
                 "InputString":  {
                     "Fn::Sub": "${AWS::StackName}" 
                 },
-                "MaxLength": 25
+                "MaxLength": 20
             }
         },
         "IntersectAZCustomResource": {
