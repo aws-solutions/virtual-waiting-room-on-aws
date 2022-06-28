@@ -242,7 +242,7 @@
             "Type": "AWS::SQS::Queue",
             "Properties": {
                 "QueueName": {
-                    "Fn::Sub": "${AWS::StackName}-WaitingRoomQueue"
+                    "Fn::Join": ["-", [ { "Fn::GetAtt": [ "InvokeShortenStackNameLambda", "returnValue" ] }, "WaitingRoomQueue"] ]
                 },
                 "KmsMasterKeyId": "alias/aws/sqs",
                 "KmsDataKeyReusePeriodSeconds": 300,
@@ -257,7 +257,7 @@
             "Type": "AWS::SQS::Queue",
             "Properties": {
                 "QueueName": {
-                    "Fn::Sub": "${AWS::StackName}-WaitingRoomDeadLetterQueue"
+                    "Fn::Join": ["-", [ { "Fn::GetAtt": [ "InvokeShortenStackNameLambda", "returnValue" ] }, "WaitingRoomDeadLetterQueue" ] ] 
                 },
                 "KmsMasterKeyId": "alias/aws/sqs",
                 "KmsDataKeyReusePeriodSeconds": 300
@@ -3404,6 +3404,75 @@
                         }
                     ]
                 }
+            }
+        },
+        "StringClipLambdaCustomResource": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "FunctionName": "StringLambdaFunction",
+                "Runtime": "python3.8",
+                "Role": {
+                    "Fn::GetAtt": ["StringClipLambdaRole", "Arn"]
+                },
+                "Handler": "index.lambda_handler",
+                "Description": "Custom string lambda cloudformation",
+                "Timeout": 90,
+                "Code": {
+                    "ZipFile": "import cfnresponse\n\ndef lambda_handler(event, context):\n  responseData = {}\n  try:\n    input_string = str(event['ResourceProperties']['InputString'])\n    max_length = int(event['ResourceProperties']['MaxLength'])\n    responseData['returnValue'] = input_string[:max_length]\n    cfnresponse.send(event, context, 'SUCCESS', responseData)\n  except Exception as ex:\n    print(ex)\n    cfnresponse.send(event, context, 'FAILED', responseData)\n"
+                }
+            }
+        },
+        "StringClipLambdaRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                },
+                "Policies": [
+                    {
+                        "PolicyName": "StringClipLambdaRolePolicy",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "logs:*"
+                                    ],
+                                    "Resource": "arn:aws:logs:*:*:*"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "InvokeShortenStackNameLambda": {
+            "Type": "Custom::InvokeCustomLambda",
+            "Properties": {
+                "ServiceToken": {
+                    "Fn::GetAtt": [
+                        "StringClipLambdaCustomResource",
+                        "Arn"
+                    ]
+                },
+                "InputString":  {
+                    "Fn::Sub": "${AWS::StackName}" 
+                },
+                "MaxLength": 25
             }
         },
         "IntersectAZCustomResource": {
