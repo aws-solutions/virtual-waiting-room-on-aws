@@ -23,11 +23,14 @@ import token_helper
 REDIS_HOST = os.environ["REDIS_HOST"]
 REDIS_PORT = os.environ["REDIS_PORT"]
 DDB_TABLE_NAME = os.environ["TOKEN_TABLE"]
+DDB_SVC_EXP_TABLE_NAME = os.environ['COUNTER_ISSUED_AT_TABLE']
 SECRET_NAME_PREFIX = os.environ["STACK_NAME"]
 VALIDITY_PERIOD = int(os.environ["VALIDITY_PERIOD"])
 EVENT_ID = os.environ["EVENT_ID"]
 EVENT_BUS_NAME = os.environ["EVENT_BUS_NAME"]
 SOLUTION_ID = os.environ['SOLUTION_ID']
+ENABLE_QUEUE_POSITION_EXPIRY = os.environ['ENABLE_QUEUE_POSITION_EXPIRY']
+QUEUE_POSITION_EXPIRY_PERIOD = os.environ['QUEUE_POSITION_EXPIRY_PERIOD']
 
 boto_session = boto3.session.Session()
 region = boto_session.region_name
@@ -35,6 +38,7 @@ user_agent_extra = {"user_agent_extra": SOLUTION_ID}
 user_config = config.Config(**user_agent_extra)
 ddb_resource = boto3.resource('dynamodb', endpoint_url=f'https://dynamodb.{region}.amazonaws.com', config=user_config)
 ddb_table = ddb_resource.Table(DDB_TABLE_NAME)
+ddb_svc_exp_table =  ddb_table = ddb_resource.Table(DDB_SVC_EXP_TABLE_NAME)
 events_client = boto3.client('events', endpoint_url=f'https://events.{region}.amazonaws.com', config=user_config)
 
 secrets_client = boto3.client('secretsmanager', endpoint_url=f'https://secretsmanager.{region}.amazonaws.com', config=user_config)
@@ -67,8 +71,14 @@ def lambda_handler(event, context):
     if client_event_id == EVENT_ID and is_valid_rid(request_id):
         if queue_number := rc.hget(request_id, "queue_number"):
             if int(queue_number) <= int(rc.get(SERVING_COUNTER)):
-                keypair = token_helper.create_jwk_keypair(secrets_client, SECRET_NAME_PREFIX)
+                if ENABLE_QUEUE_POSITION_EXPIRY and not token_helper.is_queue_position_valid(EVENT_ID, queue_number, ddb_svc_exp_table):
+                    return {
+                        "statusCode": HTTPStatus.GONE.value,
+                        "headers": headers, 
+                        "body": json.dumps({"error": "Session token acquistion window expired"})
+                    }
 
+                keypair = token_helper.create_jwk_keypair(secrets_client, SECRET_NAME_PREFIX)
                 item = ddb_table.get_item(Key={"request_id": request_id})
                 if 'Item' in item:
                     claims = token_helper.create_claims_from_record(EVENT_ID, item)
@@ -115,6 +125,9 @@ def lambda_handler(event, context):
                 (access_token, refresh_token, id_token) = token_helper.create_tokens(claims, keypair, False)
                 token_helper.write_to_eventbus(events_client, EVENT_ID, EVENT_BUS_NAME, request_id)
                 rc.incr(TOKEN_COUNTER, 1)
+
+                if ENABLE_QUEUE_POSITION_EXPIRY:
+                    token_helper.is_queue_position_valid(EVENT_ID, queue_number, ddb_svc_exp_table)
 
                 response = {
                     "statusCode": HTTPStatus.OK.value, 

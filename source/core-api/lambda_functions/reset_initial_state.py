@@ -14,6 +14,7 @@ from counters import *
 from vwr.common.sanitize import deep_clean
 
 DDB_TABLE_NAME = os.environ["TOKEN_TABLE"]
+DDB_SVC_EXP_TABLE_NAME = os.environ["COUNTER_ISSUED_AT_TABLE"]
 EVENT_ID = os.environ["EVENT_ID"]
 REDIS_HOST = os.environ["REDIS_HOST"]
 REDIS_PORT = os.environ["REDIS_PORT"]
@@ -24,8 +25,8 @@ user_agent_extra = {"user_agent_extra": SOLUTION_ID}
 user_config = config.Config(**user_agent_extra)
 boto_session = boto3.session.Session()
 region = boto_session.region_name
-ddb_client = boto3.client('dynamodb', endpoint_url="https://dynamodb."+region+".amazonaws.com", config=user_config)
-secrets_client = boto3.client('secretsmanager', config=user_config, endpoint_url="https://secretsmanager."+region+".amazonaws.com")
+ddb_client = boto3.client('dynamodb', endpoint_url=f"https://dynamodb.{region}.amazonaws.com", config=user_config)
+secrets_client = boto3.client('secretsmanager', config=user_config, endpoint_url=f"https://secretsmanager.{region}.amazonaws.com")
 response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/redis-auth")
 redis_auth = response.get("SecretString")
 rc = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, ssl=True, decode_responses=True, password=redis_auth)
@@ -52,57 +53,13 @@ def lambda_handler(event, context):
         rc.getset(ABANDONED_SESSION_COUNTER, 0)
 
         try:                       
-            response = ddb_client.delete_table( TableName=DDB_TABLE_NAME )
+            response = ddb_client.delete_table( TableName=DDB_SVC_EXP_TABLE_NAME )
             waiter = ddb_client.get_waiter('table_not_exists')
             # wait for table to get deleted
             waiter.wait(TableName=DDB_TABLE_NAME)
-            print("Token table deleted")
+            print("Counter Issued At table deleted")
             # recreate table
-            response = ddb_client.create_table(
-                TableName= DDB_TABLE_NAME,
-                BillingMode = "PAY_PER_REQUEST",
-                AttributeDefinitions = [
-                    {
-                        "AttributeName": "request_id",
-                        "AttributeType": "S"
-                    },
-                    {
-                        "AttributeName": "expires",
-                        "AttributeType": "N"
-                    },
-                    {
-                        "AttributeName": "event_id",
-                        "AttributeType": "S"
-                    }
-                ],
-                KeySchema = [
-                    {
-                        "AttributeName": "request_id",
-                        "KeyType": "HASH"
-                    }
-                ],
-                GlobalSecondaryIndexes = [
-                    {
-                        "IndexName": "EventExpiresIndex",
-                        "KeySchema": [
-                            {
-                                "AttributeName": "event_id",
-                                "KeyType": "HASH"
-                            },
-                            {
-                                "AttributeName": "expires",
-                                "KeyType": "RANGE"
-                            }
-                        ],
-                        "Projection": {
-                            "ProjectionType": "ALL"
-                        }
-                    }
-                ],
-                SSESpecification = {
-                    "Enabled": True
-                }
-            )
+            Create_CounterIssuedAt_Table()
             waiter = ddb_client.get_waiter('table_exists')
             # wait for table to get created
             waiter.wait(TableName=DDB_TABLE_NAME)
@@ -114,6 +71,26 @@ def lambda_handler(event, context):
                     'PointInTimeRecoveryEnabled': True
                 }
             )
+
+            response = ddb_client.delete_table( TableName=DDB_TABLE_NAME )
+            waiter = ddb_client.get_waiter('table_not_exists')
+            # wait for table to get deleted
+            waiter.wait(TableName=DDB_TABLE_NAME)
+            print("Token table deleted")
+            # recreate table
+            Create_Token_Table()
+            waiter = ddb_client.get_waiter('table_exists')
+            # wait for table to get created
+            waiter.wait(TableName=DDB_TABLE_NAME)
+            print("Token table recreated")
+            # enable PITR
+            ddb_client.update_continuous_backups(
+                TableName=DDB_TABLE_NAME,
+                PointInTimeRecoverySpecification={
+                    'PointInTimeRecoveryEnabled': True
+                }
+            )
+
             response = {
                     "statusCode": 200,
                     "headers": headers,
@@ -132,3 +109,114 @@ def lambda_handler(event, context):
         }
     print(response)
     return response
+
+def Create_Token_Table():
+    ddb_client.create_table(
+        TableName= DDB_TABLE_NAME,
+        BillingMode = "PAY_PER_REQUEST",
+        AttributeDefinitions = [
+            {
+                "AttributeName": "request_id",
+                "AttributeType": "S"
+            },
+            {
+                "AttributeName": "expires",
+                "AttributeType": "N"
+            },
+            {
+                "AttributeName": "event_id",
+                "AttributeType": "S"
+            }
+        ],
+        KeySchema = [
+            {
+                "AttributeName": "request_id",
+                "KeyType": "HASH"
+            }
+        ],
+        GlobalSecondaryIndexes = [
+            {
+                "IndexName": "EventExpiresIndex",
+                "KeySchema": [
+                    {
+                        "AttributeName": "event_id",
+                        "KeyType": "HASH"
+                    },
+                    {
+                        "AttributeName": "expires",
+                        "KeyType": "RANGE"
+                    }
+                ],
+                "Projection": {
+                    "ProjectionType": "ALL"
+                }
+            }
+        ],
+        SSESpecification = {
+            "Enabled": True
+        }
+    )
+
+
+def Create_CounterIssuedAt_Table():
+    ddb_client.create_table(
+        TableName = DDB_SVC_EXP_TABLE_NAME,
+        BillingMode = "PAY_PER_REQUEST",
+        AttributeDefinitions = [
+            {
+                "AttributeName": "event_id",
+                "AttributeType": "S"
+            },
+            {
+                "AttributeName": "serving_position",
+                "AttributeType": "N"
+            },
+            {
+                "AttributeName": "issue_time",
+                "AttributeType": "N"
+            },
+            {
+                "AttributeName": "served_positions_count",
+                "AttributeType": "N"
+            },
+            {
+                "AttributeName": "obsolete",
+                "AttributeType": "N"
+            }
+        ],
+        KeySchema = [
+            {
+                "AttributeName": "event_id",
+                "KeyType": "HASH"
+            }
+        ],
+        GlobalSecondaryIndexes = [
+            {
+                "IndexName": "CounterIssueIndex",
+                "KeySchema": [
+                    {
+                        "AttributeName": "serving_position",
+                        "KeyType": "RANGE"
+                    },
+                    {
+                        "AttributeName": "issue_time",
+                        "KeyType": "RANGE"
+                    },
+                    {
+                        "AttributeName": "served_positions_count",
+                        "KeyType": "RANGE"
+                    },
+                    {
+                        "AttributeName": "obsolete",
+                        "KeyType": "RANGE"
+                    }
+                ],
+                "Projection": {
+                    "ProjectionType": "ALL"
+                }
+            }
+        ],
+        SSESpecification = {
+            "Enabled": True
+        }
+    )
