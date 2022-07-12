@@ -386,12 +386,20 @@
                                 "dynamodb:DescribeTable"
                             ],
                             "Effect": "Allow",
-                            "Resource": {
-                                "Fn::GetAtt": [
-                                    "TokenTable",
-                                    "Arn"
-                                ]
-                            },
+                            "Resource": [
+                                {
+                                    "Fn::GetAtt": [
+                                        "TokenTable",
+                                        "Arn"
+                                    ]
+                                },
+                                {
+                                    "Fn::GetAtt": [
+                                        "CounterIssuedAtTable",
+                                        "Arn"
+                                    ]
+                                }
+                            ],
                             "Principal": {
                                 "AWS": "*"
                             }
@@ -1045,6 +1053,9 @@
                         },
                         "TOKEN_TABLE": {
                             "Ref": "TokenTable"
+                        },
+                        "COUNTER_ISSUED_AT_TABLE": {
+                            "Ref": "CounterIssuedAtTable"
                         },
                         "STACK_NAME": {
                             "Ref": "AWS::StackName"
@@ -1765,6 +1776,124 @@
                 }
             }
         },
+        "SetCounterPositionsObsolete": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": {
+                        "Fn::Join": [
+                            "-",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "S3Bucket"
+                                    ]
+                                },
+                                {
+                                    "Ref": "AWS::Region"
+                                }
+                            ]
+                        ]
+                    },
+                    "S3Key": {
+                        "Fn::Join": [
+                            "/",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "KeyPrefix"
+                                    ]
+                                },
+                                "virtual-waiting-room-on-aws-%%TIMESTAMP%%.zip"
+                            ]
+                        ]
+                    }
+                },
+                "Environment": {
+                    "Variables": {
+                        "REDIS_HOST": {
+                            "Fn::GetAtt": [
+                                "RedisReplicationGroup",
+                                "PrimaryEndPoint.Address"
+                            ]
+                        },
+                        "REDIS_PORT": {
+                            "Fn::GetAtt": [
+                                "RedisReplicationGroup",
+                                "PrimaryEndPoint.Port"
+                            ]
+                        },
+                        "COUNTER_ISSUED_AT_TABLE": {
+                            "Ref": "CounterIssuedAtTable"
+                        },
+                        "EVENT_ID": {
+                            "Ref": "EventId"
+                        },
+                        "SOLUTION_ID": {
+                            "Fn::FindInMap": [
+                                "SolutionId",
+                                "UserAgent",
+                                "Extra"
+                            ]
+                        },
+                        "STACK_NAME": {
+                            "Ref": "AWS::StackName"
+                        }
+                    }
+                },
+                "Handler": "set_counter_positions_obsolete.lambda_handler",
+                "Layers": [
+                    {
+                        "Ref": "RedisLayer"
+                    }
+                ],
+                "MemorySize": 1024,
+                "Role": {
+                    "Fn::GetAtt": [
+                        "SetCounterObsoleteRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "python3.8",
+                "Timeout": 30,
+                "VpcConfig": {
+                    "SecurityGroupIds": [
+                        {
+                            "Fn::GetAtt": [
+                                "WaitingRoomVpc",
+                                "DefaultSecurityGroup"
+                            ]
+                        }
+                    ],
+                    "SubnetIds": [
+                        {
+                            "Ref": "Subnet1"
+                        },
+                        {
+                            "Ref": "Subnet2"
+                        }
+                    ]
+                }
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W92",
+                            "reason": "Lambda does not require ReservedConcurrentExecutions."
+                        },
+                        {
+                            "id": "W58",
+                            "reason": "Permission to write CloudWatch logs has been associated with IAM policy instead."
+                        }
+                    ]
+                }
+            }
+        },
         "GenerateToken": {
             "Type": "AWS::Lambda::Function",
             "Properties": {
@@ -1827,6 +1956,9 @@
                         },
                         "VALIDITY_PERIOD": {
                             "Ref": "ValidityPeriod"
+                        },
+                        "COUNTER_ISSUED_AT_TABLE": {
+                            "Ref": "CounterIssuedAtTable"
                         },
                         "QUEUE_POSITION_EXPIRY_PERIOD" : {
                             "Ref": "QueuePositionExpiryPeriod"
@@ -2217,10 +2349,7 @@
                         },
                         "EVENT_ID": {
                             "Ref": "EventId"
-                        },
-                        "COUNTER_ISSUED_AT_TABLE": {
-                            "Ref": "CounterIssuedAtTable"
-                        },                    
+                        },   
                         "SOLUTION_ID": {
                             "Fn::FindInMap": [
                                 "SolutionId",
@@ -2228,6 +2357,9 @@
                                 "Extra"
                             ]
                         },
+                        "COUNTER_ISSUED_AT_TABLE": {
+                            "Ref": "CounterIssuedAtTable"
+                        },                 
                         "QUEUE_POSITION_EXPIRY_PERIOD" : {
                             "Ref": "QueuePositionExpiryPeriod"
                         },
@@ -2246,7 +2378,7 @@
                 "MemorySize": 1024,
                 "Role": {
                     "Fn::GetAtt": [
-                        "LambdaVpcRole",
+                        "SetCounterObsoleteRole",
                         "Arn"
                     ]
                 },
@@ -2304,128 +2436,6 @@
                             "RestApi": {
                                 "Ref": "PrivateWaitingRoomApi"
                             }
-                        }
-                    ]
-                }
-            }
-        },
-        "SetServingPositionsExpired": {
-            "Type": "AWS::Lambda::Function",
-            "Properties": {
-                "Code": {
-                    "S3Bucket": {
-                        "Fn::Join": [
-                            "-",
-                            [
-                                {
-                                    "Fn::FindInMap": [
-                                        "SourceCode",
-                                        "General",
-                                        "S3Bucket"
-                                    ]
-                                },
-                                {
-                                    "Ref": "AWS::Region"
-                                }
-                            ]
-                        ]
-                    },
-                    "S3Key": {
-                        "Fn::Join": [
-                            "/",
-                            [
-                                {
-                                    "Fn::FindInMap": [
-                                        "SourceCode",
-                                        "General",
-                                        "KeyPrefix"
-                                    ]
-                                },
-                                "virtual-waiting-room-on-aws-%%TIMESTAMP%%.zip"
-                            ]
-                        ]
-                    }
-                },
-                "Environment": {
-                    "Variables": {
-                        "REDIS_HOST": {
-                            "Fn::GetAtt": [
-                                "RedisReplicationGroup",
-                                "PrimaryEndPoint.Address"
-                            ]
-                        },
-                        "REDIS_PORT": {
-                            "Fn::GetAtt": [
-                                "RedisReplicationGroup",
-                                "PrimaryEndPoint.Port"
-                            ]
-                        },
-                        "EVENT_ID": {
-                            "Ref": "EventId"
-                        },
-                        "COUNTER_ISSUED_AT_TABLE": {
-                            "Ref": "CounterIssuedAtTable"
-                        },                    
-                        "SOLUTION_ID": {
-                            "Fn::FindInMap": [
-                                "SolutionId",
-                                "UserAgent",
-                                "Extra"
-                            ]
-                        }, 
-                        "STACK_NAME": {"Ref": "AWS::StackName"},
-                        "QUEUE_POSITION_EXPIRY_PERIOD" : {
-                            "Ref": "QueuePositionExpiryPeriod"
-                        },
-                        "ENABLE_QUEUE_POSITION_EXPIRY": {
-                            "Ref": "EnableQueuePositionExpiry"
-                        }
-                    }
-                },
-                "Handler": "increment_serving_counter.lambda_handler",
-                "Layers": [
-                    {
-                        "Ref": "RedisLayer"
-                    }
-                ],
-                "MemorySize": 1024,
-                "Role": {
-                    "Fn::GetAtt": [
-                        "LambdaVpcRole",
-                        "Arn"
-                    ]
-                },
-                "Runtime": "python3.8",
-                "Timeout": 30,
-                "VpcConfig": {
-                    "SecurityGroupIds": [
-                        {
-                            "Fn::GetAtt": [
-                                "WaitingRoomVpc",
-                                "DefaultSecurityGroup"
-                            ]
-                        }
-                    ],
-                    "SubnetIds": [
-                        {
-                            "Ref": "Subnet1"
-                        },
-                        {
-                            "Ref": "Subnet2"
-                        }
-                    ]
-                }
-            },
-            "Metadata": {
-                "cfn_nag": {
-                    "rules_to_suppress": [
-                        {
-                            "id": "W92",
-                            "reason": "Lambda does not require ReservedConcurrentExecutions."
-                        },
-                        {
-                            "id": "W58",
-                            "reason": "Permission to write CloudWatch logs has been associated with IAM policy instead."
                         }
                     ]
                 }
@@ -2723,6 +2733,44 @@
                 "Policies": [
                     {
                         "PolicyName": "LambdaVpcRolePolicy",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": "secretsmanager:GetSecretValue",
+                                    "Resource": [
+                                        { "Fn::Sub": "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AWS::StackName}/redis-auth*" }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "SetCounterObsoleteRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "Policies": [
+                    {
+                        "PolicyName": "SetCounterObsoleteRolePolicy",
                         "PolicyDocument": {
                             "Version": "2012-10-17",
                             "Statement": [
@@ -3071,7 +3119,8 @@
                     {"Ref": "GenerateTokenRole"},
                     {"Ref": "GetTokenRole"},
                     {"Ref": "GenerateKeysRole"},
-                    {"Ref": "IntersectAZRole"}
+                    {"Ref": "IntersectAZRole"},
+                    {"Ref": "SetCounterObsoleteRole"}
                 ]
             },
             "Metadata": {
@@ -3198,9 +3247,9 @@
                                 },
                                 {
                                     "Fn::Sub": [
-                                        "${TableArn}/index/*",
+                                        "${TableArn1}/index/*",
                                         {
-                                            "TableArn": {
+                                            "TableArn1": {
                                                 "Fn::GetAtt": [
                                                     "CounterIssuedAtTable",
                                                     "Arn"
@@ -3225,6 +3274,9 @@
                     },
                     {
                         "Ref": "GenerateTokenRole"
+                    },
+                    {
+                        "Ref": "SetCounterObsoleteRole"
                     }
                 ]
             }
@@ -4020,6 +4072,28 @@
             },
             "Condition": "GenerateWaitingRoomEvents"
         },
+        "MarkCounterOboleteEventRule": {
+            "Type": "AWS::Events::Rule",
+            "Properties": {
+                "Description": "Marks items obsolete in the CounterIssuedAtTable.",
+                "ScheduleExpression": "rate(1 minute)",
+                "State": "ENABLED",
+                "Targets": [
+                    {
+                        "Arn": {
+                            "Fn::GetAtt": [
+                                "SetCounterPositionsObsolete",
+                                "Arn"
+                            ]
+                        },
+                        "Id": {
+                            "Fn::Sub": "${AWS::StackName}-ObsoleteEvents"
+                        }
+                    }
+                ]
+            },
+            "Condition": "SetCounterPositionsObsoleteEvents"
+        },
         "GenerateEventsRulePermissions": {
             "Type": "AWS::Lambda::Permission",
             "Properties": {
@@ -4039,6 +4113,26 @@
                 }
             },
             "Condition": "GenerateWaitingRoomEvents"
+        },
+        "MarkCounterOboleteEventRulePermissions": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+                "FunctionName": {
+                    "Fn::GetAtt": [
+                        "SetCounterPositionsObsolete",
+                        "Arn"
+                    ]
+                },
+                "Action": "lambda:InvokeFunction",
+                "Principal": "events.amazonaws.com",
+                "SourceArn": {
+                    "Fn::GetAtt": [
+                        "MarkCounterOboleteEventRule",
+                        "Arn"
+                    ]
+                }
+            },
+            "Condition": "SetCounterPositionsObsoleteEvents"
         },
         "InitializeStateCustomResource": {
             "Type": "AWS::CloudFormation::CustomResource",
@@ -5366,6 +5460,14 @@
             "Fn::Equals": [
                 {
                     "Ref": "EnableEventsGeneration"
+                },
+                "true"
+            ]
+        },
+        "SetCounterPositionsObsoleteEvents": {
+            "Fn::Equals": [
+                {
+                    "Ref": "EnableQueuePositionExpiry"
                 },
                 "true"
             ]
