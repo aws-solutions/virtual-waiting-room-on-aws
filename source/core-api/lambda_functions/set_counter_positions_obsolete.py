@@ -17,9 +17,10 @@ from counters import SERVING_COUNTER
 SECRET_NAME_PREFIX = os.environ["STACK_NAME"]
 SOLUTION_ID = os.environ['SOLUTION_ID']
 EVENT_ID = os.environ["EVENT_ID"]
-DDB_SVC_EXP_TABLE_NAME = os.environ['COUNTER_ISSUED_AT_TABLE']
 REDIS_HOST = os.environ["REDIS_HOST"]
 REDIS_PORT = os.environ["REDIS_PORT"]
+DDB_SVC_EXP_TABLE_NAME = os.environ['COUNTER_ISSUED_AT_TABLE']
+QUEUE_POSITION_EXPIRY_PERIOD = os.environ['QUEUE_POSITION_EXPIRY_PERIOD']
 
 user_agent_extra = {"user_agent_extra": SOLUTION_ID}
 user_config = config.Config(**user_agent_extra)
@@ -38,7 +39,7 @@ def lambda_handler(event, context):
     """
 
     print(event)
-    expiry_time = int(time()) + (15 * 60)
+    expiry_time = int(time()) + int(QUEUE_POSITION_EXPIRY_PERIOD)
     kce = Key('event_id').eq(EVENT_ID) & Key('issue_time').lte(expiry_time)
     response = ddb_table.query(
         KeyConditionExpression=kce,
@@ -52,12 +53,12 @@ def lambda_handler(event, context):
             ddb_table.update_item(
                 Key={
                     'event_id': item['event_id'],
-                    'serving_counter': item['serving_counter']
+                    'serving_position': item['serving_position']
                 },
                 UpdateExpression='SET obsolete = :val1',
-                ExpressionAttributeValues={':val1': 1 }
+                ExpressionAttributeValues={':val1': 1}
             )
-            increment_by += (item['serving_counter'] - item['served_positons'])
+            increment_by += (item['serving_position'] - item['served_positions_count'])
         except Exception as ex:
             print(ex)
 
@@ -66,7 +67,7 @@ def lambda_handler(event, context):
 
     item = {
         'event_id': EVENT_ID,
-        'serving_counter': cur_serving,
+        'serving_position': cur_serving,
         'issue_time': int(time()),
         'obsolete': 0,
         'served_positions_count': 0

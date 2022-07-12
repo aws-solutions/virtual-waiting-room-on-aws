@@ -188,23 +188,51 @@ def Create_CounterIssuedAt_Table():
             {
                 "AttributeName": "event_id",
                 "KeyType": "HASH"
+            },
+            {
+                "AttributeName": "serving_position",
+                "KeyType": "RANGE"
             }
         ],
         GlobalSecondaryIndexes = [
             {
-                "IndexName": "CounterIssueIndex",
+                "IndexName": "PositionIndex",
                 "KeySchema": [
                     {
-                        "AttributeName": "serving_position",
-                        "KeyType": "RANGE"
-                    },
-                    {
-                        "AttributeName": "issue_time",
-                        "KeyType": "RANGE"
+                        "AttributeName": "event_id",
+                        "KeyType": "HASH"
                     },
                     {
                         "AttributeName": "served_positions_count",
                         "KeyType": "RANGE"
+                    }
+                ],
+                "Projection": {
+                    "ProjectionType": "ALL"
+                }
+            },
+            {
+                "IndexName": "IssueTimeIndex",
+                "KeySchema": [
+                    {
+                        "AttributeName": "event_id",
+                        "KeyType": "HASH"
+                    },
+                    {
+                        "AttributeName": "issue_time",
+                        "KeyType": "RANGE"
+                    }
+                ],
+                "Projection": {
+                    "ProjectionType": "ALL"
+                }
+            },
+            {
+                "IndexName": "ObsoleteIndex",
+                "KeySchema": [
+                    {
+                        "AttributeName": "event_id",
+                        "KeyType": "HASH"
                     },
                     {
                         "AttributeName": "obsolete",
@@ -216,7 +244,10 @@ def Create_CounterIssuedAt_Table():
                 }
             }
         ],
+        PointInTimeRecoverySpecification = {
+            "PointInTimeRecoveryEnabled": True
+        },
         SSESpecification = {
-            "Enabled": True
+            "SSEEnabled": True
         }
     )

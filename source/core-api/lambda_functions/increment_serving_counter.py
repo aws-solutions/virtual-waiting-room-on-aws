@@ -58,7 +58,7 @@ def lambda_handler(event, context):
     if ENABLE_QUEUE_POSITION_EXPIRY:
         item = {
             'event_id': EVENT_ID,
-            'serving_counter': cur_serving,
+            'serving_position': cur_serving,
             'issue_time': int(time()),
             'obsolete': 0,
             'served_positions_count': 0

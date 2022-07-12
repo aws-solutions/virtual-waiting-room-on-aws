@@ -67,7 +67,8 @@ def lambda_handler(event, context):
         if queue_number := rc.hget(request_id, "queue_number"):
             if int(queue_number) <= int(rc.get(SERVING_COUNTER)):
                 
-                if ENABLE_QUEUE_POSITION_EXPIRY and not token_helper.is_queue_position_valid(EVENT_ID, queue_number, ddb_svc_exp_table):
+                if ENABLE_QUEUE_POSITION_EXPIRY and not \
+                    token_helper.is_queue_position_valid(EVENT_ID, queue_number, ddb_svc_exp_table, QUEUE_POSITION_EXPIRY_PERIOD):
                     return {
                         "statusCode": HTTPStatus.GONE.value,
                         "headers": headers, 
@@ -124,7 +125,7 @@ def lambda_handler(event, context):
                 rc.incr(TOKEN_COUNTER, 1)
 
                 if ENABLE_QUEUE_POSITION_EXPIRY:
-                    token_helper.is_queue_position_valid(EVENT_ID, queue_number, ddb_svc_exp_table)
+                    token_helper.update_served_positions_count(EVENT_ID, queue_number, ddb_svc_exp_table)
                 
                 response = {
                     "statusCode": HTTPStatus.OK.value, 

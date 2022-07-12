@@ -1830,6 +1830,9 @@
                         "COUNTER_ISSUED_AT_TABLE": {
                             "Ref": "CounterIssuedAtTable"
                         },
+                        "QUEUE_POSITION_EXPIRY_PERIOD" : {
+                            "Ref": "QueuePositionExpiryPeriod"
+                        },
                         "EVENT_ID": {
                             "Ref": "EventId"
                         },
@@ -4151,8 +4154,8 @@
             "Type": "AWS::Lambda::Function",
             "DependsOn": [
                 "TokenTable",
-                "RedisReplicationGroup",
-                "CounterIssuedAtTable"
+                "CounterIssuedAtTable",
+                "RedisReplicationGroup"
             ],
             "Properties": {
                 "Code": {
