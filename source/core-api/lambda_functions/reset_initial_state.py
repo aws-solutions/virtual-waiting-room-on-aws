@@ -54,6 +54,7 @@ def lambda_handler(event, context):
 
         # new-counter
         rc.getset(PREVIOUS_TABLE_SERVING_POSITION, 0)
+        rc.getset(AVAILABLE_SERVING_POSITIONS, 0)
 
         try:                       
             response = ddb_client.delete_table(TableName=DDB_SVC_EXP_TABLE_NAME)

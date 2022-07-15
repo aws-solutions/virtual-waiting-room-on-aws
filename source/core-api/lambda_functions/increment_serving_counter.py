@@ -13,7 +13,7 @@ import json
 import boto3
 from time import time
 from botocore import config
-from counters import SERVING_COUNTER
+from counters import AVAILABLE_SERVING_POSITIONS, SERVING_COUNTER
 from vwr.common.sanitize import deep_clean
 
 # connection info and other globals
@@ -54,6 +54,7 @@ def lambda_handler(event, context):
         return {"statusCode": 400, "headers": headers, "body": json.dumps({"error": "Invalid event ID"})}
 
     cur_serving = rc.incrby(SERVING_COUNTER, increment_by)
+    rc.incrby(AVAILABLE_SERVING_POSITIONS, increment_by)
 
     if ENABLE_QUEUE_POSITION_EXPIRY:
         item = {

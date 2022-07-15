@@ -23,3 +23,6 @@ ABANDONED_SESSION_COUNTER = "abandoned_counter"
 
 # counter for previous serving position
 PREVIOUS_TABLE_SERVING_POSITION = "previous_serving_position"
+
+# available serving positions
+AVAILABLE_SERVING_POSITIONS = "available_serving_positions"

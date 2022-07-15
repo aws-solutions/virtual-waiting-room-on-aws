@@ -65,11 +65,17 @@ def lambda_handler(event, context):
 
     if client_event_id == EVENT_ID and is_valid_rid(request_id):
         if queue_number := rc.hget(request_id, "queue_number"):
-            apparent_queue_number = int(queue_number) + int(rc.get(PREVIOUS_TABLE_SERVING_POSITION))
-
-            if apparent_queue_number <= int(rc.get(SERVING_COUNTER)):                
+            if int(queue_number) <= int(rc.get(SERVING_COUNTER)):
+                
+                previous_serving_postion = int(rc.get(PREVIOUS_TABLE_SERVING_POSITION))
                 if ENABLE_QUEUE_POSITION_EXPIRY and not \
-                    token_helper.is_queue_position_valid(EVENT_ID, apparent_queue_number, ddb_svc_exp_table, QUEUE_POSITION_EXPIRY_PERIOD):
+                    token_helper.is_queue_position_valid(
+                        EVENT_ID, 
+                        queue_number, 
+                        ddb_svc_exp_table, 
+                        QUEUE_POSITION_EXPIRY_PERIOD, 
+                        previous_serving_postion
+                    ):
                     return {
                         "statusCode": HTTPStatus.GONE.value,
                         "headers": headers, 
@@ -125,8 +131,8 @@ def lambda_handler(event, context):
                 token_helper.write_to_eventbus(events_client, EVENT_ID, EVENT_BUS_NAME, request_id)
                 rc.incr(TOKEN_COUNTER, 1)
 
-                if ENABLE_QUEUE_POSITION_EXPIRY:
-                    token_helper.update_served_positions_count(EVENT_ID, apparent_queue_number, ddb_svc_exp_table)
+                if ENABLE_QUEUE_POSITION_EXPIRY: # check method signature
+                    token_helper.update_served_positions_count(EVENT_ID, queue_number, ddb_svc_exp_table)
                 
                 response = {
                     "statusCode": HTTPStatus.OK.value, 

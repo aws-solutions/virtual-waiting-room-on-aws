@@ -99,19 +99,21 @@ def write_to_eventbus(events_client, EVENT_ID, EVENT_BUS_NAME, request_id) -> No
         ]
     )
 
-def is_queue_position_valid(EVENT_ID, apparent_queue_number, ddb_table, expiry_period) -> bool:
+def is_queue_position_valid(EVENT_ID, queue_number, ddb_table, expiry_period, previous_serving_postion) -> bool:
     '''
     Check if the queue_number's serving counter is still valid 
     '''
     expiry_period = int(expiry_period)
+    queue_number = int(queue_number)
     current_time = int(time())
-    kce = Key('event_id').eq(EVENT_ID) & Key('serving_position').gte(apparent_queue_number)
+    # kce = Key('event_id').eq(EVENT_ID) & Key('serving_position').gte(queue_number)
+    kce = Key('event_id').eq(EVENT_ID) & Key('serving_position').gte(previous_serving_postion)
     fexp = Attr('obsolete').eq(0) & Attr('issue_time').lte(current_time)
     response = ddb_table.query(
         KeyConditionExpression=kce,
         ScanIndexForward=True,
         FilterExpression=fexp,
-        Limit=1
+        Limit=1 # check and remove 
     )
 
     items = response['Items']
@@ -126,7 +128,7 @@ def update_served_positions_count(EVENT_ID, queue_number, ddb_table) -> None:
     response = ddb_table.query(
         KeyConditionExpression=kce,
         ScanIndexForward=True,
-        Limit=1
+        Limit=1 # check and remove 
     )
 
     item = response['Items'][0]

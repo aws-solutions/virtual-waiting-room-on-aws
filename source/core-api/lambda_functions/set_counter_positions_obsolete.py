@@ -12,7 +12,7 @@ import redis
 from botocore import config
 from time import time
 from boto3.dynamodb.conditions import Key, Attr
-from counters import PREVIOUS_TABLE_SERVING_POSITION, SERVING_COUNTER
+from counters import AVAILABLE_SERVING_POSITIONS, PREVIOUS_TABLE_SERVING_POSITION, SERVING_COUNTER
 
 SECRET_NAME_PREFIX = os.environ["STACK_NAME"]
 SOLUTION_ID = os.environ['SOLUTION_ID']
@@ -89,7 +89,9 @@ def lambda_handler(event, context):
     if obsolete_items:
         previous_serving_position = int(obsolete_items[-1]['serving_position'])
         rc.set(PREVIOUS_TABLE_SERVING_POSITION, previous_serving_position)
+        # available_serving_positions =  rc.incrby(AVAILABLE_SERVING_POSITIONS, int(increment_by))
         print(f'Previous table serving position: {previous_serving_position}')
+        # print(f'Available serving positions: {available_serving_positions}')
 
     if increment_by > 0:
         # increment the serving counter and update the table
