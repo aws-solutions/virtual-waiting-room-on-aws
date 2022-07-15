@@ -20,3 +20,6 @@ COMPLETED_SESSION_COUNTER = "completed_counter"
 
 # counter for sessions abandoned (i.e. token was never used to complete transaction)
 ABANDONED_SESSION_COUNTER = "abandoned_counter"
+
+# counter for previous serving position
+PREVIOUS_TABLE_SERVING_POSITION = "previous_serving_position"

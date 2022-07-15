@@ -12,7 +12,7 @@ import redis
 from botocore import config
 from time import time
 from boto3.dynamodb.conditions import Key, Attr
-from counters import SERVING_COUNTER
+from counters import PREVIOUS_TABLE_SERVING_POSITION, SERVING_COUNTER
 
 SECRET_NAME_PREFIX = os.environ["STACK_NAME"]
 SOLUTION_ID = os.environ['SOLUTION_ID']
@@ -27,7 +27,7 @@ user_config = config.Config(**user_agent_extra)
 boto_session = boto3.session.Session()
 region = boto_session.region_name
 ddb_resource = boto3.resource('dynamodb', endpoint_url=f'https://dynamodb.{region}.amazonaws.com', config=user_config)
-ddb_svc_exp_table =  ddb_table = ddb_resource.Table(DDB_SVC_EXP_TABLE_NAME)
+ddb_table = ddb_resource.Table(DDB_SVC_EXP_TABLE_NAME)
 secrets_client = boto3.client('secretsmanager', config=user_config, endpoint_url=f'https://secretsmanager.{region}.amazonaws.com')
 response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/redis-auth")
 redis_auth = response.get("SecretString")
@@ -37,42 +37,72 @@ def lambda_handler(event, context):
     """
     This function is the entry handler for Lambda.
     """
-
+    # scan for all items that are not obsolete 
     print(event)
-    expiry_time = int(time()) + int(QUEUE_POSITION_EXPIRY_PERIOD)
-    kce = Key('event_id').eq(EVENT_ID) & Key('issue_time').lte(expiry_time)
+    
+    previous_serving_position = int(rc.get(PREVIOUS_TABLE_SERVING_POSITION))
+
+    kce = Key('event_id').eq(EVENT_ID) & Key('serving_position').gte(previous_serving_position)
+    fexp = Attr('obsolete').eq(0)
     response = ddb_table.query(
         KeyConditionExpression=kce,
-        ScanIndexForward=True,
-        FilterExpression=Attr('marked_obsolete').eq(0)
+        ScanIndexForward=False,
+        FilterExpression=fexp
     )
+    items = response['Items']
 
-    increment_by = 0
-    for item in response['Items']:
-        try:
+    # mark obsolete items with expired issue time
+    obsolete_items = []
+    current_time = int(time())
+    for item in items:
+        if current_time > item['issue_time'] + int(QUEUE_POSITION_EXPIRY_PERIOD):
+            obsolete_items.append(item)
             ddb_table.update_item(
-                Key={
-                    'event_id': item['event_id'],
-                    'serving_position': item['serving_position']
-                },
-                UpdateExpression='SET obsolete = :val1',
-                ExpressionAttributeValues={':val1': 1}
-            )
-            increment_by += (item['serving_position'] - item['served_positions_count'])
-        except Exception as ex:
-            print(ex)
+                    Key={
+                        'event_id': item['event_id'],
+                        'serving_position': item['serving_position']
+                    },
+                    UpdateExpression='SET obsolete = :val1',
+                    ExpressionAttributeValues={':val1': 1}
+                )
 
-    # increment the serving counter and update the table
-    cur_serving = rc.incrby(SERVING_COUNTER, increment_by)
+    # Calculate how much to increment the serving counter 
+    # Difference in serving postions sum(Higher - Lower) - sum(served_positions_count)
+    increment_by = 0
+    items_count = len(obsolete_items)
 
-    item = {
-        'event_id': EVENT_ID,
-        'serving_position': cur_serving,
-        'issue_time': int(time()),
-        'obsolete': 0,
-        'served_positions_count': 0
-    }
-    ddb_table.put_item(Item=item)
+    if items_count == 1:
+        increment_by = obsolete_items[0]['serving_position'] - previous_serving_position
+    elif items_count > 1:
+        j = 0
+        while j + 1 < items_count:
+            increment_by += (obsolete_items[j + 1]['serving_position'] - obsolete_items[j]['serving_position'])
+            j += 1
+        increment_by -= previous_serving_position
+
+    increment_by -= sum(item['served_positions_count'] for item in obsolete_items)
+
+    print(f'Non-obsolete items found in scan: {len(items)}')
+    print(f'Oboleted items: {items_count}')
+    print(f'Increment by: {increment_by}')
+
+    if obsolete_items:
+        previous_serving_position = int(obsolete_items[-1]['serving_position'])
+        rc.set(PREVIOUS_TABLE_SERVING_POSITION, previous_serving_position)
+        print(f'Previous table serving position: {previous_serving_position}')
+
+    if increment_by > 0:
+        # increment the serving counter and update the table
+        cur_serving = rc.incrby(SERVING_COUNTER, int(increment_by))
+
+        item = {
+            'event_id': EVENT_ID,
+            'serving_position': cur_serving,
+            'issue_time': int(time()),
+            'obsolete': 0,
+            'served_positions_count': 0
+        }
+        ddb_table.put_item(Item=item)
+        print(item)
     
-    print(f"cur_serving: {cur_serving}")
-    print(item)
+    print(f"cur_serving updated to: {rc.get(SERVING_COUNTER)}")

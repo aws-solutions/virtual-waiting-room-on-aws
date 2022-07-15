@@ -14,7 +14,7 @@ import redis
 import boto3
 from http  import HTTPStatus
 from botocore import config
-from counters import SERVING_COUNTER, TOKEN_COUNTER
+from counters import SERVING_COUNTER, TOKEN_COUNTER, PREVIOUS_TABLE_SERVING_POSITION
 from vwr.common.sanitize import deep_clean
 from vwr.common.validate import is_valid_rid
 import token_helper
@@ -38,7 +38,7 @@ user_agent_extra = {"user_agent_extra": SOLUTION_ID}
 user_config = config.Config(**user_agent_extra)
 ddb_resource = boto3.resource('dynamodb', endpoint_url=f'https://dynamodb.{region}.amazonaws.com', config=user_config)
 ddb_table = ddb_resource.Table(DDB_TABLE_NAME)
-ddb_svc_exp_table =  ddb_table = ddb_resource.Table(DDB_SVC_EXP_TABLE_NAME)
+ddb_svc_exp_table = ddb_resource.Table(DDB_SVC_EXP_TABLE_NAME)
 events_client = boto3.client('events', endpoint_url=f'https://events.{region}.amazonaws.com', config=user_config)
 
 secrets_client = boto3.client('secretsmanager', endpoint_url=f'https://secretsmanager.{region}.amazonaws.com', config=user_config)
@@ -70,9 +70,11 @@ def lambda_handler(event, context):
     }
     if client_event_id == EVENT_ID and is_valid_rid(request_id):
         if queue_number := rc.hget(request_id, "queue_number"):
-            if int(queue_number) <= int(rc.get(SERVING_COUNTER)):
+            apparent_queue_number = int(queue_number) + int(rc.get(PREVIOUS_TABLE_SERVING_POSITION))
+
+            if apparent_queue_number <= int(rc.get(SERVING_COUNTER)):    
                 if ENABLE_QUEUE_POSITION_EXPIRY and not \
-                    token_helper.is_queue_position_valid(EVENT_ID, queue_number, ddb_svc_exp_table, QUEUE_POSITION_EXPIRY_PERIOD):
+                    token_helper.is_queue_position_valid(EVENT_ID, apparent_queue_number, ddb_svc_exp_table, QUEUE_POSITION_EXPIRY_PERIOD):
                     return {
                         "statusCode": HTTPStatus.GONE.value,
                         "headers": headers, 
@@ -128,7 +130,7 @@ def lambda_handler(event, context):
                 rc.incr(TOKEN_COUNTER, 1)
 
                 if ENABLE_QUEUE_POSITION_EXPIRY:
-                    token_helper.update_served_positions_count(EVENT_ID, queue_number, ddb_svc_exp_table)
+                    token_helper.update_served_positions_count(EVENT_ID, apparent_queue_number, ddb_svc_exp_table)
 
                 response = {
                     "statusCode": HTTPStatus.OK.value, 

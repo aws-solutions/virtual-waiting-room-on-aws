@@ -52,27 +52,30 @@ def lambda_handler(event, context):
         rc.getset(COMPLETED_SESSION_COUNTER, 0)
         rc.getset(ABANDONED_SESSION_COUNTER, 0)
 
+        # new-counter
+        rc.getset(PREVIOUS_TABLE_SERVING_POSITION, 0)
+
         try:                       
-            response = ddb_client.delete_table( TableName=DDB_SVC_EXP_TABLE_NAME )
+            response = ddb_client.delete_table(TableName=DDB_SVC_EXP_TABLE_NAME)
             waiter = ddb_client.get_waiter('table_not_exists')
             # wait for table to get deleted
-            waiter.wait(TableName=DDB_TABLE_NAME)
-            print("Counter Issued At table deleted")
+            waiter.wait(TableName=DDB_SVC_EXP_TABLE_NAME)
+            print("CounterIssuedAt table deleted")
             # recreate table
             Create_CounterIssuedAt_Table()
             waiter = ddb_client.get_waiter('table_exists')
             # wait for table to get created
-            waiter.wait(TableName=DDB_TABLE_NAME)
-            print("Token table recreated")
+            waiter.wait(TableName=DDB_SVC_EXP_TABLE_NAME)
+            print("CounterIssuedAt table recreated")
             # enable PITR
             ddb_client.update_continuous_backups(
-                TableName=DDB_TABLE_NAME,
+                TableName=DDB_SVC_EXP_TABLE_NAME,
                 PointInTimeRecoverySpecification={
                     'PointInTimeRecoveryEnabled': True
                 }
             )
 
-            response = ddb_client.delete_table( TableName=DDB_TABLE_NAME )
+            response = ddb_client.delete_table(TableName=DDB_TABLE_NAME)
             waiter = ddb_client.get_waiter('table_not_exists')
             # wait for table to get deleted
             waiter.wait(TableName=DDB_TABLE_NAME)
@@ -244,10 +247,7 @@ def Create_CounterIssuedAt_Table():
                 }
             }
         ],
-        PointInTimeRecoverySpecification = {
-            "PointInTimeRecoveryEnabled": True
-        },
         SSESpecification = {
-            "SSEEnabled": True
+            "Enabled": True
         }
     )
