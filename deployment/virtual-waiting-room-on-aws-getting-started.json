@@ -10,7 +10,13 @@
                     "EventId": {"Ref": "EventId"},
                     "ValidityPeriod": {"Ref": "ValidityPeriod"},
                     "EnableEventsGeneration": {"Ref": "EnableEventsGeneration"},
-                    "RedisPort": {"Ref": "RedisPort"}                    
+                    "RedisPort": {"Ref": "RedisPort"},
+                    "QueuePositionExpiryPeriod":  {
+                        "Ref": "QueuePositionExpiryPeriod"
+                    },
+                    "EnableQueuePositionExpiry": {
+                        "Ref": "EnableQueuePositionExpiry"
+                    }                   
                 }
             }
         },
@@ -92,7 +98,22 @@
             "Type": "Number",
             "ConstraintDescription": "Please enter a value for this field.",
             "Default": "1785"
-        }   
+        },
+        "QueuePositionExpiryPeriod": {
+            "Description": "Expiry period of queue position once serving counter is available (seconds)",
+            "Type": "Number",
+            "ConstraintDescription": "Please enter a value for this field.",
+            "Default": "900"
+        },
+        "EnableQueuePositionExpiry": {
+            "Description": "If set to false, expiry period is not applied to queue position",
+            "Type": "String",
+            "AllowedValues": [
+                "true",
+                "false"
+            ],
+            "Default": "true"
+        }
     },
     "Outputs": {
         "PublicApiInvokeURL": {

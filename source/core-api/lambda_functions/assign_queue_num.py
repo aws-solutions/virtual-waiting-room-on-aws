@@ -26,16 +26,20 @@ REDIS_PORT = os.environ["REDIS_PORT"]
 QUEUE_URL = os.environ["QUEUE_URL"]
 EVENT_ID = os.environ["EVENT_ID"]
 SECRET_NAME_PREFIX = os.environ["STACK_NAME"]
+QUEUE_POSITION_ISSUEDAT_TABLE = os.environ["QUEUE_POSITION_ISSUEDAT_TABLE"]
+ENABLE_QUEUE_POSITION_EXPIRY = os.environ["ENABLE_QUEUE_POSITION_EXPIRY"]
 
 boto_session = boto3.session.Session()
 region = boto_session.region_name
 user_agent_extra = {"user_agent_extra": SOLUTION_ID}
 user_config = config.Config(**user_agent_extra)
-sqs_client = boto3.client('sqs', config=user_config, endpoint_url="https://sqs."+region+".amazonaws.com")
-secrets_client = boto3.client('secretsmanager', config=user_config, endpoint_url="https://secretsmanager."+region+".amazonaws.com")
+sqs_client = boto3.client('sqs', config=user_config, endpoint_url=f"https://sqs.{region}.amazonaws.com")
+secrets_client = boto3.client('secretsmanager', config=user_config, endpoint_url=f"https://secretsmanager.{region}.amazonaws.com")
 secrets_response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/redis-auth")
 redis_auth = secrets_response.get("SecretString")
 rc = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, ssl=True, decode_responses=True, password=redis_auth)
+ddb_resource = boto3.resource('dynamodb', endpoint_url=f'https://dynamodb.{region}.amazonaws.com', config=user_config)
+ddb_table = ddb_resource.Table(QUEUE_POSITION_ISSUEDAT_TABLE)
 
 
 def lambda_handler(event, _):
@@ -77,6 +81,18 @@ def lambda_handler(event, _):
                 QueueUrl=QUEUE_URL,
                 ReceiptHandle=msg["receiptHandle"]
             )
+
+            if ENABLE_QUEUE_POSITION_EXPIRY:
+                item = {
+                    'event_id': EVENT_ID,
+                    'queue_position': int(q_start_num),
+                    'issue_time': int(time()),
+                    'request_id': request_id,
+                    'expired': 0
+                }
+                ddb_table.put_item(Item=item)
+                print(f"Item: {item}")
+
             print(response)
             q_start_num+=1
         except Exception as exception:

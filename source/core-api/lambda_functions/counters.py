@@ -20,3 +20,6 @@ COMPLETED_SESSION_COUNTER = "completed_counter"
 
 # counter for sessions abandoned (i.e. token was never used to complete transaction)
 ABANDONED_SESSION_COUNTER = "abandoned_counter"
+
+# maximum expired queue position
+MAX_QUEUE_POSITION_EXPIRED = "max_queue_position_expired"
