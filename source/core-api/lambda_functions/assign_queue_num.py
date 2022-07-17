@@ -10,11 +10,11 @@ assigns a queue number to each of the request (message).
 # pylint: disable=E0401,C0301,W0703
 
 import os
-import time
 import json
 
 import boto3
 import redis
+from time import time
 from botocore import config
 from vwr.common.sanitize import deep_clean
 from counters import QUEUE_COUNTER
@@ -68,7 +68,7 @@ def lambda_handler(event, _):
                 # write item back to redis, use hset and use request_id as the key
                 # as item gets written, delete the message from queue right away
                 # use HSETNX so no effect on queue_number if already exists
-                entry_time = int(time.time())
+                entry_time = int(time())
                 rc.hsetnx(request_id, "entry_time", entry_time)
                 rc.hsetnx(request_id, "queue_number", q_start_num)
                 rc.hsetnx(request_id, "event_id", EVENT_ID)
@@ -82,7 +82,7 @@ def lambda_handler(event, _):
                 ReceiptHandle=msg["receiptHandle"]
             )
 
-            if ENABLE_QUEUE_POSITION_EXPIRY:
+            if ENABLE_QUEUE_POSITION_EXPIRY == 'true':
                 item = {
                     'event_id': EVENT_ID,
                     'queue_position': int(q_start_num),

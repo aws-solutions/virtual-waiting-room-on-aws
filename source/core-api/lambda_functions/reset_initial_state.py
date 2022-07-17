@@ -13,7 +13,7 @@ from botocore import config
 from counters import *
 from vwr.common.sanitize import deep_clean
 
-DDB_TABLE_NAME = os.environ["TOKEN_TABLE"]
+TOKEN_TABLE = os.environ["TOKEN_TABLE"]
 EVENT_ID = os.environ["EVENT_ID"]
 REDIS_HOST = os.environ["REDIS_HOST"]
 REDIS_PORT = os.environ["REDIS_PORT"]
@@ -56,20 +56,20 @@ def lambda_handler(event, context):
         rc.getset(MAX_QUEUE_POSITION_EXPIRED, 0)
 
         try:                       
-            response = ddb_client.delete_table( TableName=DDB_TABLE_NAME )
+            response = ddb_client.delete_table( TableName=TOKEN_TABLE )
             waiter = ddb_client.get_waiter('table_not_exists')
             # wait for table to get deleted
-            waiter.wait(TableName=DDB_TABLE_NAME)
+            waiter.wait(TableName=TOKEN_TABLE)
             print("Token table deleted")
             # recreate table
             create_token_table()
             waiter = ddb_client.get_waiter('table_exists')
             # wait for table to get created
-            waiter.wait(TableName=DDB_TABLE_NAME)
+            waiter.wait(TableName=TOKEN_TABLE)
             print("Token table recreated")
             # enable PITR
             ddb_client.update_continuous_backups(
-                TableName=DDB_TABLE_NAME,
+                TableName=TOKEN_TABLE,
                 PointInTimeRecoverySpecification={
                     'PointInTimeRecoveryEnabled': True
                 }
@@ -134,7 +134,7 @@ def lambda_handler(event, context):
 
 def create_token_table():
     ddb_client.create_table(
-        TableName= DDB_TABLE_NAME,
+        TableName= TOKEN_TABLE,
         BillingMode = "PAY_PER_REQUEST",
         AttributeDefinitions = [
             {
@@ -286,6 +286,10 @@ def create_servingcounter_issuedat_table():
             {
                 "AttributeName": "issue_time",
                 "AttributeType": "N"
+            },
+            {
+                "AttributeName": "queue_positions_served",
+                "AttributeType": "N"
             }
         ],
         KeySchema = [
@@ -308,6 +312,22 @@ def create_servingcounter_issuedat_table():
                     },
                     {
                         "AttributeName": "issue_time",
+                        "KeyType": "RANGE"
+                    }
+                ],
+                "Projection": {
+                    "ProjectionType": "ALL"
+                }
+            },
+            {
+                "IndexName": "ServedPositionsIndex",
+                "KeySchema": [
+                    {
+                        "AttributeName": "event_id",
+                        "KeyType": "HASH"
+                    },
+                    {
+                        "AttributeName": "queue_positions_served",
                         "KeyType": "RANGE"
                     }
                 ],

@@ -3290,9 +3290,9 @@
                                 },
                                 {
                                     "Fn::Sub": [
-                                        "${TableArn1}/index/*",
+                                        "${TableArn2}/index/*",
                                         {
-                                            "TableArn1": {
+                                            "TableArn2": {
                                                 "Fn::GetAtt": [
                                                     "ServingCounterIssuedAtTable",
                                                     "Arn"
@@ -3320,6 +3320,9 @@
                     },
                     {
                         "Ref": "SetQueueExpiredRole"
+                    },
+                    {
+                        "Ref": "AssignQueueRole"
                     }
                 ]
             }
@@ -3540,6 +3543,10 @@
                     {
                         "AttributeName": "issue_time",
                         "AttributeType": "N"
+                    },
+                    {
+                        "AttributeName": "queue_positions_served",
+                        "AttributeType": "N"
                     }
                 ],
                 "KeySchema": [
@@ -3562,6 +3569,22 @@
                             },
                             {
                                 "AttributeName": "issue_time",
+                                "KeyType": "RANGE"
+                            }
+                        ],
+                        "Projection": {
+                            "ProjectionType": "ALL"
+                        }
+                    },
+                    {
+                        "IndexName": "ServedPositionsIndex",
+                        "KeySchema": [
+                            {
+                                "AttributeName": "event_id",
+                                "KeyType": "HASH"
+                            },
+                            {
+                                "AttributeName": "queue_positions_served",
                                 "KeyType": "RANGE"
                             }
                         ],

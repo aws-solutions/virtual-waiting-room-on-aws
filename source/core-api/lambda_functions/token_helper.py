@@ -7,6 +7,8 @@ This module contains helper methods for generating tokens.
 
 import json
 from jwcrypto import jwk, jwt
+from time import time 
+from boto3.dynamodb.conditions import Key
 
 def create_jwk_keypair(secrets_client, SECRET_NAME_PREFIX) -> jwk.JWK:
     """
@@ -95,4 +97,48 @@ def write_to_eventbus(events_client, EVENT_ID, EVENT_BUS_NAME, request_id) -> No
                 'EventBusName': EVENT_BUS_NAME
             }
         ]
+    )
+
+def validate_token_expiry(event_id, queue_number, queue_position_expiry_period, ddb_table_queue_position_issued_at, ddb_table_serving_counter_issued_at):
+    """
+    Validates the queue position to see if it has expired
+    Returns: (is_valid, serving_position)
+    """
+    current_time = int(time)
+    response = ddb_table_queue_position_issued_at.query(
+        KeyConditionExpression=Key('event_id').eq(event_id) & Key('queue_position').eq(int(queue_number)),
+    )
+
+    # if marked as expired then return immediately
+    if response['Items'][0]['expired'] == 1:
+        return (False, None)
+
+    # verify queue expiry period    
+    response = ddb_table_serving_counter_issued_at.query(
+        KeyConditionExpression=Key('event_id').eq(event_id) & Key('serving_counter').gte(int(queue_number))
+        # go in reverse ?
+    )
+    serving_counter_item = response['Items'][0]
+    if response['Items'] and current_time - serving_counter_item['issue_time'] < int(queue_position_expiry_period):
+        return (True, serving_counter_item['serving_position'])
+
+    return (False, None)
+
+
+def update_queue_positions_served(event_id, serving_position, ddb_table_serving_counter_issued_at):
+    """
+    Update the corresponding serving counter with queue positions served
+    """
+    response = ddb_table_serving_counter_issued_at.query(
+        KeyConditionExpression=Key('event_id').eq(event_id) & Key('serving_counter').eq(serving_position)
+    )
+    serving_counter_item = response['Items'][0]
+
+    ddb_table_serving_counter_issued_at.update_item(
+        Key={
+            'event_id': serving_counter_item['event_id'],
+            'serving_position': serving_counter_item['serving_position']
+        },
+        UpdateExpression='SET queue_positions_served = :val',
+        ExpressionAttributeValues={':val': serving_counter_item['queue_positions_served'] + 1}
     )

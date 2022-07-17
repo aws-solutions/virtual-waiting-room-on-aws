@@ -55,7 +55,7 @@ def lambda_handler(event, context):
 
     cur_serving = rc.incrby(SERVING_COUNTER, increment_by)
 
-    if ENABLE_QUEUE_POSITION_EXPIRY:
+    if ENABLE_QUEUE_POSITION_EXPIRY == 'true':
         item = {
             'event_id': EVENT_ID,
             'serving_counter': int(cur_serving),

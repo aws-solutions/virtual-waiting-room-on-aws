@@ -26,7 +26,11 @@ SECRET_NAME_PREFIX = os.environ["STACK_NAME"]
 VALIDITY_PERIOD = int(os.environ["VALIDITY_PERIOD"])
 EVENT_ID = os.environ["EVENT_ID"]
 EVENT_BUS_NAME = os.environ["EVENT_BUS_NAME"]
-SOLUTION_ID = os.environ['SOLUTION_ID']
+SOLUTION_ID = os.environ["SOLUTION_ID"]
+QUEUE_POSITION_ISSUEDAT_TABLE = os.environ["QUEUE_POSITION_ISSUEDAT_TABLE"]
+QUEUE_POSITION_EXPIRY_PERIOD = os.environ["QUEUE_POSITION_EXPIRY_PERIOD"]
+SERVING_COUNTER_ISSUEDAT_TABLE = os.environ["SERVING_COUNTER_ISSUEDAT_TABLE"]
+ENABLE_QUEUE_POSITION_EXPIRY = os.environ["ENABLE_QUEUE_POSITION_EXPIRY"]
 
 user_agent_extra = {"user_agent_extra": SOLUTION_ID}
 user_config = config.Config(**user_agent_extra)
@@ -34,6 +38,8 @@ boto_session = boto3.session.Session()
 region = boto_session.region_name
 ddb_resource = boto3.resource('dynamodb', endpoint_url=f'https://dynamodb.{region}.amazonaws.com', config=user_config)
 ddb_table = ddb_resource.Table(DDB_TABLE_NAME)
+ddb_table_queue_position_issued_at = ddb_resource.Table(QUEUE_POSITION_ISSUEDAT_TABLE)
+ddb_table_serving_counter_issued_at = ddb_resource.Table(SERVING_COUNTER_ISSUEDAT_TABLE)
 events_client = boto3.client('events', endpoint_url=f'https://events.{region}.amazonaws.com', config=user_config)
 
 secrets_client = boto3.client('secretsmanager', endpoint_url=f'https://secretsmanager.{region}.amazonaws.com', config=user_config)
@@ -63,6 +69,17 @@ def lambda_handler(event, context):
         if queue_number := rc.hget(request_id, "queue_number"):
             if int(queue_number) <= int(rc.get(SERVING_COUNTER)):
                 keypair = token_helper.create_jwk_keypair(secrets_client, SECRET_NAME_PREFIX)
+
+                if ENABLE_QUEUE_POSITION_EXPIRY == 'true':
+                    (is_valid, serving_position) = token_helper.validate_token_expiry(EVENT_ID, queue_number, QUEUE_POSITION_EXPIRY_PERIOD, 
+                                                    ddb_table_queue_position_issued_at, ddb_table_serving_counter_issued_at)
+                    if not is_valid:
+                        return {
+                            "statusCode": HTTPStatus.NOT_FOUND.GONE,
+                            "headers": headers,
+                            "body": json.dumps({"error": "Queue position has expired"})
+                        }
+            
 
                 item = ddb_table.get_item(Key={"request_id": request_id})
                 if 'Item' in item:
@@ -110,6 +127,9 @@ def lambda_handler(event, context):
                 (access_token, refresh_token, id_token) = token_helper.create_tokens(claims, keypair, True)
                 token_helper.write_to_eventbus(events_client, EVENT_ID, EVENT_BUS_NAME, request_id)
                 rc.incr(TOKEN_COUNTER, 1)
+
+                if ENABLE_QUEUE_POSITION_EXPIRY == 'true':
+                    token_helper.update_queue_positions_served(EVENT_ID, serving_position, ddb_table_serving_counter_issued_at) 
 
                 response = {
                     "statusCode": HTTPStatus.OK.value, 
