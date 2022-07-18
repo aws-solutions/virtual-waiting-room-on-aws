@@ -106,6 +106,7 @@ def validate_token_expiry(event_id, queue_number, queue_position_expiry_period,r
     Validates the queue position to see if it has expired
     Returns: (is_valid, serving_counter)
     """
+    current_time = int(time())
     if int(queue_number) <= int(rc.get(MAX_QUEUE_POSITION_EXPIRED)):
         return (False, None)
 
@@ -115,21 +116,16 @@ def validate_token_expiry(event_id, queue_number, queue_position_expiry_period,r
     queue_position_item = response['Items'][0]
     queue_position_issue_time = int(queue_position_item['issue_time'])
 
-    # # if marked as expired then return immediately
-    # if response['Items'][0]['expired'] == 1:
-    #     return (False, None)
-
     # verify queue expiry period    
-    current_time = int(time())
     response = ddb_table_serving_counter_issued_at.query(
-        KeyConditionExpression=Key('event_id').eq(event_id) & Key('serving_counter').gte(int(queue_number))
-        # go in reverse ?
+        KeyConditionExpression=Key('event_id').eq(event_id) & Key('serving_counter').gte(int(queue_number)),
+        Limit=1
     )
     serving_counter_item = response['Items'][0]
     serving_counter_issue_time = int(serving_counter_item['issue_time'])
 
     # enqueued before or after moving the serving counter
-    time_in_queue = min(queue_position_issue_time, serving_counter_issue_time)
+    time_in_queue = max(queue_position_issue_time, serving_counter_issue_time)
     if current_time - time_in_queue > int(queue_position_expiry_period):
         return(False, None)
 

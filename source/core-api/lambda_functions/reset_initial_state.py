@@ -56,7 +56,7 @@ def lambda_handler(event, context):
         rc.getset(MAX_QUEUE_POSITION_EXPIRED, 0)
 
         try:                       
-            response = ddb_client.delete_table( TableName=TOKEN_TABLE )
+            response = ddb_client.delete_table(TableName=TOKEN_TABLE)
             waiter = ddb_client.get_waiter('table_not_exists')
             # wait for table to get deleted
             waiter.wait(TableName=TOKEN_TABLE)
