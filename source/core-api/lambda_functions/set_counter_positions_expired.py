@@ -12,7 +12,7 @@ import redis
 from botocore import config
 from time import time
 from boto3.dynamodb.conditions import Key, Attr
-from counters import MAX_QUEUE_POSITION_EXPIRED, SERVING_COUNTER
+from counters import MAX_QUEUE_POSITION_EXPIRED, QUEUE_COUNTER, SERVING_COUNTER
 
 SECRET_NAME_PREFIX = os.environ["STACK_NAME"]
 SOLUTION_ID = os.environ['SOLUTION_ID']
@@ -39,12 +39,13 @@ def lambda_handler(event, context):
     """
     This function is the entry handler for Lambda.
     """
-    # scan for all items that are not obsolete 
     print(event)
 
     # get serving counter items greater than the max expired queue position
     max_queue_position_expired = int(rc.get(MAX_QUEUE_POSITION_EXPIRED))
-    serving_counter = int(rc.get(SERVING_COUNTER))
+    serving_counter_position = int(rc.get(SERVING_COUNTER))
+    print(f'Max queue position expired: {max_queue_position_expired}')
+    print(f'Serving counter: {serving_counter_position}')
 
     kce = Key('event_id').eq(EVENT_ID) & Key('serving_counter').gt(max_queue_position_expired)
     response = ddb_table_serving_counter_issued_at.query(
@@ -57,44 +58,63 @@ def lambda_handler(event, context):
         print('No serving counter items avaialable for checking')
         return
 
-    current_time = int(time)
+    current_time = int(time())
+    queue_counter = int(rc.get(QUEUE_COUNTER))
+    print(f'Queue counter: {queue_counter}')
+
     # find items in the serving counter table that are greater than the max queue position expired
+    # queue_position_loop_start = max_queue_position_expired
     for serving_counter_item in serving_counter_items:
-        serving_counter = serving_counter_item['serving_counter']
-        serving_counter_issue_time = serving_counter_item['issue_time']
-        print(f'serving counter {serving_counter} issue time: {serving_counter_issue_time}')
-        
+        serving_counter_position = int(serving_counter_item['serving_counter'])
+        serving_counter_issue_time = int(serving_counter_item['issue_time'])
+        print(f'serving counter {serving_counter_position} issue time: {serving_counter_issue_time}')
+
         # get items between the last max queue position expired value and serving counter 
-        kce = Key('event_id').eq(EVENT_ID) & Key('queue_position').between(max_queue_position_expired, serving_counter)
+        kce = Key('event_id').eq(EVENT_ID) & Key('queue_position').between(max_queue_position_expired, serving_counter_position)
         fexp = Attr('expired').eq(0)
         response = ddb_table_queue_position_issued_at.query(
             KeyConditionExpression=kce,
-            ScanIndexForward=False,
             FilterExpression=fexp
         )
         queue_position_items = response['Items']
+        # queue_position_loop_start = serving_counter_position # set to current serving_counter
 
         if not queue_position_items:
             print('No queue positions avaialable to be marked for expiry')
             return
-
-        # get last queue position and the issue time
-        # last_queue_position = int(queue_position_items[-1]['queue_position'])
-        # print(f'last queue position: {last_queue_position}')
     
-        # mark expired items with expired issue time
+        # mark queue posistion within range
         increment_by = 0
         for queue_item in queue_position_items:
-            if current_time - serving_counter_issue_time > int(QUEUE_POSITION_EXPIRY_PERIOD): # check this logic 
-                ddb_table_queue_position_issued_at.update_item(
-                Key={
-                    'event_id': queue_item['event_id'],
-                    'queue_position': queue_item['queue_position']
-                },  
-                UpdateExpression='SET expired = :val1',
-                ExpressionAttributeValues={':val1': 1}
-            )
-            increment_by += 1
+            # if current_time - serving_counter_issue_time > int(QUEUE_POSITION_EXPIRY_PERIOD): # check this logic 
+            #     ddb_table_queue_position_issued_at.update_item(
+            #     Key={
+            #         'event_id': queue_item['event_id'],
+            #         'queue_position': queue_item['queue_position']
+            #     },  
+            #     UpdateExpression='SET expired = :val1',
+            #     ExpressionAttributeValues={':val1': 1}
+            # )
+            time_in_queue = min(int(queue_item['issue_time']), serving_counter_issue_time)
+            if current_time - time_in_queue > int(QUEUE_POSITION_EXPIRY_PERIOD):
+                increment_by += 1
         
-        max_queue_position_expired = rc.incrby(MAX_QUEUE_POSITION_EXPIRED, increment_by)
-        print(f'max queue_position incremented by :{increment_by} to {max_queue_position_expired}')
+        if increment_by > 0:
+            max_queue_position_expired = rc.incrby(MAX_QUEUE_POSITION_EXPIRED, increment_by)
+            print(f'max queue_position incremented by :{increment_by} to {max_queue_position_expired}')
+        else:
+            print('max queue_position not incremented')
+
+        if max_queue_position_expired == serving_counter_position:
+            serving_positions_unused = serving_counter_position - int(serving_counter_item['queue_positions_served'])
+            cur_serving = rc.incrby(SERVING_COUNTER, serving_positions_unused)
+            print(f'Serving counter incremented by {serving_positions_unused}. Current value: {cur_serving}')
+            
+        # # increment the serving counter for expired queue positions
+        # # increment_by - queue_positions_served
+        # serving_positions_unused = increment_by - int(serving_counter_item['queue_positions_served'])
+        # if  serving_positions_unused > 0:
+        #     serving_counter_increment_by += serving_positions_unused
+            
+    # cur_serving = rc.incrby(SERVING_COUNTER, serving_counter_increment_by)
+    # print(f'Serving counter incremented by {serving_counter_increment_by}. Current value: {cur_serving}')

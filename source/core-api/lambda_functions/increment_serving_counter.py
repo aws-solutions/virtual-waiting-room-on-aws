@@ -59,7 +59,8 @@ def lambda_handler(event, context):
         item = {
             'event_id': EVENT_ID,
             'serving_counter': int(cur_serving),
-            'issue_time': int(time())
+            'issue_time': int(time()),
+            'queue_positions_served': 0
         }
         ddb_table.put_item(Item=item)
         print(f'Item: {item}')

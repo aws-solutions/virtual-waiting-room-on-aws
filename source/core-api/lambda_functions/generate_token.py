@@ -68,19 +68,18 @@ def lambda_handler(event, context):
     if client_event_id == EVENT_ID and is_valid_rid(request_id):
         if queue_number := rc.hget(request_id, "queue_number"):
             if int(queue_number) <= int(rc.get(SERVING_COUNTER)):
-                keypair = token_helper.create_jwk_keypair(secrets_client, SECRET_NAME_PREFIX)
 
                 if ENABLE_QUEUE_POSITION_EXPIRY == 'true':
-                    (is_valid, serving_position) = token_helper.validate_token_expiry(EVENT_ID, queue_number, QUEUE_POSITION_EXPIRY_PERIOD, 
+                    (is_valid, serving_counter) = token_helper.validate_token_expiry(EVENT_ID, queue_number, QUEUE_POSITION_EXPIRY_PERIOD, rc, 
                                                     ddb_table_queue_position_issued_at, ddb_table_serving_counter_issued_at)
                     if not is_valid:
                         return {
-                            "statusCode": HTTPStatus.NOT_FOUND.GONE,
+                            "statusCode": HTTPStatus.GONE.value,
                             "headers": headers,
                             "body": json.dumps({"error": "Queue position has expired"})
                         }
             
-
+                keypair = token_helper.create_jwk_keypair(secrets_client, SECRET_NAME_PREFIX)
                 item = ddb_table.get_item(Key={"request_id": request_id})
                 if 'Item' in item:
                     claims = token_helper.create_claims_from_record(EVENT_ID, item)
@@ -129,7 +128,7 @@ def lambda_handler(event, context):
                 rc.incr(TOKEN_COUNTER, 1)
 
                 if ENABLE_QUEUE_POSITION_EXPIRY == 'true':
-                    token_helper.update_queue_positions_served(EVENT_ID, serving_position, ddb_table_serving_counter_issued_at) 
+                    token_helper.update_queue_positions_served(EVENT_ID, serving_counter, ddb_table_serving_counter_issued_at) 
 
                 response = {
                     "statusCode": HTTPStatus.OK.value, 

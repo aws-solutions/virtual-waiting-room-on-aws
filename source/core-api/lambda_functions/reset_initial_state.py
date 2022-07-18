@@ -133,6 +133,9 @@ def lambda_handler(event, context):
     return response
 
 def create_token_table():
+    """
+    Create TOKEN_TABLE
+    """
     ddb_client.create_table(
         TableName= TOKEN_TABLE,
         BillingMode = "PAY_PER_REQUEST",
@@ -180,6 +183,9 @@ def create_token_table():
     )
 
 def create_queueposition_issuedat_table():
+    """
+    Create QUEUE_POSITION_ISSUEDAT_TABLE
+    """
     ddb_client.create_table(
         TableName = QUEUE_POSITION_ISSUEDAT_TABLE,
         BillingMode = "PAY_PER_REQUEST",
@@ -271,7 +277,10 @@ def create_queueposition_issuedat_table():
     )
 
 def create_servingcounter_issuedat_table():
-     ddb_client.create_table(
+    """
+    Create SERVING_COUNTER_ISSUEDAT_TABLE
+    """
+    ddb_client.create_table(
         TableName = SERVING_COUNTER_ISSUEDAT_TABLE,
         BillingMode = "PAY_PER_REQUEST",
         AttributeDefinitions = [
@@ -340,3 +349,4 @@ def create_servingcounter_issuedat_table():
             "Enabled": True
         }
     )
+    
