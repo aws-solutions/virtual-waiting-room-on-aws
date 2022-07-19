@@ -12,7 +12,7 @@ import json
 import boto3
 import os
 from botocore import config
-from counters import *
+from counters import QUEUE_COUNTER, SERVING_COUNTER, TOKEN_COUNTER, ABANDONED_SESSION_COUNTER, COMPLETED_SESSION_COUNTER
 
 # connection info and other globals
 REDIS_HOST = os.environ["REDIS_HOST"]
