@@ -99,6 +99,9 @@ def lambda_handler(event, context):
             break
 
 def increment_serving_counter(max_queue_position_expired, serving_counter_position, serving_counter_item):
+    """
+    Increment serving counter if max_queue_position_expired has reached counter value
+    """
     if max_queue_position_expired == serving_counter_position:
         serving_positions_unused = serving_counter_position - int(serving_counter_item['queue_positions_served'])
         cur_serving = rc.incrby(SERVING_COUNTER, serving_positions_unused)
@@ -107,6 +110,9 @@ def increment_serving_counter(max_queue_position_expired, serving_counter_positi
         print('Serving counter position not incremented')
 
 def set_max_queue_expiry_for_queue_items(current_time, serving_counter_issue_time, queue_position_items):
+    """
+    Set max expiry counter position from the queue position items
+    """
     for queue_item in queue_position_items:
         time_in_queue = max(int(queue_item['issue_time']), serving_counter_issue_time)
         if current_time - time_in_queue > int(QUEUE_POSITION_EXPIRY_PERIOD):
