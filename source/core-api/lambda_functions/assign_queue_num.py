@@ -88,7 +88,6 @@ def lambda_handler(event, _):
                     'queue_position': int(q_start_num),
                     'issue_time': int(time()),
                     'request_id': request_id,
-                    'expired': 0
                 }
                 ddb_table.put_item(Item=item)
                 print(f"Item: {item}")

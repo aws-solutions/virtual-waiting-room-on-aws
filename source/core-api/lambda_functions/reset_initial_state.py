@@ -205,10 +205,6 @@ def create_queueposition_issuedat_table():
             {
                 "AttributeName": "request_id",
                 "AttributeType": "S"
-            },
-            {
-                "AttributeName": "expired",
-                "AttributeType": "N"
             }
         ],
         KeySchema = [
@@ -231,22 +227,6 @@ def create_queueposition_issuedat_table():
                     },
                     {
                         "AttributeName": "issue_time",
-                        "KeyType": "RANGE"
-                    }
-                ],
-                "Projection": {
-                    "ProjectionType": "ALL"
-                }
-            },
-            {
-                "IndexName": "ExpiredIndex",
-                "KeySchema": [
-                    {
-                        "AttributeName": "event_id",
-                        "KeyType": "HASH"
-                    },
-                    {
-                        "AttributeName": "expired",
                         "KeyType": "RANGE"
                     }
                 ],
