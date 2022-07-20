@@ -40,85 +40,62 @@ def lambda_handler(event, context):
     This function is the entry handler for Lambda.
     """
     print(event)
-
-    # get serving counter items greater than the max expired queue position
-    max_queue_position_expired = int(rc.get(MAX_QUEUE_POSITION_EXPIRED))
-    serving_counter_position = int(rc.get(SERVING_COUNTER))
     current_time = int(time())
+
+    max_queue_position_expired = int(rc.get(MAX_QUEUE_POSITION_EXPIRED))
+    current_serving_counter_position = int(rc.get(SERVING_COUNTER))
     queue_counter = int(rc.get(QUEUE_COUNTER))
-    print(f'Queue counter: {queue_counter}')
-    print(f'Max queue position expired: {max_queue_position_expired}')
-    print(f'Serving counter: {serving_counter_position}')
+    print(f'Queue counter: {queue_counter}. Max position expired: {max_queue_position_expired}. Serving counter: {current_serving_counter_position}')
 
     # find items in the serving counter table that are greater than the max queue position expired
     response = ddb_table_serving_counter_issued_at.query(
         KeyConditionExpression=Key('event_id').eq(EVENT_ID) & Key('serving_counter').gt(max_queue_position_expired),
-        ScanIndexForward=True,
     )
     serving_counter_items = response['Items']
 
     if not serving_counter_items:
         print('No serving counter items avaialable for checking')
         return
-        
+
+    # set previous serving counter to max queue position expired
+    previous_serving_counter_position = max_queue_position_expired
+
     for serving_counter_item in serving_counter_items:
-        serving_counter_position = int(serving_counter_item['serving_counter'])
+
+        serving_counter_item_position = int(serving_counter_item['serving_counter'])
         serving_counter_issue_time = int(serving_counter_item['issue_time'])
-        print(f'serving counter {serving_counter_position} issue time: {serving_counter_issue_time}')
-
-        # get items between the last max queue position expired value and serving counter 
+        
+        # query queue position table for corresponding serving counter item position
         response = ddb_table_queue_position_issued_at.query(
-            KeyConditionExpression=Key('event_id').eq(EVENT_ID) & Key('queue_position').between(max_queue_position_expired + 1, serving_counter_position),
-            ScanIndexForward=False # are the responses in the reverse order, do I need to flip the between values
-            # do you need Limit here??
+            KeyConditionExpression=Key('event_id').eq(EVENT_ID) & Key('queue_position').eq(serving_counter_item_position)
         )
-
-        if not response['Items']:
-            print('No queue positions avaialable to be marked for expiry')
-            return ## check this
-        
-        # try and set max_queue_position_expired within the range of 
         queue_position_items = response['Items']
-        is_max_queue_position_set = set_max_queue_expiry_for_queue_items(current_time, serving_counter_issue_time, queue_position_items)
-
-        # check for paged reponses
-        while not is_max_queue_position_set and 'LastEvaluatedKey' in response:
-            response = ddb_table_queue_position_issued_at.query(
-                KeyConditionExpression=Key('event_id').eq(EVENT_ID) & Key('queue_position').between(max_queue_position_expired + 1, serving_counter_position),
-                ExclusiveStartKey=response['LastEvaluatedKey'],
-                ScanIndexForward=False
-            )
-            queue_position_items = response['Items']
-            is_max_queue_position_set = set_max_queue_expiry_for_queue_items(current_time, serving_counter_issue_time, queue_position_items)
-
-        # increment serving counter logic 
-        increment_serving_counter(max_queue_position_expired, serving_counter_position, serving_counter_item)
-          
-        # no need to process further items in QUEUE_POSITION_EXPIRY_PERIOD table
-        if max_queue_position_expired < serving_counter_position:
-            break
-
-def increment_serving_counter(max_queue_position_expired, serving_counter_position, serving_counter_item):
-    """
-    Increment serving counter if max_queue_position_expired has reached counter value
-    """
-    if max_queue_position_expired == serving_counter_position:
-        serving_positions_unused = serving_counter_position - int(serving_counter_item['queue_positions_served'])
-        cur_serving = rc.incrby(SERVING_COUNTER, serving_positions_unused)
-        print(f'Serving counter incremented by {serving_positions_unused}. Current value: {cur_serving}')
-    else:
-        print('Serving counter position not incremented')
-
-def set_max_queue_expiry_for_queue_items(current_time, serving_counter_issue_time, queue_position_items):
-    """
-    Set max expiry counter position from the queue position items
-    """
-    for queue_item in queue_position_items:
-        time_in_queue = max(int(queue_item['issue_time']), serving_counter_issue_time)
-        if current_time - time_in_queue > int(QUEUE_POSITION_EXPIRY_PERIOD):
-            max_queue_position_expired = rc.set(MAX_QUEUE_POSITION_EXPIRED, int(queue_item['queue_position']))
-            print(f'max queue position expired incremented to : {max_queue_position_expired}')
-            return True
         
-        print('max queue_position not incremented')
-    return False
+        if not queue_position_items:
+            break
+        
+        queue_item_issue_time = int(queue_position_items[0]['issue_time'])
+        time_in_queue = max(queue_item_issue_time, serving_counter_issue_time)
+
+        # if time in queue has not exceeded expiry period
+        if current_time - time_in_queue < int(QUEUE_POSITION_EXPIRY_PERIOD):
+            break
+                
+        max_queue_position_expired = rc.set(MAX_QUEUE_POSITION_EXPIRED, serving_counter_item_position)
+        print(f'Max queue expiry position set to: {max_queue_position_expired}')        
+
+        # increment the serving counter (Current - Previous) - (Positions served)
+        increment_by = (serving_counter_item_position - previous_serving_counter_position) - int(serving_counter_item['queue_positions_served'])
+        cur_serving = rc.incrby(SERVING_COUNTER, int(increment_by))
+        item = {
+            'event_id': EVENT_ID,
+            'serving_counter': cur_serving,
+            'issue_time': int(time()),
+            'queue_positions_served': 0
+        }
+        ddb_table_serving_counter_issued_at.put_item(Item=item)
+        print(item)
+        print(f'Serving counter incremented by {increment_by}. Current value: {cur_serving}')
+
+        # set prevous serving counter position to item serving counter position
+        previous_serving_counter_position = serving_counter_item_position

@@ -69,11 +69,9 @@ def lambda_handler(event, context):
         if queue_number := rc.hget(request_id, "queue_number"):
             if int(queue_number) <= int(rc.get(SERVING_COUNTER)):
                 
-                # tokens are accessible even if queue position has expired
                 item = ddb_table.get_item(Key={"request_id": request_id})
-                if 'Item' in item:
-                    is_requestid_in_token_table = True
-
+                is_requestid_in_token_table = 'Item' in item
+                
                 # check if queue position is valid and not expired
                 if ENABLE_QUEUE_POSITION_EXPIRY == 'true' and not is_requestid_in_token_table:
                     (is_valid, serving_counter) = token_helper.validate_token_expiry(EVENT_ID, queue_number, QUEUE_POSITION_EXPIRY_PERIOD, rc, 
@@ -91,6 +89,14 @@ def lambda_handler(event, context):
                     (access_token, refresh_token, id_token) = token_helper.create_tokens(claims, keypair, True)
                     expires = int(item['Item']['expires'])
                     cur_time = int(time.time())
+
+                    # check for session status (non-zero) and reject the request  
+                    if int(item['Item']['session_status']) != 0:
+                        return {
+                            "statusCode": HTTPStatus.GONE.value,
+                            "headers": headers,
+                            "body": json.dumps({"error": "Token corresponding to request id has expired"})
+                        }
 
                     return {
                         "statusCode": HTTPStatus.OK.value, 
@@ -126,7 +132,7 @@ def lambda_handler(event, context):
                 except Exception as e:
                     print(e)
                     raise e
-                
+
                 claims = token_helper.create_claims(EVENT_ID, request_id, issuer, queue_number, iat, nbf, exp)
                 (access_token, refresh_token, id_token) = token_helper.create_tokens(claims, keypair, True)
                 token_helper.write_to_eventbus(events_client, EVENT_ID, EVENT_BUS_NAME, request_id)
@@ -166,6 +172,6 @@ def lambda_handler(event, context):
             "headers": headers,
             "body": json.dumps({"error": "Invalid event or request ID"})
         }
-    
+
     return response
     
