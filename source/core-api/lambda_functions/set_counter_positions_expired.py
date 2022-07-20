@@ -81,10 +81,13 @@ def lambda_handler(event, context):
         if current_time - time_in_queue < int(QUEUE_POSITION_EXPIRY_PERIOD):
             break
                 
-        max_queue_position_expired = rc.set(MAX_QUEUE_POSITION_EXPIRED, serving_counter_item_position)
-        print(f'Max queue expiry position set to: {max_queue_position_expired}')        
+        if rc.set(MAX_QUEUE_POSITION_EXPIRED, serving_counter_item_position):
+            max_queue_position_expired = serving_counter_item_position
+            print(f'Max queue expiry position set to: {max_queue_position_expired}')
+        else:
+            print(f'Failed to set max queue position served: Current value: {max_queue_position_expired}')
 
-        # increment the serving counter (Current - Previous) - (Positions served)
+        # increment the serving counter [(Current counter - Previous counter) - (PositionsServed)]
         increment_by = (serving_counter_item_position - previous_serving_counter_position) - int(serving_counter_item['queue_positions_served'])
         cur_serving = rc.incrby(SERVING_COUNTER, int(increment_by))
         item = {
@@ -99,3 +102,4 @@ def lambda_handler(event, context):
 
         # set prevous serving counter position to item serving counter position
         previous_serving_counter_position = serving_counter_item_position
+        

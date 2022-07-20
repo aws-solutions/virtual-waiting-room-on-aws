@@ -116,7 +116,7 @@ def validate_token_expiry(event_id, queue_number, queue_position_expiry_period,r
     queue_position_item = response['Items'][0]
     queue_position_issue_time = int(queue_position_item['issue_time'])
 
-    # verify queue expiry period    
+    # serving counter gte queue number, should always have atleast 1 result 
     response = ddb_table_serving_counter_issued_at.query(
         KeyConditionExpression=Key('event_id').eq(event_id) & Key('serving_counter').gte(int(queue_number)),
         Limit=1
@@ -124,7 +124,7 @@ def validate_token_expiry(event_id, queue_number, queue_position_expiry_period,r
     serving_counter_item = response['Items'][0]
     serving_counter_issue_time = int(serving_counter_item['issue_time'])
 
-    # enqueued before or after moving the serving counter
+    # time in queue greater than the expiry period 
     time_in_queue = max(queue_position_issue_time, serving_counter_issue_time)
     if current_time - time_in_queue > int(queue_position_expiry_period):
         return(False, None)
