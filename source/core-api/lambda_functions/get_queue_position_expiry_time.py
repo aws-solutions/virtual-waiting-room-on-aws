@@ -63,7 +63,7 @@ def lambda_handler(event, context):
         }
 
     if not ENABLE_QUEUE_POSITION_EXPIRY:
-         return {
+        return {
             "statusCode": HTTPStatus.ACCEPTED.value,
             "headers": headers,
             "body": json.dumps({"error": "Queue position expiration not enabled"})
@@ -116,9 +116,8 @@ def lambda_handler(event, context):
         }
     
     return {
-            "statusCode": HTTPStatus.OK.value,
-            "headers": headers,
-            "body": json.dumps({"Expiration": time_in_queue})
-        }
-
+        "statusCode": HTTPStatus.OK.value,
+        "headers": headers,
+        "body": json.dumps({"Expiration": time_in_queue})
+    }
     

@@ -2298,7 +2298,7 @@
                 "MemorySize": 1024,
                 "Role": {
                     "Fn::GetAtt": [
-                        "SetQueueExpiredRole",
+                        "QueuePositionExpiredRole",
                         "Arn"
                     ]
                 },
