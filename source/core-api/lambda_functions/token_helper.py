@@ -6,6 +6,7 @@ This module contains helper methods for generating tokens.
 """
 
 import json
+from typing import Tuple
 from jwcrypto import jwk, jwt
 from time import time 
 from boto3.dynamodb.conditions import Key
@@ -101,7 +102,7 @@ def write_to_eventbus(events_client, EVENT_ID, EVENT_BUS_NAME, request_id) -> No
     )
 
 def validate_token_expiry(event_id, queue_number, queue_position_expiry_period,rc, 
-        ddb_table_queue_position_issued_at, ddb_table_serving_counter_issued_at):
+        ddb_table_queue_position_issued_at, ddb_table_serving_counter_issued_at) -> Tuple[bool, int]:
     """
     Validates the queue position to see if it has expired
     Returns: (is_valid, serving_counter)
@@ -132,7 +133,7 @@ def validate_token_expiry(event_id, queue_number, queue_position_expiry_period,r
     return (True, int(serving_counter_item['serving_counter']))
 
 
-def update_queue_positions_served(event_id, serving_counter, ddb_table_serving_counter_issued_at):
+def update_queue_positions_served(event_id, serving_counter, ddb_table_serving_counter_issued_at) -> None:
     """
     Update the corresponding serving counter with queue positions served
     """

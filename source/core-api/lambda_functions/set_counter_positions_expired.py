@@ -54,7 +54,7 @@ def lambda_handler(event, context):
     serving_counter_items = response['Items']
 
     if not serving_counter_items:
-        print('No serving counter items avaialable for checking')
+        print('No serving counter items eligible for checking')
         return
 
     # set previous serving counter to max queue position expired
