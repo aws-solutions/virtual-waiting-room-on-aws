@@ -63,7 +63,7 @@ def lambda_handler(event, context):
     for serving_counter_item in serving_counter_items:
 
         serving_counter_item_position = int(serving_counter_item['serving_counter'])
-        serving_counter_issue_time = int(serving_counter_item['issue_time'])
+        serving_counter_item_issue_time = int(serving_counter_item['issue_time'])
         
         # query queue position table for corresponding serving counter item position
         response = ddb_table_queue_position_issued_at.query(
@@ -75,19 +75,21 @@ def lambda_handler(event, context):
             break
         
         queue_item_issue_time = int(queue_position_items[0]['issue_time'])
-        time_in_queue = max(queue_item_issue_time, serving_counter_issue_time)
+        time_in_queue = max(queue_item_issue_time, serving_counter_item_issue_time)
 
-        # if time in queue has not exceeded expiry period
+        # if time in queue has not exceeded expiry period, we can stop checking
         if current_time - time_in_queue < int(QUEUE_POSITION_EXPIRY_PERIOD):
             break
                 
+        # set max queue position to serving counter item position
         if rc.set(MAX_QUEUE_POSITION_EXPIRED, serving_counter_item_position):
             max_queue_position_expired = serving_counter_item_position
             print(f'Max queue expiry position set to: {max_queue_position_expired}')
         else:
             print(f'Failed to set max queue position served: Current value: {max_queue_position_expired}')
 
-        # increment the serving counter [(Current counter - Previous counter) - (PositionsServed)]
+        # increment the serving counter by taking the difference of counter item entries and subtract positions served in that range
+        # [(Current counter - Previous counter) - (PositionsServed in that range)]
         increment_by = (serving_counter_item_position - previous_serving_counter_position) - int(serving_counter_item['queue_positions_served'])
         cur_serving = rc.incrby(SERVING_COUNTER, int(increment_by))
         item = {
@@ -100,6 +102,6 @@ def lambda_handler(event, context):
         print(item)
         print(f'Serving counter incremented by {increment_by}. Current value: {cur_serving}')
 
-        # set prevous serving counter position to item serving counter position
+        # set prevous serving counter position to item serving counter position for the loop
         previous_serving_counter_position = serving_counter_item_position
         
