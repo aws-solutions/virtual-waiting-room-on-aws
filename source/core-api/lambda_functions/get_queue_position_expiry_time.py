@@ -6,7 +6,7 @@ This module is the get_queue_position_expiry_time API handler.
 It retrieves the expiry time for a queue number
 """
 
-# pylint: disable=R0201
+# pylint: disable=R0911
 
 from http import HTTPStatus
 import redis
