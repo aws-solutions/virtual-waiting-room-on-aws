@@ -82,11 +82,12 @@ def lambda_handler(event, _):
                 ReceiptHandle=msg["receiptHandle"]
             )
 
+            # same information here  - combine ?
             if ENABLE_QUEUE_POSITION_EXPIRY == 'true':
                 item = {
                     'event_id': EVENT_ID,
                     'queue_position': int(q_start_num),
-                    'issue_time': int(time()),
+                    'issue_time': entry_time, 
                     'request_id': request_id,
                 }
                 ddb_table.put_item(Item=item)

@@ -75,10 +75,10 @@ def lambda_handler(event, context):
             break
         
         queue_item_issue_time = int(queue_position_items[0]['issue_time'])
-        time_in_queue = max(queue_item_issue_time, serving_counter_item_issue_time)
+        queue_time = max(queue_item_issue_time, serving_counter_item_issue_time)
 
         # if time in queue has not exceeded expiry period, we can stop checking
-        if current_time - time_in_queue < int(QUEUE_POSITION_EXPIRY_PERIOD):
+        if current_time - queue_time < int(QUEUE_POSITION_EXPIRY_PERIOD):
             break
                 
         # set max queue position to serving counter item position

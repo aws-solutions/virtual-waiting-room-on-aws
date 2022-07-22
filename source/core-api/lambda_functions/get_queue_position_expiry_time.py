@@ -2,9 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-This module is the get_queue_num API handler.
-It retrieves the queue number assigned to a request from redis.
+This module is the get_queue_position_expiry_time API handler.
+It retrieves the expiry time for a queue number
 """
+
+# pylint: disable=R0201
 
 from http import HTTPStatus
 import redis
@@ -18,7 +20,6 @@ from vwr.common.sanitize import deep_clean
 from vwr.common.validate import is_valid_rid
 from counters import MAX_QUEUE_POSITION_EXPIRED, SERVING_COUNTER
 
-# connection info
 REDIS_HOST = os.environ["REDIS_HOST"]
 REDIS_PORT = os.environ["REDIS_PORT"]
 EVENT_ID = os.environ["EVENT_ID"]
@@ -107,8 +108,8 @@ def lambda_handler(event, context):
     serving_counter_item = response['Items'][0]
     serving_counter_issue_time = int(serving_counter_item['issue_time'])
 
-    time_in_queue = max(queue_position_issue_time, serving_counter_issue_time)
-    if current_time - time_in_queue > int(QUEUE_POSITION_EXPIRY_PERIOD):
+    queue_time = max(queue_position_issue_time, serving_counter_issue_time)
+    if current_time - queue_time > int(QUEUE_POSITION_EXPIRY_PERIOD):
         return {
             "statusCode": HTTPStatus.GONE.value,
             "headers": headers,
@@ -118,6 +119,5 @@ def lambda_handler(event, context):
     return {
         "statusCode": HTTPStatus.OK.value,
         "headers": headers,
-        "body": json.dumps({"Expiration": time_in_queue})
+        "body": json.dumps({"Expires_in": current_time - queue_time})
     }
-    

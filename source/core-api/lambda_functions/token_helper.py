@@ -126,8 +126,8 @@ def validate_token_expiry(event_id, queue_number, queue_position_expiry_period,r
     serving_counter_issue_time = int(serving_counter_item['issue_time'])
 
     # time in queue greater than the expiry period 
-    time_in_queue = max(queue_position_issue_time, serving_counter_issue_time)
-    if current_time - time_in_queue > int(queue_position_expiry_period):
+    queue_time = max(queue_position_issue_time, serving_counter_issue_time)
+    if current_time - queue_time > int(queue_position_expiry_period):
         return(False, None)
 
     return (True, int(serving_counter_item['serving_counter']))
