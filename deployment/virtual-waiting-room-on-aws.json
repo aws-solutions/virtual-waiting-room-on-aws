@@ -1066,12 +1066,6 @@
                         "TOKEN_TABLE": {
                             "Ref": "TokenTable"
                         },
-                        "QUEUE_POSITION_ISSUEDAT_TABLE": {
-                            "Ref": "QueuePositionIssuedAtTable"
-                        },
-                        "SERVING_COUNTER_ISSUEDAT_TABLE": {
-                            "Ref": "ServingCounterIssuedAtTable"
-                        },
                         "STACK_NAME": {
                             "Ref": "AWS::StackName"
                         },
@@ -1080,6 +1074,12 @@
                         },
                         "VALIDITY_PERIOD": {
                             "Ref": "ValidityPeriod"
+                        },
+                        "QUEUE_POSITION_ISSUEDAT_TABLE": {
+                            "Ref": "QueuePositionIssuedAtTable"
+                        },
+                        "SERVING_COUNTER_ISSUEDAT_TABLE": {
+                            "Ref": "ServingCounterIssuedAtTable"
                         },
                         "QUEUE_POSITION_EXPIRY_PERIOD" : {
                             "Ref": "QueuePositionExpiryPeriod"
