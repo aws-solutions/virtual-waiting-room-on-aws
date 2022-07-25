@@ -961,8 +961,8 @@
                         "QUEUE_POSITION_ISSUEDAT_TABLE": {
                             "Ref": "QueuePositionIssuedAtTable"
                         },
-                        "ENABLE_QUEUE_POSITION_EXPIRY": {
-                            "Ref": "EnableQueuePositionExpiry"
+                        "ENABLE_QUEUE_POSITION_TIMEOUT": {
+                            "Ref": "EnableQueuePositionTimeout"
                         },
                         "STACK_NAME": {"Ref": "AWS::StackName"}
                     }
@@ -1081,11 +1081,11 @@
                         "SERVING_COUNTER_ISSUEDAT_TABLE": {
                             "Ref": "ServingCounterIssuedAtTable"
                         },
-                        "QUEUE_POSITION_EXPIRY_PERIOD" : {
-                            "Ref": "QueuePositionExpiryPeriod"
+                        "QUEUE_POSITION_TIMEOUT_PERIOD" : {
+                            "Ref": "QueuePositionTimeoutPeriod"
                         },
-                        "ENABLE_QUEUE_POSITION_EXPIRY": {
-                            "Ref": "EnableQueuePositionExpiry"
+                        "ENABLE_QUEUE_POSITION_TIMEOUT": {
+                            "Ref": "EnableQueuePositionTimeout"
                         },
                         "EVENT_BUS_NAME": {
                             "Ref": "WaitingRoomEventBus"
@@ -1845,8 +1845,8 @@
                         "QUEUE_POSITION_ISSUEDAT_TABLE": {
                             "Ref": "QueuePositionIssuedAtTable"
                         },
-                        "QUEUE_POSITION_EXPIRY_PERIOD" : {
-                            "Ref": "QueuePositionExpiryPeriod"
+                        "QUEUE_POSITION_TIMEOUT_PERIOD" : {
+                            "Ref": "QueuePositionTimeoutPeriod"
                         },
                         "SERVING_COUNTER_ISSUEDAT_TABLE": {
                             "Ref": "ServingCounterIssuedAtTable"
@@ -1866,7 +1866,7 @@
                         }
                     }
                 },
-                "Handler": "set_counter_positions_expired.lambda_handler",
+                "Handler": "set_queue_positions_expired.lambda_handler",
                 "Layers": [
                     {
                         "Ref": "RedisLayer"
@@ -1984,11 +1984,11 @@
                         "SERVING_COUNTER_ISSUEDAT_TABLE": {
                             "Ref": "ServingCounterIssuedAtTable"
                         },
-                        "QUEUE_POSITION_EXPIRY_PERIOD" : {
-                            "Ref": "QueuePositionExpiryPeriod"
+                        "QUEUE_POSITION_TIMEOUT_PERIOD" : {
+                            "Ref": "QueuePositionTimeoutPeriod"
                         },
-                        "ENABLE_QUEUE_POSITION_EXPIRY": {
-                            "Ref": "EnableQueuePositionExpiry"
+                        "ENABLE_QUEUE_POSITION_TIMEOUT": {
+                            "Ref": "EnableQueuePositionTimeout"
                         },
                         "EVENT_BUS_NAME": {
                             "Ref": "WaitingRoomEventBus"
@@ -2280,11 +2280,11 @@
                         "SERVING_COUNTER_ISSUEDAT_TABLE": {
                             "Ref": "ServingCounterIssuedAtTable"
                         },
-                        "QUEUE_POSITION_EXPIRY_PERIOD" : {
-                            "Ref": "QueuePositionExpiryPeriod"
+                        "QUEUE_POSITION_TIMEOUT_PERIOD" : {
+                            "Ref": "QueuePositionTimeoutPeriod"
                         },
-                        "ENABLE_QUEUE_POSITION_EXPIRY": {
-                            "Ref": "EnableQueuePositionExpiry"
+                        "ENABLE_QUEUE_POSITION_TIMEOUT": {
+                            "Ref": "EnableQueuePositionTimeout"
                         },
                         "STACK_NAME": {"Ref": "AWS::StackName"}
                     }
@@ -2532,8 +2532,8 @@
                         "SERVING_COUNTER_ISSUEDAT_TABLE": {
                             "Ref": "ServingCounterIssuedAtTable"
                         },                 
-                        "ENABLE_QUEUE_POSITION_EXPIRY": {
-                            "Ref": "EnableQueuePositionExpiry"
+                        "ENABLE_QUEUE_POSITION_TIMEOUT": {
+                            "Ref": "EnableQueuePositionTimeout"
                         },
                         "STACK_NAME": {"Ref": "AWS::StackName"}
                     }
@@ -5742,7 +5742,7 @@
         "SetQueuePositionExpiredEvents": {
             "Fn::Equals": [
                 {
-                    "Ref": "EnableQueuePositionExpiry"
+                    "Ref": "EnableQueuePositionTimeout"
                 },
                 "true"
             ]
@@ -5776,13 +5776,13 @@
             "ConstraintDescription": "Please enter a value for this field.",
             "Default": "1785"
         },
-        "QueuePositionExpiryPeriod": {
+        "QueuePositionTimeoutPeriod": {
             "Description": "Expiry period of queue position once serving counter is available (seconds)",
             "Type": "Number",
             "ConstraintDescription": "Please enter a value for this field.",
             "Default": "900"
         },
-        "EnableQueuePositionExpiry": {
+        "EnableQueuePositionTimeout": {
             "Description": "If set to false, expiry period is not applied to queue position",
             "Type": "String",
             "AllowedValues": [

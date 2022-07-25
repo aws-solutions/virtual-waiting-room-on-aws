@@ -23,7 +23,7 @@ EVENT_ID = os.environ["EVENT_ID"]
 SECRET_NAME_PREFIX = os.environ["STACK_NAME"]
 SOLUTION_ID = os.environ["SOLUTION_ID"]
 SERVING_COUNTER_ISSUEDAT_TABLE = os.environ["SERVING_COUNTER_ISSUEDAT_TABLE"]
-ENABLE_QUEUE_POSITION_EXPIRY = os.environ["ENABLE_QUEUE_POSITION_EXPIRY"]
+ENABLE_QUEUE_POSITION_TIMEOUT = os.environ["ENABLE_QUEUE_POSITION_TIMEOUT"]
 
 boto_session = boto3.session.Session()
 region = boto_session.region_name
@@ -55,7 +55,7 @@ def lambda_handler(event, context):
 
     cur_serving = rc.incrby(SERVING_COUNTER, increment_by)
 
-    if ENABLE_QUEUE_POSITION_EXPIRY == 'true':
+    if ENABLE_QUEUE_POSITION_TIMEOUT == 'true':
         item = {
             'event_id': EVENT_ID,
             'serving_counter': int(cur_serving),

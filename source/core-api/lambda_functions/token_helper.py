@@ -101,7 +101,7 @@ def write_to_eventbus(events_client, EVENT_ID, EVENT_BUS_NAME, request_id) -> No
         ]
     )
 
-def validate_token_expiry(event_id, queue_number, queue_position_expiry_period,rc, 
+def validate_token_expiry(event_id, queue_number, queue_position_timeout_period, rc, 
         ddb_table_queue_position_issued_at, ddb_table_serving_counter_issued_at) -> Tuple[bool, int]:
     """
     Validates the queue position to see if it has expired
@@ -127,7 +127,7 @@ def validate_token_expiry(event_id, queue_number, queue_position_expiry_period,r
 
     # time in queue greater than the expiry period 
     queue_time = max(queue_position_issue_time, serving_counter_issue_time)
-    if current_time - queue_time > int(queue_position_expiry_period):
+    if current_time - queue_time > int(queue_position_timeout_period):
         return(False, None)
 
     return (True, int(serving_counter_item['serving_counter']))

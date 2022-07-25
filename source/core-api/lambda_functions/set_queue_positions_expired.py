@@ -20,7 +20,7 @@ EVENT_ID = os.environ["EVENT_ID"]
 REDIS_HOST = os.environ["REDIS_HOST"]
 REDIS_PORT = os.environ["REDIS_PORT"]
 QUEUE_POSITION_ISSUEDAT_TABLE = os.environ["QUEUE_POSITION_ISSUEDAT_TABLE"]
-QUEUE_POSITION_EXPIRY_PERIOD = os.environ["QUEUE_POSITION_EXPIRY_PERIOD"]
+QUEUE_POSITION_TIMEOUT_PERIOD = os.environ["QUEUE_POSITION_TIMEOUT_PERIOD"]
 SERVING_COUNTER_ISSUEDAT_TABLE = os.environ["SERVING_COUNTER_ISSUEDAT_TABLE"]
 
 user_agent_extra = {"user_agent_extra": SOLUTION_ID}
@@ -41,6 +41,8 @@ def lambda_handler(event, context):
     """
     print(event)
     current_time = int(time())
+
+    # how do we account for reset here so we don't do anything crazy?
 
     max_queue_position_expired = int(rc.get(MAX_QUEUE_POSITION_EXPIRED))
     current_serving_counter_position = int(rc.get(SERVING_COUNTER))
@@ -78,7 +80,7 @@ def lambda_handler(event, context):
         queue_time = max(queue_item_issue_time, serving_counter_item_issue_time)
 
         # if time in queue has not exceeded expiry period, we can stop checking
-        if current_time - queue_time < int(QUEUE_POSITION_EXPIRY_PERIOD):
+        if current_time - queue_time < int(QUEUE_POSITION_TIMEOUT_PERIOD):
             break
                 
         # set max queue position to serving counter item position

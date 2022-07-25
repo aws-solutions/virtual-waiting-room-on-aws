@@ -26,9 +26,9 @@ EVENT_ID = os.environ["EVENT_ID"]
 SECRET_NAME_PREFIX = os.environ["STACK_NAME"]
 SOLUTION_ID = os.environ["SOLUTION_ID"]
 QUEUE_POSITION_ISSUEDAT_TABLE = os.environ["QUEUE_POSITION_ISSUEDAT_TABLE"]
-QUEUE_POSITION_EXPIRY_PERIOD = os.environ["QUEUE_POSITION_EXPIRY_PERIOD"]
+QUEUE_POSITION_TIMEOUT_PERIOD = os.environ["QUEUE_POSITION_TIMEOUT_PERIOD"]
 SERVING_COUNTER_ISSUEDAT_TABLE = os.environ["SERVING_COUNTER_ISSUEDAT_TABLE"]
-ENABLE_QUEUE_POSITION_EXPIRY = os.environ["ENABLE_QUEUE_POSITION_EXPIRY"]
+ENABLE_QUEUE_POSITION_TIMEOUT = os.environ["ENABLE_QUEUE_POSITION_TIMEOUT"]
 
 boto_session = boto3.session.Session()
 region = boto_session.region_name
@@ -63,7 +63,7 @@ def lambda_handler(event, context):
             "body": json.dumps({"error": "Invalid event or request ID"})
         }
 
-    if not ENABLE_QUEUE_POSITION_EXPIRY:
+    if not ENABLE_QUEUE_POSITION_TIMEOUT:
         return {
             "statusCode": HTTPStatus.ACCEPTED.value,
             "headers": headers,
@@ -109,7 +109,7 @@ def lambda_handler(event, context):
     serving_counter_issue_time = int(serving_counter_item['issue_time'])
 
     queue_time = max(queue_position_issue_time, serving_counter_issue_time)
-    if current_time - queue_time > int(QUEUE_POSITION_EXPIRY_PERIOD):
+    if current_time - queue_time > int(QUEUE_POSITION_TIMEOUT_PERIOD):
         return {
             "statusCode": HTTPStatus.GONE.value,
             "headers": headers,
@@ -119,5 +119,5 @@ def lambda_handler(event, context):
     return {
         "statusCode": HTTPStatus.OK.value,
         "headers": headers,
-        "body": json.dumps({"Expires_in": current_time - queue_time})
+        "body": json.dumps({"Expires_in": int(QUEUE_POSITION_TIMEOUT_PERIOD) - (current_time - queue_time)})
     }

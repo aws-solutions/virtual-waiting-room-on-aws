@@ -27,7 +27,7 @@ QUEUE_URL = os.environ["QUEUE_URL"]
 EVENT_ID = os.environ["EVENT_ID"]
 SECRET_NAME_PREFIX = os.environ["STACK_NAME"]
 QUEUE_POSITION_ISSUEDAT_TABLE = os.environ["QUEUE_POSITION_ISSUEDAT_TABLE"]
-ENABLE_QUEUE_POSITION_EXPIRY = os.environ["ENABLE_QUEUE_POSITION_EXPIRY"]
+ENABLE_QUEUE_POSITION_TIMEOUT = os.environ["ENABLE_QUEUE_POSITION_TIMEOUT"]
 
 boto_session = boto3.session.Session()
 region = boto_session.region_name
@@ -83,7 +83,7 @@ def lambda_handler(event, _):
             )
 
             # same information here  - combine ?
-            if ENABLE_QUEUE_POSITION_EXPIRY == 'true':
+            if ENABLE_QUEUE_POSITION_TIMEOUT == 'true':
                 item = {
                     'event_id': EVENT_ID,
                     'queue_position': int(q_start_num),

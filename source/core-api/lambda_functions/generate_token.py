@@ -28,9 +28,9 @@ EVENT_ID = os.environ["EVENT_ID"]
 EVENT_BUS_NAME = os.environ["EVENT_BUS_NAME"]
 SOLUTION_ID = os.environ["SOLUTION_ID"]
 QUEUE_POSITION_ISSUEDAT_TABLE = os.environ["QUEUE_POSITION_ISSUEDAT_TABLE"]
-QUEUE_POSITION_EXPIRY_PERIOD = os.environ["QUEUE_POSITION_EXPIRY_PERIOD"]
+QUEUE_POSITION_TIMEOUT_PERIOD = os.environ["QUEUE_POSITION_TIMEOUT_PERIOD"]
 SERVING_COUNTER_ISSUEDAT_TABLE = os.environ["SERVING_COUNTER_ISSUEDAT_TABLE"]
-ENABLE_QUEUE_POSITION_EXPIRY = os.environ["ENABLE_QUEUE_POSITION_EXPIRY"]
+ENABLE_QUEUE_POSITION_TIMEOUT = os.environ["ENABLE_QUEUE_POSITION_TIMEOUT"]
 
 user_agent_extra = {"user_agent_extra": SOLUTION_ID}
 user_config = config.Config(**user_agent_extra)
@@ -73,8 +73,8 @@ def lambda_handler(event, context):
                 is_requestid_in_token_table = 'Item' in item
                 
                 # check if queue position is valid and not expired
-                if ENABLE_QUEUE_POSITION_EXPIRY == 'true' and not is_requestid_in_token_table:
-                    (is_valid, serving_counter) = token_helper.validate_token_expiry(EVENT_ID, queue_number, QUEUE_POSITION_EXPIRY_PERIOD, rc, 
+                if ENABLE_QUEUE_POSITION_TIMEOUT == 'true' and not is_requestid_in_token_table:
+                    (is_valid, serving_counter) = token_helper.validate_token_expiry(EVENT_ID, queue_number, QUEUE_POSITION_TIMEOUT_PERIOD, rc, 
                                                     ddb_table_queue_position_issued_at, ddb_table_serving_counter_issued_at)
                     if not is_valid:
                         return {
@@ -138,7 +138,7 @@ def lambda_handler(event, context):
                 token_helper.write_to_eventbus(events_client, EVENT_ID, EVENT_BUS_NAME, request_id)
                 rc.incr(TOKEN_COUNTER, 1)
 
-                if ENABLE_QUEUE_POSITION_EXPIRY == 'true':
+                if ENABLE_QUEUE_POSITION_TIMEOUT == 'true':
                     token_helper.update_queue_positions_served(EVENT_ID, serving_counter, ddb_table_serving_counter_issued_at) 
 
                 response = {
