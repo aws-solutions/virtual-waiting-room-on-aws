@@ -76,12 +76,6 @@ def lambda_handler(event, _):
                 # result = rc.hgetall(request_id)
                 # print(result)
 
-            # sqs has a vpc endpoint
-            response = sqs_client.delete_message(
-                QueueUrl=QUEUE_URL,
-                ReceiptHandle=msg["receiptHandle"]
-            )
-
             # same information here  - combine ?
             # if ENABLE_QUEUE_POSITION_TIMEOUT == 'true':
             item = {
@@ -92,6 +86,12 @@ def lambda_handler(event, _):
             }
             ddb_table.put_item(Item=item)
             print(f"Item: {item}")
+
+            # sqs has a vpc endpoint
+            response = sqs_client.delete_message(
+                QueueUrl=QUEUE_URL,
+                ReceiptHandle=msg["receiptHandle"]
+            )
 
             print(response)
             q_start_num+=1

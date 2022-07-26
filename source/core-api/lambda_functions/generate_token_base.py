@@ -11,7 +11,7 @@ import json
 from http import HTTPStatus
 from typing import Tuple
 from jwcrypto import jwk, jwt
-from time import time 
+from time import time
 from boto3.dynamodb.conditions import Key
 from counters import MAX_QUEUE_POSITION_EXPIRED,SERVING_COUNTER, TOKEN_COUNTER
 
@@ -61,7 +61,7 @@ def generate_token_base_method(
         claims = create_claims_from_record(EVENT_ID, item)
         (access_token, refresh_token, id_token) = create_tokens(claims, keypair, is_header_key_id)
         expires = int(item['Item']['expires'])
-        cur_time = int(time.time())
+        cur_time = int(time())
 
         # check for session status (non-zero) and reject the request  
         if int(item['Item']['session_status']) != 0:
@@ -86,7 +86,7 @@ def generate_token_base_method(
         }
 
     # request_id is not in ddb_table, create and save record to ddb_table
-    iat = int(time.time())  # issued-at and not-before can be the same time (epoch seconds)
+    iat = int(time())  # issued-at and not-before can be the same time (epoch seconds)
     nbf = iat
     exp = iat + VALIDITY_PERIOD # expiration (exp) is a time after iat and nbf, like 1 hour (epoch seconds)
     item = {
@@ -223,7 +223,7 @@ def validate_token_expiry(event_id, queue_number, queue_position_entry_time, que
     Validates the queue position to see if it has expired
     Returns: (is_valid, serving_counter)
     """
-    current_time = int(time.time())
+    current_time = int(time())
     if int(queue_number) <= int(rc.get(MAX_QUEUE_POSITION_EXPIRED)):
         return (False, None)
 
