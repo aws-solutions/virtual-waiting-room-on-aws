@@ -15,7 +15,7 @@ from botocore import config
 from boto3.dynamodb.conditions import Key, Attr
 from vwr.common.sanitize import deep_clean
 
-DDB_TABLE_NAME = os.environ["TOKEN_TABLE"]
+DDB_TOKEN_TABLE_NAME = os.environ["TOKEN_TABLE"]
 EVENT_ID = os.environ["EVENT_ID"]
 SOLUTION_ID = os.environ['SOLUTION_ID']
 
@@ -24,7 +24,7 @@ user_config = config.Config(**user_agent_extra)
 boto_session = boto3.session.Session()
 region = boto_session.region_name
 ddb_resource = boto3.resource('dynamodb', config=user_config)
-ddb_table = ddb_resource.Table(DDB_TABLE_NAME)
+ddb_table = ddb_resource.Table(DDB_TOKEN_TABLE_NAME)
     
 def lambda_handler(event, context):
     """

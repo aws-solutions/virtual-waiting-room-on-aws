@@ -25,7 +25,7 @@ REDIS_PORT = os.environ["REDIS_PORT"]
 EVENT_ID = os.environ["EVENT_ID"]
 SECRET_NAME_PREFIX = os.environ["STACK_NAME"]
 SOLUTION_ID = os.environ["SOLUTION_ID"]
-QUEUE_POSITION_ISSUEDAT_TABLE = os.environ["QUEUE_POSITION_ISSUEDAT_TABLE"]
+QUEUE_POSITION_ENTRYTIME_TABLE = os.environ["QUEUE_POSITION_ENTRYTIME_TABLE"]
 QUEUE_POSITION_TIMEOUT_PERIOD = os.environ["QUEUE_POSITION_TIMEOUT_PERIOD"]
 SERVING_COUNTER_ISSUEDAT_TABLE = os.environ["SERVING_COUNTER_ISSUEDAT_TABLE"]
 ENABLE_QUEUE_POSITION_TIMEOUT = os.environ["ENABLE_QUEUE_POSITION_TIMEOUT"]
@@ -39,7 +39,7 @@ response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/redis
 redis_auth = response.get("SecretString")
 rc = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, ssl=True, decode_responses=True, password=redis_auth)
 ddb_resource = boto3.resource('dynamodb', endpoint_url=f'https://dynamodb.{region}.amazonaws.com', config=user_config)
-ddb_table_queue_position_issued_at = ddb_resource.Table(QUEUE_POSITION_ISSUEDAT_TABLE)
+ddb_table_queue_position_entry_time = ddb_resource.Table(QUEUE_POSITION_ENTRYTIME_TABLE)
 ddb_table_serving_counter_issued_at = ddb_resource.Table(SERVING_COUNTER_ISSUEDAT_TABLE)
 
 
@@ -94,21 +94,22 @@ def lambda_handler(event, context):
             "body": json.dumps({"error": "Queue position has expired"})
         }
 
-    response = ddb_table_queue_position_issued_at.query(
-        KeyConditionExpression=Key('event_id').eq(EVENT_ID) & Key('queue_position').eq(int(queue_number)),
+    response = ddb_table_queue_position_entry_time.query(
+        KeyConditionExpression=Key('queue_position').eq(int(queue_number)),
+        IndexName='QueuePositionIndex'
     )
     queue_position_item = response['Items'][0]
-    queue_position_issue_time = int(queue_position_item['issue_time'])
+    queue_position_entry_time = int(queue_position_item['entry_time'])
 
     # serving counter gte queue number, should always have atleast 1 result 
     response = ddb_table_serving_counter_issued_at.query(
-        KeyConditionExpression=Key('event_id').eq(EVENT_ID) & Key('serving_counter').gte(int(queue_number)),
+        KeyConditionExpression=Key('serving_counter').gte(int(queue_number)),
         Limit=1
     )
     serving_counter_item = response['Items'][0]
     serving_counter_issue_time = int(serving_counter_item['issue_time'])
 
-    queue_time = max(queue_position_issue_time, serving_counter_issue_time)
+    queue_time = max(queue_position_entry_time, serving_counter_issue_time)
     if current_time - queue_time > int(QUEUE_POSITION_TIMEOUT_PERIOD):
         return {
             "statusCode": HTTPStatus.GONE.value,

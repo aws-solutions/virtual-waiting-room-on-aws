@@ -395,7 +395,7 @@
                                 },
                                 {
                                     "Fn::GetAtt": [
-                                        "QueuePositionIssuedAtTable",
+                                        "QueuePositionEntryTimeTable",
                                         "Arn"
                                     ]
                                 },
@@ -958,8 +958,8 @@
                                 "Extra"
                             ]
                         }, 
-                        "QUEUE_POSITION_ISSUEDAT_TABLE": {
-                            "Ref": "QueuePositionIssuedAtTable"
+                        "QUEUE_POSITION_ENTRYTIME_TABLE": {
+                            "Ref": "QueuePositionEntryTimeTable"
                         },
                         "ENABLE_QUEUE_POSITION_TIMEOUT": {
                             "Ref": "EnableQueuePositionTimeout"
@@ -1075,8 +1075,8 @@
                         "VALIDITY_PERIOD": {
                             "Ref": "ValidityPeriod"
                         },
-                        "QUEUE_POSITION_ISSUEDAT_TABLE": {
-                            "Ref": "QueuePositionIssuedAtTable"
+                        "QUEUE_POSITION_ENTRYTIME_TABLE": {
+                            "Ref": "QueuePositionEntryTimeTable"
                         },
                         "SERVING_COUNTER_ISSUEDAT_TABLE": {
                             "Ref": "ServingCounterIssuedAtTable"
@@ -1842,8 +1842,8 @@
                                 "PrimaryEndPoint.Port"
                             ]
                         },
-                        "QUEUE_POSITION_ISSUEDAT_TABLE": {
-                            "Ref": "QueuePositionIssuedAtTable"
+                        "QUEUE_POSITION_ENTRYTIME_TABLE": {
+                            "Ref": "QueuePositionEntryTimeTable"
                         },
                         "QUEUE_POSITION_TIMEOUT_PERIOD" : {
                             "Ref": "QueuePositionTimeoutPeriod"
@@ -1978,8 +1978,8 @@
                         "VALIDITY_PERIOD": {
                             "Ref": "ValidityPeriod"
                         },
-                        "QUEUE_POSITION_ISSUEDAT_TABLE": {
-                            "Ref": "QueuePositionIssuedAtTable"
+                        "QUEUE_POSITION_ENTRYTIME_TABLE": {
+                            "Ref": "QueuePositionEntryTimeTable"
                         },
                         "SERVING_COUNTER_ISSUEDAT_TABLE": {
                             "Ref": "ServingCounterIssuedAtTable"
@@ -2274,8 +2274,8 @@
                                 "Extra"
                             ]
                         },
-                        "QUEUE_POSITION_ISSUEDAT_TABLE": {
-                            "Ref": "QueuePositionIssuedAtTable"
+                        "QUEUE_POSITION_ENTRYTIME_TABLE": {
+                            "Ref": "QueuePositionEntryTimeTable"
                         },
                         "SERVING_COUNTER_ISSUEDAT_TABLE": {
                             "Ref": "ServingCounterIssuedAtTable"
@@ -2794,8 +2794,8 @@
                         "TOKEN_TABLE": {
                             "Ref": "TokenTable"
                         },
-                        "QUEUE_POSITION_ISSUEDAT_TABLE": {
-                            "Ref": "QueuePositionIssuedAtTable"
+                        "QUEUE_POSITION_ENTRYTIME_TABLE": {
+                            "Ref": "QueuePositionEntryTimeTable"
                         },
                         "SERVING_COUNTER_ISSUEDAT_TABLE" : {
                             "Ref": "ServingCounterIssuedAtTable"
@@ -3413,7 +3413,7 @@
                                 },
                                 {
                                     "Fn::GetAtt": [
-                                        "QueuePositionIssuedAtTable",
+                                        "QueuePositionEntryTimeTable",
                                         "Arn"
                                     ]
                                 },
@@ -3423,7 +3423,7 @@
                                         {
                                             "TableArn1": {
                                                 "Fn::GetAtt": [
-                                                    "QueuePositionIssuedAtTable",
+                                                    "QueuePositionEntryTimeTable",
                                                     "Arn"
                                                 ]
                                             }
@@ -3581,21 +3581,13 @@
                 }
             }
         },
-        "QueuePositionIssuedAtTable": {
+        "QueuePositionEntryTimeTable": {
             "Type": "AWS::DynamoDB::Table",
             "Properties": {
                 "BillingMode": "PAY_PER_REQUEST",
                 "AttributeDefinitions": [
                     {
-                        "AttributeName": "event_id",
-                        "AttributeType": "S"
-                    },
-                    {
                         "AttributeName": "queue_position",
-                        "AttributeType": "N"
-                    },
-                    {
-                        "AttributeName": "issue_time",
                         "AttributeType": "N"
                     },
                     {
@@ -3605,41 +3597,17 @@
                 ],
                 "KeySchema": [
                     {
-                        "AttributeName": "event_id",
+                        "AttributeName": "request_id",
                         "KeyType": "HASH"
-                    },
-                    {
-                        "AttributeName": "queue_position",
-                        "KeyType": "RANGE"
                     }
                 ],
                 "GlobalSecondaryIndexes": [
                     {
-                        "IndexName": "IssueTimeIndex",
+                        "IndexName": "QueuePositionIndex",
                         "KeySchema": [
                             {
-                                "AttributeName": "event_id",
+                                "AttributeName": "queue_position",
                                 "KeyType": "HASH"
-                            },
-                            {
-                                "AttributeName": "issue_time",
-                                "KeyType": "RANGE"
-                            }
-                        ],
-                        "Projection": {
-                            "ProjectionType": "ALL"
-                        }
-                    },
-                    {
-                        "IndexName": "RequestIdIndex",
-                        "KeySchema": [
-                            {
-                                "AttributeName": "event_id",
-                                "KeyType": "HASH"
-                            },
-                            {
-                                "AttributeName": "request_id",
-                                "KeyType": "RANGE"
                             }
                         ],
                         "Projection": {
@@ -3667,14 +3635,6 @@
                     {
                         "AttributeName": "serving_counter",
                         "AttributeType": "N"
-                    },
-                    {
-                        "AttributeName": "issue_time",
-                        "AttributeType": "N"
-                    },
-                    {
-                        "AttributeName": "queue_positions_served",
-                        "AttributeType": "N"
                     }
                 ],
                 "KeySchema": [
@@ -3685,40 +3645,6 @@
                     {
                         "AttributeName": "serving_counter",
                         "KeyType": "RANGE"
-                    }
-                ],
-                "GlobalSecondaryIndexes": [
-                    {
-                        "IndexName": "IssueTimeIndex",
-                        "KeySchema": [
-                            {
-                                "AttributeName": "event_id",
-                                "KeyType": "HASH"
-                            },
-                            {
-                                "AttributeName": "issue_time",
-                                "KeyType": "RANGE"
-                            }
-                        ],
-                        "Projection": {
-                            "ProjectionType": "ALL"
-                        }
-                    },
-                    {
-                        "IndexName": "ServedPositionsIndex",
-                        "KeySchema": [
-                            {
-                                "AttributeName": "event_id",
-                                "KeyType": "HASH"
-                            },
-                            {
-                                "AttributeName": "queue_positions_served",
-                                "KeyType": "RANGE"
-                            }
-                        ],
-                        "Projection": {
-                            "ProjectionType": "ALL"
-                        }
                     }
                 ],
                 "PointInTimeRecoverySpecification": {
@@ -4323,7 +4249,7 @@
         "QueuePositionExpiredEventRule": {
             "Type": "AWS::Events::Rule",
             "Properties": {
-                "Description": "Marks items expired in the QueuePositionIssuedAtTable.",
+                "Description": "Marks items expired in the QueuePositionEntryTimeTable.",
                 "ScheduleExpression": "rate(1 minute)",
                 "State": "ENABLED",
                 "Targets": [
@@ -4400,7 +4326,7 @@
             "DependsOn": [
                 "TokenTable",
                 "RedisReplicationGroup",
-                "QueuePositionIssuedAtTable",
+                "QueuePositionEntryTimeTable",
                 "ServingCounterIssuedAtTable"
             ],
             "Properties": {

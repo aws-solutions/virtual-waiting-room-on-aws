@@ -19,7 +19,7 @@ SOLUTION_ID = os.environ['SOLUTION_ID']
 EVENT_ID = os.environ["EVENT_ID"]
 REDIS_HOST = os.environ["REDIS_HOST"]
 REDIS_PORT = os.environ["REDIS_PORT"]
-QUEUE_POSITION_ISSUEDAT_TABLE = os.environ["QUEUE_POSITION_ISSUEDAT_TABLE"]
+QUEUE_POSITION_ENTRYTIME_TABLE = os.environ["QUEUE_POSITION_ENTRYTIME_TABLE"]
 QUEUE_POSITION_TIMEOUT_PERIOD = os.environ["QUEUE_POSITION_TIMEOUT_PERIOD"]
 SERVING_COUNTER_ISSUEDAT_TABLE = os.environ["SERVING_COUNTER_ISSUEDAT_TABLE"]
 
@@ -28,7 +28,7 @@ user_config = config.Config(**user_agent_extra)
 boto_session = boto3.session.Session()
 region = boto_session.region_name
 ddb_resource = boto3.resource('dynamodb', endpoint_url=f'https://dynamodb.{region}.amazonaws.com', config=user_config)
-ddb_table_queue_position_issued_at = ddb_resource.Table(QUEUE_POSITION_ISSUEDAT_TABLE)
+ddb_table_queue_position_entry_time = ddb_resource.Table(QUEUE_POSITION_ENTRYTIME_TABLE)
 ddb_table_serving_counter_issued_at = ddb_resource.Table(SERVING_COUNTER_ISSUEDAT_TABLE)
 secrets_client = boto3.client('secretsmanager', config=user_config, endpoint_url=f'https://secretsmanager.{region}.amazonaws.com')
 response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/redis-auth")
@@ -51,7 +51,7 @@ def lambda_handler(event, context):
 
     # find items in the serving counter table that are greater than the max queue position expired
     response = ddb_table_serving_counter_issued_at.query(
-        KeyConditionExpression=Key('event_id').eq(EVENT_ID) & Key('serving_counter').gt(max_queue_position_expired),
+        KeyConditionExpression=Key('serving_counter').gt(max_queue_position_expired),
     )
     serving_counter_items = response['Items']
 
@@ -68,16 +68,17 @@ def lambda_handler(event, context):
         serving_counter_item_issue_time = int(serving_counter_item['issue_time'])
         
         # query queue position table for corresponding serving counter item position
-        response = ddb_table_queue_position_issued_at.query(
-            KeyConditionExpression=Key('event_id').eq(EVENT_ID) & Key('queue_position').eq(serving_counter_item_position)
+        response = ddb_table_queue_position_entry_time.query(
+            KeyConditionExpression=Key('queue_position').eq(serving_counter_item_position),
+            IndexName='QueuePositionIndex',
         )
         queue_position_items = response['Items']
         
         if not queue_position_items:
             break
         
-        queue_item_issue_time = int(queue_position_items[0]['issue_time'])
-        queue_time = max(queue_item_issue_time, serving_counter_item_issue_time)
+        queue_item_entry_time = int(queue_position_items[0]['issue_time'])
+        queue_time = max(queue_item_entry_time, serving_counter_item_issue_time)
 
         # if time in queue has not exceeded expiry period, we can stop checking
         if current_time - queue_time < int(QUEUE_POSITION_TIMEOUT_PERIOD):
@@ -97,7 +98,7 @@ def lambda_handler(event, context):
         item = {
             'event_id': EVENT_ID,
             'serving_counter': cur_serving,
-            'issue_time': int(time()),
+            'entry_time': int(time()),
             'queue_positions_served': 0
         }
         ddb_table_serving_counter_issued_at.put_item(Item=item)

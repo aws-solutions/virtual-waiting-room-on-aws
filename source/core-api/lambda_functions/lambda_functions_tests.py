@@ -104,10 +104,10 @@ class CoreApiTestCase(unittest.TestCase):
         self.assertEqual(response, 10)
 
 
-    @patch.object(auth_generate_token.ddb_table, 'query',
+    @patch.object(auth_generate_token.ddb_table_tokens, 'query',
                   return_value={"Items": [{"request_id": "fe7a5f04-6ff0-4bd6-9c31-52088cc4e73a", "expires": 1000,
                                            "access_token": "accesstoken", "refresh_token": "refreshtoken", "id_token": "idtoken"}]})
-    @patch.object(auth_generate_token.ddb_table, 'put_item',
+    @patch.object(auth_generate_token.ddb_table_tokens, 'put_item',
                   return_value={"Items": [{"request_id": "fe7a5f04-6ff0-4bd6-9c31-52088cc4e73a"}]})
     @patch.object(auth_generate_token.rc, 'hget', return_value=1)
     @patch.object(auth_generate_token.rc, 'get', return_value=2)
@@ -167,7 +167,7 @@ class CoreApiTestCase(unittest.TestCase):
 
         # request_id already exists in the database
         with patch.object(auth_generate_token.rc, 'hget', return_value=1):
-            with patch.object(auth_generate_token.ddb_table, 'put_item',
+            with patch.object(auth_generate_token.ddb_table_tokens, 'put_item',
                               side_effect=ClientError({"Error": {"Code": "400", "Message": "ConditionalCheckFailedException"}}, "UpdateItem")):
                 with self.assertRaises(ClientError):
                     response = auth_generate_token.lambda_handler(
@@ -219,10 +219,10 @@ class CoreApiTestCase(unittest.TestCase):
             with self.assertRaises(Exception):
                 response = generate_events.lambda_handler(None, None)
 
-    @patch.object(generate_token.ddb_table, 'query',
+    @patch.object(generate_token.ddb_table_tokens, 'query',
                   return_value={"Items": [{"request_id": "fe7a5f04-6ff0-4bd6-9c31-52088cc4e73a", "expires": 1000,
                                            "access_token": "accesstoken", "refresh_token": "refreshtoken", "id_token": "idtoken"}]})
-    @patch.object(generate_token.ddb_table, 'put_item',
+    @patch.object(generate_token.ddb_table_tokens, 'put_item',
                   return_value={"Items": [{"request_id": "fe7a5f04-6ff0-4bd6-9c31-52088cc4e73a"}]})
     @patch.object(generate_token.rc, 'hget', return_value=1)
     @patch.object(generate_token.rc, 'get', return_value=2)
@@ -280,7 +280,7 @@ class CoreApiTestCase(unittest.TestCase):
 
         # request_id already exists in the database
         with patch.object(generate_token.rc, 'hget', return_value=1):
-            with patch.object(generate_token.ddb_table, 'put_item',
+            with patch.object(generate_token.ddb_table_tokens, 'put_item',
                               side_effect=ClientError({"Error": {"Code": "400", "Message": "ConditionalCheckFailedException"}}, "UpdateItem")):
                 with self.assertRaises(ClientError):
                     response = generate_token.lambda_handler(

@@ -8,6 +8,9 @@ Session status is denoted by an integer. Sessions set to a status of 1 indicates
 Authorization is required to invoke this API.
 """
 
+
+
+
 import redis
 import json
 import boto3
@@ -24,7 +27,7 @@ REDIS_HOST = os.environ["REDIS_HOST"]
 REDIS_PORT = os.environ["REDIS_PORT"]
 EVENT_ID = os.environ["EVENT_ID"]
 EVENT_BUS_NAME = os.environ["EVENT_BUS_NAME"]
-DDB_TABLE_NAME = os.environ["TOKEN_TABLE"]
+DDB_TOKEN_TABLE_NAME = os.environ["TOKEN_TABLE"]
 SOLUTION_ID = os.environ['SOLUTION_ID']
 SECRET_NAME_PREFIX = os.environ["STACK_NAME"]
 
@@ -32,14 +35,15 @@ user_agent_extra = {"user_agent_extra": SOLUTION_ID}
 user_config = config.Config(**user_agent_extra)
 boto_session = boto3.session.Session()
 region = boto_session.region_name
-ddb_resource = boto3.resource(
-    'dynamodb', endpoint_url="https://dynamodb."+region+".amazonaws.com", config=user_config)
-ddb_table = ddb_resource.Table(DDB_TABLE_NAME)
-events_client = boto3.client(
-    'events', endpoint_url="https://events."+region+".amazonaws.com", config=user_config)
+ddb_resource = boto3.resource('dynamodb', endpoint_url=f"https://dynamodb.{region}.amazonaws.com", config=user_config)
+
+ddb_table = ddb_resource.Table(DDB_TOKEN_TABLE_NAME)
+events_client = boto3.client('events', endpoint_url=f"https://events.{region}.amazonaws.com", config=user_config)
+
 status_codes = {1: "completed", -1: "abandoned"}
 
-secrets_client = boto3.client('secretsmanager', config=user_config, endpoint_url="https://secretsmanager."+region+".amazonaws.com")
+secrets_client = boto3.client('secretsmanager', config=user_config, endpoint_url=f"https://secretsmanager.{region}.amazonaws.com")
+
 response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/redis-auth")
 redis_auth = response.get("SecretString")
 rc = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, ssl=True, decode_responses=True, password=redis_auth)

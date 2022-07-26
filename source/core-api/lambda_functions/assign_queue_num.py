@@ -26,7 +26,7 @@ REDIS_PORT = os.environ["REDIS_PORT"]
 QUEUE_URL = os.environ["QUEUE_URL"]
 EVENT_ID = os.environ["EVENT_ID"]
 SECRET_NAME_PREFIX = os.environ["STACK_NAME"]
-QUEUE_POSITION_ISSUEDAT_TABLE = os.environ["QUEUE_POSITION_ISSUEDAT_TABLE"]
+QUEUE_POSITION_ENTRYTIME_TABLE = os.environ["QUEUE_POSITION_ENTRYTIME_TABLE"]
 ENABLE_QUEUE_POSITION_TIMEOUT = os.environ["ENABLE_QUEUE_POSITION_TIMEOUT"]
 
 boto_session = boto3.session.Session()
@@ -39,7 +39,7 @@ secrets_response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFI
 redis_auth = secrets_response.get("SecretString")
 rc = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, ssl=True, decode_responses=True, password=redis_auth)
 ddb_resource = boto3.resource('dynamodb', endpoint_url=f'https://dynamodb.{region}.amazonaws.com', config=user_config)
-ddb_table = ddb_resource.Table(QUEUE_POSITION_ISSUEDAT_TABLE)
+ddb_table = ddb_resource.Table(QUEUE_POSITION_ENTRYTIME_TABLE)
 
 
 def lambda_handler(event, _):
@@ -87,7 +87,7 @@ def lambda_handler(event, _):
                 item = {
                     'event_id': EVENT_ID,
                     'queue_position': int(q_start_num),
-                    'issue_time': entry_time, 
+                    'entry_time': entry_time, 
                     'request_id': request_id,
                 }
                 ddb_table.put_item(Item=item)
