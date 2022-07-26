@@ -3471,9 +3471,6 @@
                     },
                     {
                         "Ref": "AssignQueueRole"
-                    },
-                    {
-                        "Ref": "GenerateTokenRole"
                     }
                 ]
             }
