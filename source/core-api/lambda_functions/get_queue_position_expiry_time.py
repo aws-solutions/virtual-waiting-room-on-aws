@@ -103,7 +103,7 @@ def lambda_handler(event, context):
 
     # serving counter gte queue number, should always have atleast 1 result 
     response = ddb_table_serving_counter_issued_at.query(
-        KeyConditionExpression=Key('serving_counter').gte(int(queue_number)),
+        KeyConditionExpression=Key('event_id').eq(EVENT_ID) & Key('serving_counter').gte(int(queue_number)),
         Limit=1
     )
     serving_counter_item = response['Items'][0]

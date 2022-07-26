@@ -1875,7 +1875,7 @@
                 "MemorySize": 1024,
                 "Role": {
                     "Fn::GetAtt": [
-                        "QueuePositionExpiredRole",
+                        "QueuePosExpRole",
                         "Arn"
                     ]
                 },
@@ -2298,7 +2298,7 @@
                 "MemorySize": 1024,
                 "Role": {
                     "Fn::GetAtt": [
-                        "QueuePositionExpiredRole",
+                        "QueuePosExpRole",
                         "Arn"
                     ]
                 },
@@ -2547,7 +2547,7 @@
                 "MemorySize": 1024,
                 "Role": {
                     "Fn::GetAtt": [
-                        "QueuePositionExpiredRole",
+                        "QueuePosExpRole",
                         "Arn"
                     ]
                 },
@@ -2937,12 +2937,12 @@
                 }
             }
         },
-        "QueuePositionExpiredRole": {
+        "QueuePosExpRole": {
             "Type": "AWS::IAM::Role",
             "Properties": {
                 "Policies": [
                     {
-                        "PolicyName": "QueuePositionExpiredRolePolicy",
+                        "PolicyName": "QueuePosExpRolePolicy",
                         "PolicyDocument": {
                             "Version": "2012-10-17",
                             "Statement": [
@@ -3292,7 +3292,7 @@
                     {"Ref": "GetTokenRole"},
                     {"Ref": "GenerateKeysRole"},
                     {"Ref": "IntersectAZRole"},
-                    {"Ref": "QueuePositionExpiredRole"}
+                    {"Ref": "QueuePosExpRole"}
                 ]
             },
             "Metadata": {
@@ -3467,10 +3467,13 @@
                         "Ref": "GenerateTokenRole"
                     },
                     {
-                        "Ref": "QueuePositionExpiredRole"
+                        "Ref": "QueuePosExpRole"
                     },
                     {
                         "Ref": "AssignQueueRole"
+                    },
+                    {
+                        "Ref": "GenerateTokenRole"
                     }
                 ]
             }

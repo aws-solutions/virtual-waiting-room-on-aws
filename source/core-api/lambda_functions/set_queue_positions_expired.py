@@ -51,7 +51,7 @@ def lambda_handler(event, context):
 
     # find items in the serving counter table that are greater than the max queue position expired
     response = ddb_table_serving_counter_issued_at.query(
-        KeyConditionExpression=Key('serving_counter').gt(max_queue_position_expired),
+        KeyConditionExpression=Key('event_id').eq(EVENT_ID) & Key('serving_counter').gt(max_queue_position_expired),
     )
     serving_counter_items = response['Items']
 

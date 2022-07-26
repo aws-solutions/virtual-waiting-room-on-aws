@@ -8,16 +8,14 @@ Authorization is required to invoke this API.
 """
 
 import os
-import time
 import json
 import redis
 import boto3
 from http  import HTTPStatus
 from botocore import config
-from counters import SERVING_COUNTER, TOKEN_COUNTER
 from vwr.common.sanitize import deep_clean
 from vwr.common.validate import is_valid_rid
-import token_helper
+from generate_token_base import generate_token_base_method
 
 # connection info and other globals
 REDIS_HOST = os.environ["REDIS_HOST"]
@@ -70,103 +68,17 @@ def lambda_handler(event, context):
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*'
     }
-    if client_event_id == EVENT_ID and is_valid_rid(request_id):
-        if queue_number := rc.hget(request_id, "queue_number"):
-            if int(queue_number) <= int(rc.get(SERVING_COUNTER)):
-                item = ddb_table_tokens.get_item(Key={"request_id": request_id})
-                is_requestid_in_token_table = 'Item' in item
-                
-                # check if queue position is valid and not expired
-                if ENABLE_QUEUE_POSITION_TIMEOUT == 'true' and not is_requestid_in_token_table:
-                    (is_valid, serving_counter) = token_helper.validate_token_expiry(EVENT_ID, queue_number, QUEUE_POSITION_TIMEOUT_PERIOD, rc, 
-                                                    ddb_table_queue_position_entry_time, ddb_table_serving_counter_issued_at)
-                    if not is_valid:
-                        return {
-                            "statusCode": HTTPStatus.GONE.value,
-                            "headers": headers,
-                            "body": json.dumps({"error": "Queue position has expired"})
-                        }
 
-                keypair = token_helper.create_jwk_keypair(secrets_client, SECRET_NAME_PREFIX)
-                if is_requestid_in_token_table: 
-                    claims = token_helper.create_claims_from_record(EVENT_ID, item)
-                    (access_token, refresh_token, id_token) = token_helper.create_tokens(claims, keypair, False)
-                    expires = int(item['Item']['expires'])
-                    cur_time = int(time.time())
-
-                    return {
-                        "statusCode": HTTPStatus.OK.value, 
-                        "headers": headers, 
-                        "body": json.dumps(
-                            {
-                                "access_token": access_token.serialize(),
-                                "refresh_token": refresh_token.serialize(), 
-                                "id_token": id_token.serialize(), 
-                                "token_type": "Bearer", 
-                                "expires_in": expires - cur_time
-                            }
-                        )
-                    }
-
-                # request_id is not in ddb_table, create and save record to ddb_table
-                iat = int(time.time())  # issued-at and not-before can be the same time (epoch seconds)
-                nbf = iat
-                exp = iat + VALIDITY_PERIOD # expiration (exp) is a time after iat and nbf, like 1 hour (epoch seconds)
-                item = {
-                    "event_id": EVENT_ID,
-                    "request_id": request_id,
-                    "issued_at": iat,
-                    "not_before": nbf,
-                    "expires": exp,
-                    "queue_number": queue_number,
-                    'issuer': issuer,
-                    "session_status": 0
-                }
-
-                try:
-                    ddb_table_tokens.put_item(Item=item)
-                except Exception as e:
-                    print(e)
-                    raise e
-
-                claims = token_helper.create_claims(EVENT_ID, request_id, issuer, queue_number, iat, nbf, exp)
-                (access_token, refresh_token, id_token) = token_helper.create_tokens(claims, keypair, False)
-                token_helper.write_to_eventbus(events_client, EVENT_ID, EVENT_BUS_NAME, request_id)
-                rc.incr(TOKEN_COUNTER, 1)
-
-                if ENABLE_QUEUE_POSITION_TIMEOUT == 'true':
-                    token_helper.update_queue_positions_served(serving_counter, ddb_table_serving_counter_issued_at) 
-
-                response = {
-                    "statusCode": HTTPStatus.OK.value, 
-                    "headers": headers, 
-                    "body": json.dumps(
-                        {
-                            "access_token": access_token.serialize(),
-                            "refresh_token": refresh_token.serialize(), 
-                            "id_token": id_token.serialize(), 
-                            "token_type": "Bearer", 
-                            "expires_in": VALIDITY_PERIOD
-                        }
-                    )
-                }
-            else:
-                response = {
-                    "statusCode": HTTPStatus.ACCEPTED.value,
-                    "headers": headers,
-                    "body": json.dumps({"error": "Request ID not being served yet"})
-                }
-        else:
-            response = {
-                "statusCode": HTTPStatus.NOT_FOUND.value,
-                "headers": headers,
-                "body": json.dumps({"error": "Invalid request ID"})
-            }
-    else:
-        response = {
-            "statusCode": HTTPStatus.BAD_REQUEST.value,
+    if client_event_id != EVENT_ID or not is_valid_rid(request_id):
+        return {
+            "statusCode": HTTPStatus.ACCEPTED.value, 
             "headers": headers,
             "body": json.dumps({"error": "Invalid event or request ID"})
         }
-    
-    return response
+
+    is_header_key_id = False
+    return generate_token_base_method(
+        EVENT_ID, request_id, headers, rc, ENABLE_QUEUE_POSITION_TIMEOUT, QUEUE_POSITION_TIMEOUT_PERIOD, 
+        secrets_client, SECRET_NAME_PREFIX, VALIDITY_PERIOD, issuer, events_client, EVENT_BUS_NAME, is_header_key_id,
+        ddb_table_tokens, ddb_table_queue_position_entry_time, ddb_table_serving_counter_issued_at
+    )

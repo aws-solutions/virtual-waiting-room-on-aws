@@ -22,7 +22,7 @@ def create_jwk_keypair(secrets_client, SECRET_NAME_PREFIX) -> jwk.JWK:
     return jwk.JWK.from_json(private_key)
 
 
-def create_tokens(claims, keypair, is_header_key_id):
+def create_tokens(claims, keypair, is_header_key_id: bool) -> Tuple[jwt.JWT, jwt.JWT, jwt.JWT]:
     """
     Create access, refresh and id tokens 
     """
@@ -101,8 +101,7 @@ def write_to_eventbus(events_client, EVENT_ID, EVENT_BUS_NAME, request_id) -> No
         ]
     )
 
-def validate_token_expiry(event_id, queue_number, queue_position_timeout_period, rc, 
-        ddb_table_queue_position_entry_time, ddb_table_serving_counter_issued_at) -> Tuple[bool, int]:
+def validate_token_expiry(event_id, queue_number, queue_position_entry_time, queue_position_timeout_period, rc, ddb_table_serving_counter_issued_at) -> Tuple[bool, int]:
     """
     Validates the queue position to see if it has expired
     Returns: (is_valid, serving_counter)
@@ -111,16 +110,9 @@ def validate_token_expiry(event_id, queue_number, queue_position_timeout_period,
     if int(queue_number) <= int(rc.get(MAX_QUEUE_POSITION_EXPIRED)):
         return (False, None)
 
-    response = ddb_table_queue_position_entry_time.query(
-        KeyConditionExpression=Key('queue_position').eq(int(queue_number)),
-        IndexName='QueuePositionIndex'
-    )
-    queue_position_item = response['Items'][0]
-    queue_position_entry_time = int(queue_position_item['entry_time'])
-
     # serving counter gte queue number, should always have atleast 1 result 
     response = ddb_table_serving_counter_issued_at.query(
-        KeyConditionExpression=Key('serving_counter').gte(int(queue_number)),
+        KeyConditionExpression=Key('event_id').eq(event_id) & Key('serving_counter').gte(int(queue_number)),
         Limit=1
     )
     serving_counter_item = response['Items'][0]
@@ -134,17 +126,18 @@ def validate_token_expiry(event_id, queue_number, queue_position_timeout_period,
     return (True, int(serving_counter_item['serving_counter']))
 
 
-def update_queue_positions_served(serving_counter, ddb_table_serving_counter_issued_at) -> None:
+def update_queue_positions_served(event_id, serving_counter, ddb_table_serving_counter_issued_at) -> None:
     """
     Update the corresponding serving counter with queue positions served
     """
     response = ddb_table_serving_counter_issued_at.query(
-        KeyConditionExpression=Key('serving_counter').eq(serving_counter)
+        KeyConditionExpression=Key('event_id').eq(event_id) & Key('serving_counter').eq(serving_counter)
     )
     serving_counter_item = response['Items'][0]
 
     ddb_table_serving_counter_issued_at.update_item(
         Key={
+            'event_id': event_id,
             'serving_counter': serving_counter_item['serving_counter']
         },
         UpdateExpression='SET queue_positions_served = :val',
