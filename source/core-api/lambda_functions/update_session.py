@@ -90,21 +90,17 @@ def lambda_handler(event, context):
                 ]
             )
             # increment counter tracking sessions completed
-            if status == 1:
-                rc.incr(COMPLETED_SESSION_COUNTER, 1)
-            elif status == -1:
+            if status == -1:
                 rc.incr(ABANDONED_SESSION_COUNTER, 1)
 
+            elif status == 1:
+                rc.incr(COMPLETED_SESSION_COUNTER, 1)
         except ClientError as e:
-            if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
-                print(e)
-                response = {
-                    "statusCode": 404,
-                    "headers": headers,
-                    "body": json.dumps({"error": "Request ID doesn't exist or status already set."})
-                }
-            else:
+            if e.response['Error']['Code'] != 'ConditionalCheckFailedException':
                 raise e
+            print(e)
+            response = {"statusCode": 404, "headers": headers, "body": json.dumps({"error": "Request ID doesn't exist or status already set."})}
+
         except Exception as e:
             print(e)
             raise e
@@ -114,5 +110,6 @@ def lambda_handler(event, context):
             "headers": headers,
             "body": json.dumps({"error": "Invalid event or request ID"})
         }
+        
     print(response)
     return response

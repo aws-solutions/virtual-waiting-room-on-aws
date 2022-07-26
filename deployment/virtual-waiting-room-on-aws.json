@@ -1875,7 +1875,7 @@
                 "MemorySize": 1024,
                 "Role": {
                     "Fn::GetAtt": [
-                        "QueuePosExpRole",
+                        "QueuePositionRole",
                         "Arn"
                     ]
                 },
@@ -2137,7 +2137,10 @@
                                 "UserAgent",
                                 "Extra"
                             ]
-                        }, 
+                        },
+                        "QUEUE_POSITION_ENTRYTIME_TABLE": {
+                            "Ref": "QueuePositionEntryTimeTable"
+                        },
                         "STACK_NAME": {"Ref": "AWS::StackName"}
                     }
                 },
@@ -2298,7 +2301,7 @@
                 "MemorySize": 1024,
                 "Role": {
                     "Fn::GetAtt": [
-                        "QueuePosExpRole",
+                        "QueuePositionRole",
                         "Arn"
                     ]
                 },
@@ -2547,7 +2550,7 @@
                 "MemorySize": 1024,
                 "Role": {
                     "Fn::GetAtt": [
-                        "QueuePosExpRole",
+                        "QueuePositionRole",
                         "Arn"
                     ]
                 },
@@ -2937,12 +2940,12 @@
                 }
             }
         },
-        "QueuePosExpRole": {
+        "QueuePositionRole": {
             "Type": "AWS::IAM::Role",
             "Properties": {
                 "Policies": [
                     {
-                        "PolicyName": "QueuePosExpRolePolicy",
+                        "PolicyName": "QueuePositionRolePolicy",
                         "PolicyDocument": {
                             "Version": "2012-10-17",
                             "Statement": [
@@ -3292,7 +3295,7 @@
                     {"Ref": "GetTokenRole"},
                     {"Ref": "GenerateKeysRole"},
                     {"Ref": "IntersectAZRole"},
-                    {"Ref": "QueuePosExpRole"}
+                    {"Ref": "QueuePositionRole"}
                 ]
             },
             "Metadata": {
@@ -3467,10 +3470,13 @@
                         "Ref": "GenerateTokenRole"
                     },
                     {
-                        "Ref": "QueuePosExpRole"
+                        "Ref": "QueuePositionRole"
                     },
                     {
                         "Ref": "AssignQueueRole"
+                    },
+                    {
+                        "Ref": "LambdaVpcRole"
                     }
                 ]
             }

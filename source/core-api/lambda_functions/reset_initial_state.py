@@ -52,7 +52,6 @@ def lambda_handler(event, context):
         rc.getset(TOKEN_COUNTER, 0)
         rc.getset(COMPLETED_SESSION_COUNTER, 0)
         rc.getset(ABANDONED_SESSION_COUNTER, 0)
-
         rc.getset(MAX_QUEUE_POSITION_EXPIRED, 0)
 
         try:                       

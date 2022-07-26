@@ -70,7 +70,7 @@ def lambda_handler(event, context):
             "body": json.dumps({"error": "Queue position expiration not enabled"})
         }
 
-    queue_number = rc.hget(request_id, "queue_number")
+    queue_number = int(queue_position_item['Item']['queue_position']) if 'Item' in queue_position_item else None
     if not queue_number:
         return {
             "statusCode": HTTPStatus.NOT_FOUND.value,

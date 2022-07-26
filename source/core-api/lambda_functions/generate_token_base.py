@@ -8,7 +8,6 @@ It generates a token for a valid request that has been allowed to complete its t
 
 import time
 import json
-import json
 from http import HTTPStatus
 from typing import Tuple
 from jwcrypto import jwk, jwt
@@ -129,6 +128,7 @@ def generate_token_base_method(
         )
     }
     
+    
 def create_jwk_keypair(secrets_client, SECRET_NAME_PREFIX) -> jwk.JWK:
     """
     Create JWK key object
@@ -223,7 +223,7 @@ def validate_token_expiry(event_id, queue_number, queue_position_entry_time, que
     Validates the queue position to see if it has expired
     Returns: (is_valid, serving_counter)
     """
-    current_time = int(time())
+    current_time = int(time.time())
     if int(queue_number) <= int(rc.get(MAX_QUEUE_POSITION_EXPIRED)):
         return (False, None)
 
@@ -260,4 +260,3 @@ def update_queue_positions_served(event_id, serving_counter, ddb_table_serving_c
         UpdateExpression='SET queue_positions_served = :val',
         ExpressionAttributeValues={':val': serving_counter_item['queue_positions_served'] + 1}
     )
-    
