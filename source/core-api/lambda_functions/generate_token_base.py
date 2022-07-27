@@ -6,7 +6,6 @@ This module is the base method implementation for generate_token and auth_genera
 It generates a token for a valid request that has been allowed to complete its transaction. 
 """
 
-import time
 import json
 from http import HTTPStatus
 from typing import Tuple
@@ -129,11 +128,11 @@ def generate_token_base_method(
     }
     
     
-def create_jwk_keypair(secrets_client, SECRET_NAME_PREFIX) -> jwk.JWK:
+def create_jwk_keypair(secrets_client, secret_name_prefix) -> jwk.JWK:
     """
     Create JWK key object
     """
-    response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/jwk-private")
+    response = secrets_client.get_secret_value(SecretId=f"{secret_name_prefix}/jwk-private")
     private_key = response.get("SecretString")
     # create JWK format keys
     return jwk.JWK.from_json(private_key)
@@ -167,12 +166,12 @@ def make_jwt_token(claims, keypair, token_use, is_header_key_id) -> jwt.JWT:
     return jwt_token
 
 
-def create_claims_from_record(EVENT_ID, item):
+def create_claims_from_record(event_id, item):
     """
     Parse DynamoDB table item and create claims
     """
     return create_claims(
-        EVENT_ID,
+        event_id,
         item['Item']['request_id'], 
         item['Item']['issuer'], 
         item['Item']['queue_number'], 
@@ -182,12 +181,12 @@ def create_claims_from_record(EVENT_ID, item):
     )
 
 
-def create_claims(EVENT_ID, request_id, issuer, queue_number, iat, nbf, exp):
+def create_claims(event_id, request_id, issuer, queue_number, iat, nbf, exp):
     """
     Create claims
     """
     return {
-        'aud': EVENT_ID,
+        'aud': event_id,
         'sub': request_id,
         'queue_position': queue_number,
         'token_use': 'access',
@@ -198,7 +197,7 @@ def create_claims(EVENT_ID, request_id, issuer, queue_number, iat, nbf, exp):
     }
 
 
-def write_to_eventbus(events_client, EVENT_ID, EVENT_BUS_NAME, request_id) -> None:
+def write_to_eventbus(events_client, event_id, event_bus_name, request_id) -> None:
     """
     write to event bus
     """
@@ -209,11 +208,11 @@ def write_to_eventbus(events_client, EVENT_ID, EVENT_BUS_NAME, request_id) -> No
                 'DetailType': 'token_generated',
                 'Detail': json.dumps(
                     {
-                        "event_id": EVENT_ID,
+                        "event_id": event_id,
                         "request_id": request_id
                     }
                 ),
-                'EventBusName': EVENT_BUS_NAME
+                'EventBusName': event_bus_name
             }
         ]
     )

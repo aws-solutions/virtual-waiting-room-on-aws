@@ -43,7 +43,7 @@ ddb_table_queue_position_entry_time = ddb_resource.Table(QUEUE_POSITION_ENTRYTIM
 ddb_table_serving_counter_issued_at = ddb_resource.Table(SERVING_COUNTER_ISSUEDAT_TABLE)
 
 
-def lambda_handler(event, context):
+def lambda_handler(event, _):
     """
     This function is the entry handler for Lambda.
     """

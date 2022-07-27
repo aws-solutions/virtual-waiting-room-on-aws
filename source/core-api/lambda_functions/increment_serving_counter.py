@@ -37,7 +37,7 @@ ddb_resource = boto3.resource('dynamodb', endpoint_url=f'https://dynamodb.{regio
 ddb_table = ddb_resource.Table(SERVING_COUNTER_ISSUEDAT_TABLE)
 
 
-def lambda_handler(event, context):
+def lambda_handler(event, _):
     """
     This function is the entry handler for Lambda.
     """

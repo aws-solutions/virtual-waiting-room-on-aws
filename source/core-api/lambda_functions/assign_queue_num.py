@@ -65,27 +65,15 @@ def lambda_handler(event, _):
             # if valid, assign number and del msg
             # if the event ID is invalid, don't process it at all
             if client_event_id == EVENT_ID:
-                # write item back to redis, use hset and use request_id as the key
-                # as item gets written, delete the message from queue right away
-                # use HSETNX so no effect on queue_number if already exists
-                entry_time = int(time())
-                # rc.hsetnx(request_id, "entry_time", entry_time)
-                # rc.hsetnx(request_id, "queue_number", q_start_num)
-                # rc.hsetnx(request_id, "event_id", EVENT_ID)
-                # rc.hsetnx(request_id, "status", 1)
-                # result = rc.hgetall(request_id)
-                # print(result)
-
-            # same information here  - combine ?
-            # if ENABLE_QUEUE_POSITION_TIMEOUT == 'true':
-            item = {
-                'event_id': EVENT_ID,
-                'queue_position': int(q_start_num),
-                'entry_time': entry_time, 
-                'request_id': request_id,
-            }
-            ddb_table.put_item(Item=item)
-            print(f"Item: {item}")
+                item = {
+                    'event_id': EVENT_ID,
+                    'queue_position': int(q_start_num),
+                    'entry_time': int(time()), 
+                    'request_id': request_id,
+                    'status': 1
+                }
+                ddb_table.put_item(Item=item)
+                print(f"Item: {item}")
 
             # sqs has a vpc endpoint
             response = sqs_client.delete_message(
@@ -94,7 +82,7 @@ def lambda_handler(event, _):
             )
 
             print(response)
-            q_start_num+=1
+            q_start_num += 1 ## should this be incremented inside the if condition ???
         except Exception as exception:
             print(exception)
             return_with_exception = True

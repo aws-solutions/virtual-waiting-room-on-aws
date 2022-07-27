@@ -46,7 +46,7 @@ response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/redis
 redis_auth = response.get("SecretString")
 rc = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, ssl=True, decode_responses=True, password=redis_auth)
 
-def lambda_handler(event, context):
+def lambda_handler(event, _):
     """
     This function is the entry handler for Lambda.
     """

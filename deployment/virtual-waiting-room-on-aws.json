@@ -394,15 +394,54 @@
                                     ]
                                 },
                                 {
+                                    "Fn::Sub": [
+                                        "${TableArn}/index/*",
+                                        {
+                                            "TableArn": {
+                                                "Fn::GetAtt": [
+                                                    "TokenTable",
+                                                    "Arn"
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
                                     "Fn::GetAtt": [
                                         "QueuePositionEntryTimeTable",
                                         "Arn"
                                     ]
                                 },
                                 {
+                                    "Fn::Sub": [
+                                        "${TableArn1}/index/*",
+                                        {
+                                            "TableArn1": {
+                                                "Fn::GetAtt": [
+                                                    "QueuePositionEntryTimeTable",
+                                                    "Arn"
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
                                     "Fn::GetAtt": [
                                         "ServingCounterIssuedAtTable",
                                         "Arn"
+                                    ]
+                                },
+                                {
+                                    "Fn::Sub": [
+                                        "${TableArn2}/index/*",
+                                        {
+                                            "TableArn2": {
+                                                "Fn::GetAtt": [
+                                                    "ServingCounterIssuedAtTable",
+                                                    "Arn"
+                                                ]
+                                            }
+                                        }
                                     ]
                                 }
                             ],

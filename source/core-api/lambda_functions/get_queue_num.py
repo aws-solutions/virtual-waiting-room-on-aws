@@ -35,7 +35,7 @@ ddb_resource = boto3.resource('dynamodb', endpoint_url=f'https://dynamodb.{regio
 ddb_table_queue_position_entry_time = ddb_resource.Table(QUEUE_POSITION_ENTRYTIME_TABLE)
 
 
-def lambda_handler(event, context):
+def lambda_handler(event, _):
     """
     This function is the entry handler for Lambda.
     """
@@ -51,8 +51,7 @@ def lambda_handler(event, context):
     if client_event_id == EVENT_ID and is_valid_rid(request_id):
         queue_position_item = ddb_table_queue_position_entry_time.get_item(Key={"request_id": request_id})
         queue_number = int(queue_position_item['Item']['queue_position']) if 'Item' in queue_position_item else None
-        # queue_number = rc.hget(request_id, "queue_number")
-        # client_record = rc.hgetall(request_id)
+
         if queue_number:
             print(queue_number)
             response = {
@@ -80,4 +79,5 @@ def lambda_handler(event, context):
             "headers": headers,
             "body": json.dumps({"error": "Invalid event or request ID"})
         }
+
     return response

@@ -25,7 +25,7 @@ region = boto_session.region_name
 ddb_resource = boto3.resource('dynamodb', config=user_config)
 ddb_table = ddb_resource.Table(DDB_TOKEN_TABLE_NAME)
     
-def lambda_handler(event, context):
+def lambda_handler(event, _):
     """
     This function is the entry handler for Lambda.
     """
