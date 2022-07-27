@@ -77,7 +77,7 @@ def lambda_handler(event, _):
         if not queue_position_items:
             break
         
-        queue_item_entry_time = int(queue_position_items[0]['issue_time'])
+        queue_item_entry_time = int(queue_position_items[0]['entry_time'])
         queue_time = max(queue_item_entry_time, serving_counter_item_issue_time)
 
         # if time in queue has not exceeded expiry period, we can stop checking
@@ -98,7 +98,7 @@ def lambda_handler(event, _):
         item = {
             'event_id': EVENT_ID,
             'serving_counter': cur_serving,
-            'entry_time': int(time()),
+            'issue_time': int(time()),
             'queue_positions_served': 0
         }
         ddb_table_serving_counter_issued_at.put_item(Item=item)

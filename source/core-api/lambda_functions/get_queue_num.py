@@ -60,9 +60,9 @@ def lambda_handler(event, _):
                 "body": json.dumps(
                     {
                         'queue_number': queue_number,
+                        'entry_time': int(queue_position_item['Item']['entry_time']),
                         'event_id': queue_position_item['Item']['event_id'],
-                        'entry_time': int(queue_position_item['Item']['entry_time'])
-                        # include status ??
+                        'status': queue_position_item['Item']['status']
                     }
                 )
             }
