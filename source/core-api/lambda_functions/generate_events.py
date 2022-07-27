@@ -20,23 +20,23 @@ REDIS_PORT = os.environ["REDIS_PORT"]
 EVENT_ID = os.environ["EVENT_ID"]
 EVENT_BUS_NAME = os.environ["EVENT_BUS_NAME"]
 GET_NUM_ACTIVE_TOKENS_FN = os.environ["ACTIVE_TOKENS_FN"]
-SOLUTION_ID = os.environ['SOLUTION_ID']
+SOLUTION_ID = os.environ["SOLUTION_ID"]
 SECRET_NAME_PREFIX = os.environ["STACK_NAME"]
 
 user_agent_extra = {"user_agent_extra": SOLUTION_ID}
 user_config = config.Config(**user_agent_extra)
 boto_session = boto3.session.Session()
 region = boto_session.region_name
-events_client = boto3.client('events', endpoint_url="https://events."+region+".amazonaws.com", config=user_config)
-lambda_client = boto3.client('lambda', endpoint_url="https://lambda."+region+".amazonaws.com", config=user_config)
-secrets_client = boto3.client('secretsmanager', endpoint_url="https://secretsmanager."+region+".amazonaws.com", config=user_config)
+events_client = boto3.client('events', endpoint_url=f"https://events.{region}.amazonaws.com", config=user_config)
+lambda_client = boto3.client('lambda', endpoint_url=f"https://lambda.{region}.amazonaws.com", config=user_config)
+secrets_client = boto3.client('secretsmanager', endpoint_url=f"https://secretsmanager.{region}.amazonaws.com", config=user_config)
 response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/redis-auth")
 redis_auth = response.get("SecretString")
 rc = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, ssl=True, decode_responses=True, password=redis_auth)
 
 # put events for number of valid tokens, current queue_counter value, current serving_num value, 
 # total items(tokens) in db, and items(tokens) marked session_completed
-def lambda_handler(event, context):
+def lambda_handler(event, _):
     """
     This function is the entry handler for Lambda.
     """
