@@ -7,44 +7,29 @@ SPDX-License-Identifier: Apache-2.0
 increment the serving counter of the waiting room -->
 
 <template>
-<!-- wrap everything in a flexbox -->
+  <!-- wrap everything in a flexbox -->
   <div class="d-flex flex-column mb-2 p-4 border border-2 rounded">
     <p class="lead">
       Increment Serving Counter
       <!-- show the last connect status if available -->
       <span v-if="updateSuccess" class="badge bg-success mx-2">updated</span>
-      <span v-if="updateError" class="badge bg-danger mx-2"
-        >check configuration</span
-      >
+      <span v-if="updateError" class="badge bg-danger mx-2">check configuration</span>
     </p>
     <p>
       <!-- add a label and slider for the increment value -->
       <label class="form-label"></label>
       <!-- connect the slider to the data model and input handler -->
-      <input
-        type="range"
-        class="form-range"
-        min="1"
-        max="1000"
-        step="1"
-        v-model="increment"
-        @input="newValue = true"
-      />
+      <input type="range" class="form-range" min="1" max="1000" step="1" v-model="increment" @input="newValue = true" />
     </p>
     <div class="d-flex flex-row-reverse">
       <!-- enable change the button if the configuration is valid -->
-      <button
-        type="button"
-        class="btn btn-sm btn-primary rounded m-1 p-3"
-        v-on:click="changeCounter"
-        v-bind:disabled="
-          !(
-            configuration.credentials.valid &&
-            configuration.endpoints.valid &&
-            configuration.eventData.valid
-          )
-        "
-      >
+      <button type="button" class="btn btn-sm btn-primary rounded m-1 p-3" v-on:click="changeCounter" v-bind:disabled="
+        !(
+          configuration.credentials.valid &&
+          configuration.endpoints.valid &&
+          configuration.eventData.valid
+        )
+      ">
         Change
       </button>
       <!-- display the slider value -->
@@ -56,8 +41,7 @@ increment the serving counter of the waiting room -->
 </template>
 
 <script>
-import axios from "axios";
-import { aws4Interceptor } from "aws4-axios";
+import { AwsClient } from 'aws4fetch';
 export default {
   name: "IncrementServingCounter",
   props: ["configuration"],
@@ -77,39 +61,34 @@ export default {
       this.updateSuccess = false;
       this.updateError = false;
       // update the serving counter
-      const client = axios.create();
-      // sign the API call with the configuration's keys
-      const interceptor = aws4Interceptor(
-        {
-          region: this.configuration.endpoints.regionName,
-          service: "execute-api",
-        },
-        {
-          accessKeyId: this.configuration.credentials.accessKey,
-          secretAccessKey: this.configuration.credentials.secretAccessKey,
-          sessionToken: this.configuration.credentials.sessionToken,
-        }
-      );
-      client.interceptors.request.use(interceptor);
+      const aws = new AwsClient({
+        accessKeyId: this.configuration.credentials.accessKey,
+        secretAccessKey: this.configuration.credentials.secretAccessKey,
+        sessionToken: this.configuration.credentials.sessionToken,
+        service: "execute-api",
+        region: this.configuration.endpoints.regionName
+      });
+      const url = `${this.configuration.endpoints.privateApiUrl}/increment_serving_counter`;
       // event ID goes into the body data
       let body = {
         event_id: this.configuration.eventData.id,
         increment_by: Number.parseInt(this.increment),
       };
-      // make the request via POST
-      client
-        .post(
-          `${this.configuration.endpoints.privateApiUrl}/increment_serving_counter`,
-          body
-        )
-        .then(() => {
-          this.updateSuccess = true;
-          this.updateError = false;
-        })
-        .catch(() => {
-          this.updateSuccess = false;
-          this.updateError = true;
-        });
+      const local_this = this;
+      aws.fetch(url, {
+        method: "POST",
+        headers: {},
+        body: JSON.stringify(body)
+      }).then(function (response) {
+        return response.json();
+      }).then(function () {
+        local_this.updateSuccess = true;
+        local_this.updateError = false;
+      }).catch((error) => {
+        console.error(error);
+        local_this.updateSuccess = false;
+        local_this.updateError = true;
+      });
     },
   },
 };
