@@ -51,7 +51,11 @@ def lambda_handler(event, _):
     client_event_id = deep_clean(body['event_id'])
 
     if client_event_id != EVENT_ID:
-        return {"statusCode": 400, "headers": headers, "body": json.dumps({"error": "Invalid event ID"})}
+        return {
+            "statusCode": 400, 
+            "headers": headers,
+            "body": json.dumps({"error": "Invalid event ID"})
+        }
 
     cur_serving = rc.incrby(SERVING_COUNTER, increment_by)
 
@@ -66,4 +70,9 @@ def lambda_handler(event, _):
         print(f'Item: {item}')
 
     print(f"cur_serving: {cur_serving}")
-    return {"statusCode": 200, "headers": headers, "body": json.dumps({"serving_num": cur_serving})}
+
+    return {
+        "statusCode": 200, 
+        "headers": headers, 
+        "body": json.dumps({"serving_num": cur_serving})
+    }

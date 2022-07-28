@@ -6,7 +6,6 @@ This module is the get_serving_num API handler.
 It retrieves the number currently being served by the waiting room.
 """
 
-
 import redis
 import json
 import os
@@ -49,4 +48,5 @@ def lambda_handler(event, _):
 
     cur_serving = rc.get(SERVING_COUNTER)
     print(cur_serving)
+    
     return {"statusCode": 200, "headers": headers, "body": json.dumps({"serving_counter": cur_serving})}

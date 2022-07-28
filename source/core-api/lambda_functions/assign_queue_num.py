@@ -11,7 +11,6 @@ assigns a queue number to each of the request (message).
 
 import os
 import json
-
 import boto3
 import redis
 from time import time
