@@ -1001,7 +1001,7 @@
                             "Ref": "QueuePositionEntryTimeTable"
                         },
                         "ENABLE_QUEUE_POSITION_TIMEOUT": {
-                            "Ref": "EnableQueuePositionTimeout"
+                            "Ref": "EnableQueuePositionExpiry"
                         },
                         "STACK_NAME": {"Ref": "AWS::StackName"}
                     }
@@ -1121,10 +1121,10 @@
                             "Ref": "ServingCounterIssuedAtTable"
                         },
                         "QUEUE_POSITION_TIMEOUT_PERIOD" : {
-                            "Ref": "QueuePositionTimeoutPeriod"
+                            "Ref": "QueuePositionExpiryPeriod"
                         },
                         "ENABLE_QUEUE_POSITION_TIMEOUT": {
-                            "Ref": "EnableQueuePositionTimeout"
+                            "Ref": "EnableQueuePositionExpiry"
                         },
                         "EVENT_BUS_NAME": {
                             "Ref": "WaitingRoomEventBus"
@@ -1885,7 +1885,7 @@
                             "Ref": "QueuePositionEntryTimeTable"
                         },
                         "QUEUE_POSITION_TIMEOUT_PERIOD" : {
-                            "Ref": "QueuePositionTimeoutPeriod"
+                            "Ref": "QueuePositionExpiryPeriod"
                         },
                         "SERVING_COUNTER_ISSUEDAT_TABLE": {
                             "Ref": "ServingCounterIssuedAtTable"
@@ -2024,10 +2024,10 @@
                             "Ref": "ServingCounterIssuedAtTable"
                         },
                         "QUEUE_POSITION_TIMEOUT_PERIOD" : {
-                            "Ref": "QueuePositionTimeoutPeriod"
+                            "Ref": "QueuePositionExpiryPeriod"
                         },
                         "ENABLE_QUEUE_POSITION_TIMEOUT": {
-                            "Ref": "EnableQueuePositionTimeout"
+                            "Ref": "EnableQueuePositionExpiry"
                         },
                         "EVENT_BUS_NAME": {
                             "Ref": "WaitingRoomEventBus"
@@ -2323,10 +2323,10 @@
                             "Ref": "ServingCounterIssuedAtTable"
                         },
                         "QUEUE_POSITION_TIMEOUT_PERIOD" : {
-                            "Ref": "QueuePositionTimeoutPeriod"
+                            "Ref": "QueuePositionExpiryPeriod"
                         },
                         "ENABLE_QUEUE_POSITION_TIMEOUT": {
-                            "Ref": "EnableQueuePositionTimeout"
+                            "Ref": "EnableQueuePositionExpiry"
                         },
                         "STACK_NAME": {"Ref": "AWS::StackName"}
                     }
@@ -2575,7 +2575,7 @@
                             "Ref": "ServingCounterIssuedAtTable"
                         },                 
                         "ENABLE_QUEUE_POSITION_TIMEOUT": {
-                            "Ref": "EnableQueuePositionTimeout"
+                            "Ref": "EnableQueuePositionExpiry"
                         },
                         "STACK_NAME": {"Ref": "AWS::StackName"}
                     }
@@ -5713,7 +5713,7 @@
         "SetQueuePositionExpiredEvents": {
             "Fn::Equals": [
                 {
-                    "Ref": "EnableQueuePositionTimeout"
+                    "Ref": "EnableQueuePositionExpiry"
                 },
                 "true"
             ]
@@ -5747,13 +5747,13 @@
             "ConstraintDescription": "Please enter a value for this field.",
             "Default": "1785"
         },
-        "QueuePositionTimeoutPeriod": {
+        "QueuePositionExpiryPeriod": {
             "Description": "Expiry period of queue position once serving counter is available (seconds)",
             "Type": "Number",
             "ConstraintDescription": "Please enter a value for this field.",
             "Default": "900"
         },
-        "EnableQueuePositionTimeout": {
+        "EnableQueuePositionExpiry": {
             "Description": "If set to false, expiry period is not applied to queue position",
             "Type": "String",
             "AllowedValues": [

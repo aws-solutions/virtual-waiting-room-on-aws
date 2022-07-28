@@ -10,7 +10,7 @@ import json
 import os
 import boto3
 from botocore import config
-from counters import *
+from counters import QUEUE_COUNTER, SERVING_COUNTER, TOKEN_COUNTER, ABANDONED_SESSION_COUNTER, COMPLETED_SESSION_COUNTER, MAX_QUEUE_POSITION_EXPIRED
 from vwr.common.sanitize import deep_clean
 
 TOKEN_TABLE = os.environ["TOKEN_TABLE"]

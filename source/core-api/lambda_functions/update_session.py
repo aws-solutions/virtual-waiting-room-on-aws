@@ -8,9 +8,6 @@ Session status is denoted by an integer. Sessions set to a status of 1 indicates
 Authorization is required to invoke this API.
 """
 
-
-
-
 import redis
 import json
 import boto3
@@ -49,7 +46,7 @@ redis_auth = response.get("SecretString")
 rc = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, ssl=True, decode_responses=True, password=redis_auth)
 
 
-def lambda_handler(event, context):
+def lambda_handler(event, _):
     """
     This function is the entry handler for Lambda.
     """
@@ -63,6 +60,7 @@ def lambda_handler(event, context):
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*'
     }
+
     if client_event_id == EVENT_ID and is_valid_rid(request_id):
         try:
             result = ddb_table.update_item(
@@ -112,4 +110,5 @@ def lambda_handler(event, context):
         }
         
     print(response)
+    
     return response

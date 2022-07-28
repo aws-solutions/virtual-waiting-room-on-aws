@@ -15,8 +15,8 @@ from boto3.dynamodb.conditions import Key
 from counters import MAX_QUEUE_POSITION_EXPIRED,SERVING_COUNTER, TOKEN_COUNTER
 
 def generate_token_base_method(
-        EVENT_ID, request_id, headers, rc, ENABLE_QUEUE_POSITION_TIMEOUT, QUEUE_POSITION_TIMEOUT_PERIOD, 
-        secrets_client, SECRET_NAME_PREFIX, VALIDITY_PERIOD, issuer, events_client, EVENT_BUS_NAME, is_header_key_id,
+        event_id, request_id, headers, rc, enable_queue_position_timeout, queue_position_timeout_period, 
+        secrets_client, secret_name_prefix, validity_period, issuer, events_client, event_bus_name, is_header_key_id,
         ddb_table_tokens, ddb_table_queue_position_entry_time, ddb_table_serving_counter_issued_at
     ):
     """
@@ -44,10 +44,10 @@ def generate_token_base_method(
     is_requestid_in_token_table = 'Item' in item
 
     # check if queue position is valid and not expired only is token not issued
-    if ENABLE_QUEUE_POSITION_TIMEOUT == 'true' and not is_requestid_in_token_table:
+    if enable_queue_position_timeout == 'true' and not is_requestid_in_token_table:
         queue_position_entry_time = int(queue_position_item['Item']['entry_time'])
-        (is_valid, serving_counter) = validate_token_expiry(EVENT_ID, queue_number, queue_position_entry_time, 
-                                        QUEUE_POSITION_TIMEOUT_PERIOD, rc, ddb_table_serving_counter_issued_at)
+        (is_valid, serving_counter) = validate_token_expiry(event_id, queue_number, queue_position_entry_time, 
+                                        queue_position_timeout_period, rc, ddb_table_serving_counter_issued_at)
         if not is_valid:
             return {
                 "statusCode": HTTPStatus.GONE.value,
@@ -55,9 +55,9 @@ def generate_token_base_method(
                 "body": json.dumps({"error": "Queue position has expired"})
             }
 
-    keypair = create_jwk_keypair(secrets_client, SECRET_NAME_PREFIX)
+    keypair = create_jwk_keypair(secrets_client, secret_name_prefix)
     if is_requestid_in_token_table: 
-        claims = create_claims_from_record(EVENT_ID, item)
+        claims = create_claims_from_record(event_id, item)
         (access_token, refresh_token, id_token) = create_tokens(claims, keypair, is_header_key_id)
         expires = int(item['Item']['expires'])
         cur_time = int(time())
@@ -87,9 +87,9 @@ def generate_token_base_method(
     # request_id is not in ddb_table, create and save record to ddb_table
     iat = int(time())  # issued-at and not-before can be the same time (epoch seconds)
     nbf = iat
-    exp = iat + VALIDITY_PERIOD # expiration (exp) is a time after iat and nbf, like 1 hour (epoch seconds)
+    exp = iat + validity_period # expiration (exp) is a time after iat and nbf, like 1 hour (epoch seconds)
     item = {
-        "event_id": EVENT_ID,
+        "event_id": event_id,
         "request_id": request_id,
         "issued_at": iat,
         "not_before": nbf,
@@ -105,13 +105,13 @@ def generate_token_base_method(
         print(e)
         raise e
 
-    claims = create_claims(EVENT_ID, request_id, issuer, queue_number, iat, nbf, exp)
+    claims = create_claims(event_id, request_id, issuer, queue_number, iat, nbf, exp)
     (access_token, refresh_token, id_token) = create_tokens(claims, keypair, True)
-    write_to_eventbus(events_client, EVENT_ID, EVENT_BUS_NAME, request_id)
+    write_to_eventbus(events_client, event_id, event_bus_name, request_id)
     rc.incr(TOKEN_COUNTER, 1)
 
-    if ENABLE_QUEUE_POSITION_TIMEOUT == 'true':
-        update_queue_positions_served(EVENT_ID, serving_counter, ddb_table_serving_counter_issued_at) 
+    if enable_queue_position_timeout == 'true':
+        update_queue_positions_served(event_id, serving_counter, ddb_table_serving_counter_issued_at) 
 
     return {
         "statusCode": HTTPStatus.OK.value, 
@@ -122,7 +122,7 @@ def generate_token_base_method(
                 "refresh_token": refresh_token.serialize(), 
                 "id_token": id_token.serialize(),
                 "token_type": "Bearer",
-                "expires_in": VALIDITY_PERIOD
+                "expires_in": validity_period
             }
         )
     }
