@@ -18,9 +18,7 @@ is an object containing the endpoints and credentials for the API.
     <p class="lead">
       Active Tokens
       <span v-if="updateSuccess" class="badge bg-success mx-2">connected</span>
-      <span v-if="updateError" class="badge bg-danger mx-2"
-        >check configuration</span
-      >
+      <span v-if="updateError" class="badge bg-danger mx-2">check configuration</span>
     </p>
     <p class="h2 m-2">{{ activeTokens }}</p>
   </div>
@@ -29,8 +27,7 @@ is an object containing the endpoints and credentials for the API.
 <script>
 // use the timer mixin for periodic API checks
 import { mixin as VueTimers } from "vue-timers";
-import axios from "axios";
-import { aws4Interceptor } from "aws4-axios";
+import { AwsClient } from 'aws4fetch';
 // update interval for the API call
 const UPDATE_INTERVAL_MS = 5000;
 export default {
@@ -61,36 +58,30 @@ export default {
         this.configuration.endpoints.valid &&
         this.configuration.eventData.valid
       ) {
-        // update the serving counter
-        const client = axios.create();
-        // use the interceptor with keys to sign the API request
-        const interceptor = aws4Interceptor(
-          {
-            region: this.configuration.endpoints.regionName,
-            service: "execute-api",
-          },
-          {
-            accessKeyId: this.configuration.credentials.accessKey,
-            secretAccessKey: this.configuration.credentials.secretAccessKey,
-            sessionToken: this.configuration.credentials.sessionToken,
-          }
-        );
-        client.interceptors.request.use(interceptor);
-        // add the event ID to the query parameters
-        client
-          .get(
-            `${this.configuration.endpoints.privateApiUrl}/num_active_tokens?event_id=${this.configuration.eventData.id}`
-          )
-          .then((res) => {
-            // update the token value on success
-            this.activeTokens = res.data.active_tokens;
-            this.updateSuccess = true;
-            this.updateError = false;
-          })
-          .catch(() => {
-            this.updateSuccess = false;
-            this.updateError = true;
-          });
+        // configure the signer
+        const aws = new AwsClient({
+          accessKeyId: this.configuration.credentials.accessKey,
+          secretAccessKey: this.configuration.credentials.secretAccessKey,
+          sessionToken: this.configuration.credentials.sessionToken,
+          service: "execute-api",
+          region: this.configuration.endpoints.regionName
+        });
+        const url = `${this.configuration.endpoints.privateApiUrl}/num_active_tokens?event_id=${this.configuration.eventData.id}`;
+        const local_this = this;
+        aws.fetch(url, {
+          method: "GET"
+        }).then(function (response) {
+          return response.json();
+        }).then(function (json) {
+          // update the token value on success
+          local_this.activeTokens = json.active_tokens;
+          local_this.updateSuccess = true;
+          local_this.updateError = false;
+        }).catch((error) => {
+          console.error(error);
+          local_this.updateSuccess = false;
+          local_this.updateError = true;
+        });
       } else {
         this.updateSuccess = false;
         this.updateError = false;

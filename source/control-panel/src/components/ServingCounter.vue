@@ -12,9 +12,7 @@ the current serving counter of the waiting room -->
     <p class="lead">
       Serving Counter
       <span v-if="updateSuccess" class="badge bg-success mx-2">connected</span>
-      <span v-if="updateError" class="badge bg-danger mx-2"
-        >check configuration</span
-      >
+      <span v-if="updateError" class="badge bg-danger mx-2">check configuration</span>
     </p>
     <!-- display the serving counter value from the model -->
     <p class="h2 m-2">{{ servingCounter }}</p>
@@ -23,7 +21,6 @@ the current serving counter of the waiting room -->
 
 <script>
 import { mixin as VueTimers } from "vue-timers";
-import axios from "axios";
 // interval for the API call
 const UPDATE_INTERVAL_MS = 5000;
 export default {
@@ -56,27 +53,27 @@ export default {
         this.configuration.endpoints.valid &&
         this.configuration.eventData.valid
       ) {
-        const client = axios.create();
-        // add the event ID to the query parameters and GET from the public API
-        client
-          .get(
-            `${this.configuration.endpoints.publicApiUrl}/serving_num?event_id=${this.configuration.eventData.id}`
-          )
-          .then((res) => {
-            // update the model with the latest serving counter
-            this.servingCounter = res.data.serving_counter;
-            this.updateSuccess = true;
-            this.updateError = false;
-          })
-          .catch(() => {
-            this.updateSuccess = false;
-            this.updateError = true;
-          });
+        const local_this = this;
+        const url = `${this.configuration.endpoints.publicApiUrl}/serving_num?event_id=${this.configuration.eventData.id}`;
+        fetch(url, {
+          method: "GET"
+        }).then(function (response) {
+          return response.json();
+        }).then(function (json) {
+          // update the token value on success
+          local_this.servingCounter = json.serving_counter;
+          local_this.updateSuccess = true;
+          local_this.updateError = false;
+        }).catch((error) => {
+          console.error(error);
+          local_this.updateSuccess = false;
+          local_this.updateError = true;
+        });
       } else {
         this.updateSuccess = false;
         this.updateError = false;
       }
-    },
-  },
+    }
+  }
 };
 </script>
