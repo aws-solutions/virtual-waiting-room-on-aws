@@ -72,7 +72,7 @@ export default {
       aws.fetch(url, {
         method: "POST",
         headers: {},
-        body: body
+        body: JSON.stringify(body)
       }).then(function (response) {
         return response.json();
       }).then(function () {
