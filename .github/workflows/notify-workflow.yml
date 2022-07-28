@@ -22,7 +22,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Install required system packages
         run: |
-          pip install --upgrade --force-reinstall -r deployment/requirements.txt 2> error.txt
+          pip install --upgrade -r deployment/requirements.txt 2> error.txt
           if [ -s error.txt ]; then
             echo "ERROR: System package installation failed."
             cat error.txt
