@@ -27,9 +27,9 @@ EVENT_ID = os.environ["EVENT_ID"]
 EVENT_BUS_NAME = os.environ["EVENT_BUS_NAME"]
 SOLUTION_ID = os.environ["SOLUTION_ID"]
 QUEUE_POSITION_ENTRYTIME_TABLE = os.environ["QUEUE_POSITION_ENTRYTIME_TABLE"]
-QUEUE_POSITION_TIMEOUT_PERIOD = os.environ["QUEUE_POSITION_TIMEOUT_PERIOD"]
+QUEUE_POSITION_EXPIRY_PERIOD = os.environ["QUEUE_POSITION_EXPIRY_PERIOD"]
 SERVING_COUNTER_ISSUEDAT_TABLE = os.environ["SERVING_COUNTER_ISSUEDAT_TABLE"]
-ENABLE_QUEUE_POSITION_TIMEOUT = os.environ["ENABLE_QUEUE_POSITION_TIMEOUT"]
+ENABLE_QUEUE_POSITION_EXPIRY = os.environ["ENABLE_QUEUE_POSITION_EXPIRY"]
 
 boto_session = boto3.session.Session()
 region = boto_session.region_name
@@ -71,14 +71,14 @@ def lambda_handler(event, _):
 
     if client_event_id != EVENT_ID or not is_valid_rid(request_id):
         return {
-            "statusCode": HTTPStatus.ACCEPTED.value, 
+            "statusCode": HTTPStatus.BAD_REQUEST.value,
             "headers": headers,
             "body": json.dumps({"error": "Invalid event or request ID"})
         }
 
     is_header_key_id = False
     return generate_token_base_method(
-        EVENT_ID, request_id, headers, rc, ENABLE_QUEUE_POSITION_TIMEOUT, QUEUE_POSITION_TIMEOUT_PERIOD, 
+        EVENT_ID, request_id, headers, rc, ENABLE_QUEUE_POSITION_EXPIRY, QUEUE_POSITION_EXPIRY_PERIOD, 
         secrets_client, SECRET_NAME_PREFIX, VALIDITY_PERIOD, issuer, events_client, EVENT_BUS_NAME, is_header_key_id,
         ddb_table_tokens, ddb_table_queue_position_entry_time, ddb_table_serving_counter_issued_at
     )

@@ -1120,7 +1120,7 @@
                         "SERVING_COUNTER_ISSUEDAT_TABLE": {
                             "Ref": "ServingCounterIssuedAtTable"
                         },
-                        "QUEUE_POSITION_TIMEOUT_PERIOD" : {
+                        "QUEUE_POSITION_EXPIRY_PERIOD" : {
                             "Ref": "QueuePositionExpiryPeriod"
                         },
                         "ENABLE_QUEUE_POSITION_TIMEOUT": {
@@ -1884,7 +1884,7 @@
                         "QUEUE_POSITION_ENTRYTIME_TABLE": {
                             "Ref": "QueuePositionEntryTimeTable"
                         },
-                        "QUEUE_POSITION_TIMEOUT_PERIOD" : {
+                        "QUEUE_POSITION_EXPIRY_PERIOD" : {
                             "Ref": "QueuePositionExpiryPeriod"
                         },
                         "SERVING_COUNTER_ISSUEDAT_TABLE": {
@@ -2023,7 +2023,7 @@
                         "SERVING_COUNTER_ISSUEDAT_TABLE": {
                             "Ref": "ServingCounterIssuedAtTable"
                         },
-                        "QUEUE_POSITION_TIMEOUT_PERIOD" : {
+                        "QUEUE_POSITION_EXPIRY_PERIOD" : {
                             "Ref": "QueuePositionExpiryPeriod"
                         },
                         "ENABLE_QUEUE_POSITION_TIMEOUT": {
@@ -2322,7 +2322,7 @@
                         "SERVING_COUNTER_ISSUEDAT_TABLE": {
                             "Ref": "ServingCounterIssuedAtTable"
                         },
-                        "QUEUE_POSITION_TIMEOUT_PERIOD" : {
+                        "QUEUE_POSITION_EXPIRY_PERIOD" : {
                             "Ref": "QueuePositionExpiryPeriod"
                         },
                         "ENABLE_QUEUE_POSITION_TIMEOUT": {

@@ -26,7 +26,7 @@ QUEUE_URL = os.environ["QUEUE_URL"]
 EVENT_ID = os.environ["EVENT_ID"]
 SECRET_NAME_PREFIX = os.environ["STACK_NAME"]
 QUEUE_POSITION_ENTRYTIME_TABLE = os.environ["QUEUE_POSITION_ENTRYTIME_TABLE"]
-ENABLE_QUEUE_POSITION_TIMEOUT = os.environ["ENABLE_QUEUE_POSITION_TIMEOUT"]
+ENABLE_QUEUE_POSITION_EXPIRY = os.environ["ENABLE_QUEUE_POSITION_EXPIRY"]
 
 boto_session = boto3.session.Session()
 region = boto_session.region_name

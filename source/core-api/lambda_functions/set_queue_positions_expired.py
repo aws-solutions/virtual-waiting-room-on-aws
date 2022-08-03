@@ -20,7 +20,7 @@ EVENT_ID = os.environ["EVENT_ID"]
 REDIS_HOST = os.environ["REDIS_HOST"]
 REDIS_PORT = os.environ["REDIS_PORT"]
 QUEUE_POSITION_ENTRYTIME_TABLE = os.environ["QUEUE_POSITION_ENTRYTIME_TABLE"]
-QUEUE_POSITION_TIMEOUT_PERIOD = os.environ["QUEUE_POSITION_TIMEOUT_PERIOD"]
+QUEUE_POSITION_EXPIRY_PERIOD = os.environ["QUEUE_POSITION_EXPIRY_PERIOD"]
 SERVING_COUNTER_ISSUEDAT_TABLE = os.environ["SERVING_COUNTER_ISSUEDAT_TABLE"]
 
 user_agent_extra = {"user_agent_extra": SOLUTION_ID}
@@ -81,7 +81,7 @@ def lambda_handler(event, _):
         queue_time = max(queue_item_entry_time, serving_counter_item_issue_time)
 
         # if time in queue has not exceeded expiry period, we can stop checking
-        if current_time - queue_time < int(QUEUE_POSITION_TIMEOUT_PERIOD):
+        if current_time - queue_time < int(QUEUE_POSITION_EXPIRY_PERIOD):
             break
                 
         # set max queue position to serving counter item position
@@ -102,7 +102,7 @@ def lambda_handler(event, _):
             'queue_positions_served': 0
         }
         ddb_table_serving_counter_issued_at.put_item(Item=item)
-        print(item)
+        print(f'Item: {item}')
         print(f'Serving counter incremented by {increment_by}. Current value: {cur_serving}')
 
         # set prevous serving counter position to item serving counter position for the loop

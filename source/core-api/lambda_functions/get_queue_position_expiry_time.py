@@ -26,9 +26,9 @@ EVENT_ID = os.environ["EVENT_ID"]
 SECRET_NAME_PREFIX = os.environ["STACK_NAME"]
 SOLUTION_ID = os.environ["SOLUTION_ID"]
 QUEUE_POSITION_ENTRYTIME_TABLE = os.environ["QUEUE_POSITION_ENTRYTIME_TABLE"]
-QUEUE_POSITION_TIMEOUT_PERIOD = os.environ["QUEUE_POSITION_TIMEOUT_PERIOD"]
+QUEUE_POSITION_EXPIRY_PERIOD = os.environ["QUEUE_POSITION_EXPIRY_PERIOD"]
 SERVING_COUNTER_ISSUEDAT_TABLE = os.environ["SERVING_COUNTER_ISSUEDAT_TABLE"]
-ENABLE_QUEUE_POSITION_TIMEOUT = os.environ["ENABLE_QUEUE_POSITION_TIMEOUT"]
+ENABLE_QUEUE_POSITION_EXPIRY = os.environ["ENABLE_QUEUE_POSITION_EXPIRY"]
 
 boto_session = boto3.session.Session()
 region = boto_session.region_name
@@ -63,7 +63,7 @@ def lambda_handler(event, _):
             "body": json.dumps({"error": "Invalid event or request ID"})
         }
 
-    if not ENABLE_QUEUE_POSITION_TIMEOUT:
+    if ENABLE_QUEUE_POSITION_EXPIRY != 'true':
         return {
             "statusCode": HTTPStatus.ACCEPTED.value,
             "headers": headers,
@@ -77,7 +77,7 @@ def lambda_handler(event, _):
         return {
             "statusCode": HTTPStatus.NOT_FOUND.value,
             "headers": headers,
-            "body": json.dumps({"error": "Request ID not found"})
+            "body": json.dumps({"error": "Invalid request ID"})
         }
 
     print(f'Queue number: {queue_number}')
@@ -112,7 +112,7 @@ def lambda_handler(event, _):
     serving_counter_issue_time = int(serving_counter_item['issue_time'])
 
     queue_time = max(queue_position_entry_time, serving_counter_issue_time)
-    if current_time - queue_time > int(QUEUE_POSITION_TIMEOUT_PERIOD):
+    if current_time - queue_time > int(QUEUE_POSITION_EXPIRY_PERIOD):
         return {
             "statusCode": HTTPStatus.GONE.value,
             "headers": headers,
@@ -122,5 +122,5 @@ def lambda_handler(event, _):
     return {
         "statusCode": HTTPStatus.OK.value,
         "headers": headers,
-        "body": json.dumps({"Expires_in": int(QUEUE_POSITION_TIMEOUT_PERIOD) - (current_time - queue_time)})
+        "body": json.dumps({"Expires_in": int(QUEUE_POSITION_EXPIRY_PERIOD) - (current_time - queue_time)})
     }
