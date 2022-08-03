@@ -61,7 +61,7 @@ def lambda_handler(event, _):
                         'queue_number': queue_number,
                         'entry_time': int(queue_position_item['Item']['entry_time']),
                         'event_id': queue_position_item['Item']['event_id'],
-                        'status': queue_position_item['Item']['status']
+                        'status': int(queue_position_item['Item']['status'])
                     }
                 )
             }

@@ -4,7 +4,7 @@
 """
 This module is the unit test for the core API Lambda functions.
 """
-# pylint: disable=R0911 
+# pylint: disable=R0902 
 
 import os
 import unittest
