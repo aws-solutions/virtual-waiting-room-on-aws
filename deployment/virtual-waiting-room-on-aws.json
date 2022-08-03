@@ -1000,7 +1000,7 @@
                         "QUEUE_POSITION_ENTRYTIME_TABLE": {
                             "Ref": "QueuePositionEntryTimeTable"
                         },
-                        "ENABLE_QUEUE_POSITION_TIMEOUT": {
+                        "ENABLE_QUEUE_POSITION_EXPIRY": {
                             "Ref": "EnableQueuePositionExpiry"
                         },
                         "STACK_NAME": {"Ref": "AWS::StackName"}
@@ -1123,7 +1123,7 @@
                         "QUEUE_POSITION_EXPIRY_PERIOD" : {
                             "Ref": "QueuePositionExpiryPeriod"
                         },
-                        "ENABLE_QUEUE_POSITION_TIMEOUT": {
+                        "ENABLE_QUEUE_POSITION_EXPIRY": {
                             "Ref": "EnableQueuePositionExpiry"
                         },
                         "EVENT_BUS_NAME": {
@@ -2026,7 +2026,7 @@
                         "QUEUE_POSITION_EXPIRY_PERIOD" : {
                             "Ref": "QueuePositionExpiryPeriod"
                         },
-                        "ENABLE_QUEUE_POSITION_TIMEOUT": {
+                        "ENABLE_QUEUE_POSITION_EXPIRY": {
                             "Ref": "EnableQueuePositionExpiry"
                         },
                         "EVENT_BUS_NAME": {
@@ -2325,7 +2325,7 @@
                         "QUEUE_POSITION_EXPIRY_PERIOD" : {
                             "Ref": "QueuePositionExpiryPeriod"
                         },
-                        "ENABLE_QUEUE_POSITION_TIMEOUT": {
+                        "ENABLE_QUEUE_POSITION_EXPIRY": {
                             "Ref": "EnableQueuePositionExpiry"
                         },
                         "STACK_NAME": {"Ref": "AWS::StackName"}
@@ -2574,7 +2574,7 @@
                         "SERVING_COUNTER_ISSUEDAT_TABLE": {
                             "Ref": "ServingCounterIssuedAtTable"
                         },                 
-                        "ENABLE_QUEUE_POSITION_TIMEOUT": {
+                        "ENABLE_QUEUE_POSITION_EXPIRY": {
                             "Ref": "EnableQueuePositionExpiry"
                         },
                         "STACK_NAME": {"Ref": "AWS::StackName"}
