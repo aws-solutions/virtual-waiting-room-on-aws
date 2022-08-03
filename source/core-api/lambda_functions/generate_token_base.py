@@ -213,6 +213,7 @@ def write_to_eventbus(events_client, event_id, event_bus_name, request_id) -> No
         ]
     )
 
+
 def validate_queue_position_expiry(event_id, queue_number, queue_position_entry_time, queue_position_expiry_period, rc, ddb_table_serving_counter_issued_at) -> Tuple[bool, object]:
     """
     Validates the queue position to see if it has expired

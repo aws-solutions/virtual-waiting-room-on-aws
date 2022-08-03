@@ -6,7 +6,6 @@ This module is the get_queue_num API handler.
 It retrieves the queue number assigned to a request from redis.
 """
 
-
 import redis
 import json
 import os

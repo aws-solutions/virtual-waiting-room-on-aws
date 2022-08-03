@@ -195,8 +195,8 @@ class CoreApiTestCase(unittest.TestCase):
             with patch.object(auth_generate_token.ddb_table_tokens, 'get_item', 
                 return_value={"Item": {"request_id": "fe7a5f04-6ff0-4bd6-9c31-52088cc4e73a", "session_status" : "0", "expires": 2000, "issued_at": 1000, 
                                 "not_before": 1000, "queue_number": 2, "issuer": "someone"}}):
-                    response = auth_generate_token.lambda_handler(mock_event, None)
-                    self.assertEqual(response["statusCode"], 200)
+                response = auth_generate_token.lambda_handler(mock_event, None)
+                self.assertEqual(response["statusCode"], 200)
 
         # generate new token
         with patch.object(auth_generate_token.ddb_table_queue_position_entry_time, 'get_item', 
@@ -314,8 +314,8 @@ class CoreApiTestCase(unittest.TestCase):
             with patch.object(generate_token.ddb_table_tokens, 'get_item', 
                 return_value={"Item": {"request_id": "fe7a5f04-6ff0-4bd6-9c31-52088cc4e73a", "session_status" : "0", "expires": 2000, "issued_at": 1000, 
                                 "not_before": 1000, "queue_number": 2, "issuer": "someone"}}):
-                    response = generate_token.lambda_handler(mock_event, None)
-                    self.assertEqual(response["statusCode"], 200)
+                response = generate_token.lambda_handler(mock_event, None)
+                self.assertEqual(response["statusCode"], 200)
 
         # generate new token
         with patch.object(generate_token.ddb_table_queue_position_entry_time, 'get_item', 
@@ -604,7 +604,7 @@ class CoreApiTestCase(unittest.TestCase):
                 mock_event = {'queryStringParameters': {'event_id': self.event_id, 'request_id': self.request_id}}
                 response = get_queue_position_expiry_time.lambda_handler(mock_event, None)
                 self.assertEqual(response["statusCode"], 200)
-                self.assertTrue(type(json.loads(response['body'])["Expires_in"]) is int)
+                self.assertTrue(isinstance(json.loads(response['body'])["Expires_in"], int))
         
 if __name__ == '__main__':
     unittest.main()

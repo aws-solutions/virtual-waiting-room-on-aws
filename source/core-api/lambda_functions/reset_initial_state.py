@@ -131,6 +131,7 @@ def lambda_handler(event, _):
     print(response)
     return response
 
+
 def create_token_table():
     """
     Create TOKEN_TABLE
@@ -181,6 +182,7 @@ def create_token_table():
         }
     )
 
+
 def create_queueposition_issuedat_table():
     """
     Create QUEUE_POSITION_ENTRYTIME_TABLE
@@ -222,6 +224,7 @@ def create_queueposition_issuedat_table():
             "Enabled": True
         }
     )
+
 
 def create_servingcounter_issuedat_table():
     """
