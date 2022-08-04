@@ -76,9 +76,9 @@ def lambda_handler(event, _):
             "body": json.dumps({"error": "Invalid event or request ID"})
         }
 
-    is_header_key_id = False
+    is_key_id_in_header = False
     return generate_token_base_method(
         EVENT_ID, request_id, headers, rc, ENABLE_QUEUE_POSITION_EXPIRY, QUEUE_POSITION_EXPIRY_PERIOD, 
-        secrets_client, SECRET_NAME_PREFIX, VALIDITY_PERIOD, issuer, events_client, EVENT_BUS_NAME, is_header_key_id,
+        secrets_client, SECRET_NAME_PREFIX, VALIDITY_PERIOD, issuer, events_client, EVENT_BUS_NAME, is_key_id_in_header,
         ddb_table_tokens, ddb_table_queue_position_entry_time, ddb_table_serving_counter_issued_at
     )

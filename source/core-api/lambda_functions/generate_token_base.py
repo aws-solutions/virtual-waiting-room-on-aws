@@ -16,7 +16,7 @@ from counters import MAX_QUEUE_POSITION_EXPIRED, SERVING_COUNTER, TOKEN_COUNTER
 
 def generate_token_base_method(
         event_id, request_id, headers, rc, enable_queue_position_expiry, queue_position_expiry_period, 
-        secrets_client, secret_name_prefix, validity_period, issuer, events_client, event_bus_name, is_header_key_id,
+        secrets_client, secret_name_prefix, validity_period, issuer, events_client, event_bus_name, is_key_id_in_header,
         ddb_table_tokens, ddb_table_queue_position_entry_time, ddb_table_serving_counter_issued_at
     ):
     """
@@ -54,7 +54,7 @@ def generate_token_base_method(
     keypair = create_jwk_keypair(secrets_client, secret_name_prefix)
     if is_requestid_in_token_table: 
         claims = create_claims_from_record(event_id, item)
-        (access_token, refresh_token, id_token) = create_tokens(claims, keypair, is_header_key_id)
+        (access_token, refresh_token, id_token) = create_tokens(claims, keypair, is_key_id_in_header)
         expires = int(item['Item']['expires'])
         cur_time = int(time())
 
@@ -134,24 +134,24 @@ def create_jwk_keypair(secrets_client, secret_name_prefix) -> jwk.JWK:
     return jwk.JWK.from_json(private_key)
 
 
-def create_tokens(claims, keypair, is_header_key_id: bool) -> Tuple[jwt.JWT, jwt.JWT, jwt.JWT]:
+def create_tokens(claims, keypair, is_key_id_in_header: bool) -> Tuple[jwt.JWT, jwt.JWT, jwt.JWT]:
     """
     Create access, refresh and id tokens 
     """
-    access_token = make_jwt_token(claims, keypair, "access", is_header_key_id)
-    refresh_token = make_jwt_token(claims, keypair, "refresh", is_header_key_id)
-    id_token = make_jwt_token(claims, keypair, "id", is_header_key_id)
+    access_token = make_jwt_token(claims, keypair, "access", is_key_id_in_header)
+    refresh_token = make_jwt_token(claims, keypair, "refresh", is_key_id_in_header)
+    id_token = make_jwt_token(claims, keypair, "id", is_key_id_in_header)
 
     return (access_token, refresh_token, id_token)
 
 
-def make_jwt_token(claims, keypair, token_use, is_header_key_id) -> jwt.JWT:
+def make_jwt_token(claims, keypair, token_use, is_key_id_in_header) -> jwt.JWT:
     """
     create signed jwt claims token
     """
     # Bandit B105: not a hardcoded password
     claims["token_use"] = token_use  # nosec
-    if is_header_key_id:
+    if is_key_id_in_header:
         jwt_token = jwt.JWT(header={"alg": "RS256", "typ": "JWT", "kid": keypair.key_id}, claims=claims)
     else:
         jwt_token = jwt.JWT(header={"alg": "RS256", "typ": "JWT"}, claims=claims)
