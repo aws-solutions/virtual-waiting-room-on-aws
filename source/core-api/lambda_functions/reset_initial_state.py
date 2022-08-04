@@ -53,6 +53,7 @@ def lambda_handler(event, _):
         rc.getset(COMPLETED_SESSION_COUNTER, 0)
         rc.getset(ABANDONED_SESSION_COUNTER, 0)
         rc.getset(MAX_QUEUE_POSITION_EXPIRED, 0)
+        print("Counters reset")
 
         try:                       
             response = ddb_client.delete_table(TableName=TOKEN_TABLE)

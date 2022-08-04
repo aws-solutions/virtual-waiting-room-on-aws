@@ -95,16 +95,17 @@ def lambda_handler(event, _):
         # increment the serving counter by taking the difference of counter item entries and subtract positions served in that range
         # [(Current counter - Previous counter) - (PositionsServed in that range)]
         increment_by = (serving_counter_item_position - previous_serving_counter_position) - int(serving_counter_item['queue_positions_served'])
-        cur_serving = rc.incrby(SERVING_COUNTER, int(increment_by))
-        item = {
-            'event_id': EVENT_ID,
-            'serving_counter': cur_serving,
-            'issue_time': int(time()),
-            'queue_positions_served': 0
-        }
-        ddb_table_serving_counter_issued_at.put_item(Item=item)
-        print(f'Item: {item}')
-        print(f'Serving counter incremented by {increment_by}. Current value: {cur_serving}')
+        if increment_by > 0:
+            cur_serving = rc.incrby(SERVING_COUNTER, int(increment_by))
+            item = {
+                'event_id': EVENT_ID,
+                'serving_counter': cur_serving,
+                'issue_time': int(time()),
+                'queue_positions_served': 0
+            }
+            ddb_table_serving_counter_issued_at.put_item(Item=item)
+            print(f'Item: {item}')
+            print(f'Serving counter incremented by {increment_by}. Current value: {cur_serving}')
 
         # set prevous serving counter position to item serving counter position for the loop
         previous_serving_counter_position = serving_counter_item_position
