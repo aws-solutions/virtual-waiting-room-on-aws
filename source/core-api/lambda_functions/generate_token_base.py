@@ -40,8 +40,8 @@ def generate_token_base_method(
             "body": json.dumps({"error": "Request ID not being served yet"})
         }
 
-    item = ddb_table_tokens.get_item(Key={"request_id": request_id})
-    is_requestid_in_token_table = 'Item' in item
+    token_item = ddb_table_tokens.get_item(Key={"request_id": request_id})
+    is_requestid_in_token_table = 'Item' in token_item
 
     # check if queue position is valid and not expired only if token not issued
     if enable_queue_position_expiry == 'true' and not is_requestid_in_token_table:
@@ -53,13 +53,13 @@ def generate_token_base_method(
 
     keypair = create_jwk_keypair(secrets_client, secret_name_prefix)
     if is_requestid_in_token_table: 
-        claims = create_claims_from_record(event_id, item)
+        claims = create_claims_from_record(event_id, token_item)
         (access_token, refresh_token, id_token) = create_tokens(claims, keypair, is_key_id_in_header)
-        expires = int(item['Item']['expires'])
+        expires = int(token_item['Item']['expires'])
         cur_time = int(time())
 
         # check for session status (non-zero) and reject the request  
-        if int(item['Item']['session_status']) != 0:
+        if int(token_item['Item']['session_status']) != 0:
             return {
                 "statusCode": HTTPStatus.GONE.value,
                 "headers": headers,
@@ -84,7 +84,7 @@ def generate_token_base_method(
     iat = int(time())  # issued-at and not-before can be the same time (epoch seconds)
     nbf = iat
     exp = iat + validity_period # expiration (exp) is a time after iat and nbf, like 1 hour (epoch seconds)
-    item = {
+    token_item = {
         "event_id": event_id,
         "request_id": request_id,
         "issued_at": iat,
@@ -96,7 +96,7 @@ def generate_token_base_method(
     }
 
     try:
-        ddb_table_tokens.put_item(Item=item)
+        ddb_table_tokens.put_item(Item=token_item)
     except Exception as e:
         print(e)
         raise e
@@ -162,18 +162,18 @@ def make_jwt_token(claims, keypair, token_use, is_key_id_in_header) -> jwt.JWT:
     return jwt_token
 
 
-def create_claims_from_record(event_id, item):
+def create_claims_from_record(event_id, token_item):
     """
     Parse DynamoDB table item and create claims
     """
     return create_claims(
         event_id,
-        item['Item']['request_id'], 
-        item['Item']['issuer'], 
-        item['Item']['queue_number'], 
-        int(item['Item']['issued_at']), 
-        int(item['Item']['not_before']), 
-        int(item['Item']['expires'])
+        token_item['Item']['request_id'], 
+        token_item['Item']['issuer'], 
+        int(token_item['Item']['queue_number']), 
+        int(token_item['Item']['issued_at']), 
+        int(token_item['Item']['not_before']), 
+        int(token_item['Item']['expires'])
     )
 
 

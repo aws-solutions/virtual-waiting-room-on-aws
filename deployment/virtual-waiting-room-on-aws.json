@@ -3939,7 +3939,6 @@
         "StringClipLambdaCustomResource": {
             "Type": "AWS::Lambda::Function",
             "Properties": {
-                "FunctionName": "StringLambdaFunction",
                 "Runtime": "python3.8",
                 "Role": {
                     "Fn::GetAtt": ["StringClipLambdaRole", "Arn"]

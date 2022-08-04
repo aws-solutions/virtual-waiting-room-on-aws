@@ -211,6 +211,8 @@ class CoreApiTestCase(unittest.TestCase):
                             self.assertEqual(response["statusCode"], 200)
                             mock_method.assert_called_once()
 
+        # add test for regenerate token
+
 
     @patch.object(generate_events.rc, 'get', return_value=1)
     @patch.object(generate_events.events_client, 'put_events',
