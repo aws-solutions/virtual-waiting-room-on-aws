@@ -23,3 +23,6 @@ ABANDONED_SESSION_COUNTER = "abandoned_counter"
 
 # maximum expired queue position
 MAX_QUEUE_POSITION_EXPIRED = "max_queue_position_expired"
+
+# indicate if reset in progress
+RESET_IN_PROGRESS = "reset_in_progress"

@@ -12,7 +12,7 @@ import redis
 from botocore import config
 from time import time
 from boto3.dynamodb.conditions import Key
-from counters import MAX_QUEUE_POSITION_EXPIRED, QUEUE_COUNTER, SERVING_COUNTER
+from counters import MAX_QUEUE_POSITION_EXPIRED, QUEUE_COUNTER, RESET_IN_PROGRESS, SERVING_COUNTER
 
 SECRET_NAME_PREFIX = os.environ["STACK_NAME"]
 SOLUTION_ID = os.environ['SOLUTION_ID']
@@ -40,10 +40,11 @@ def lambda_handler(event, _):
     This function is the entry handler for Lambda.
     """
     print(event)
+    if int(rc.get(RESET_IN_PROGRESS)) != 0:
+        print('Reset in progress')
+        return
+
     current_time = int(time())
-
-    # how do we account for reset here so we don't do anything crazy?
-
     max_queue_position_expired = int(rc.get(MAX_QUEUE_POSITION_EXPIRED))
     current_serving_counter_position = int(rc.get(SERVING_COUNTER))
     queue_counter = int(rc.get(QUEUE_COUNTER))

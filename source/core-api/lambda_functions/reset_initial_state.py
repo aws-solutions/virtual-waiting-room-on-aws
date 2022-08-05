@@ -10,7 +10,7 @@ import json
 import os
 import boto3
 from botocore import config
-from counters import QUEUE_COUNTER, SERVING_COUNTER, TOKEN_COUNTER, ABANDONED_SESSION_COUNTER, COMPLETED_SESSION_COUNTER, MAX_QUEUE_POSITION_EXPIRED
+from counters import QUEUE_COUNTER, SERVING_COUNTER, TOKEN_COUNTER, ABANDONED_SESSION_COUNTER, COMPLETED_SESSION_COUNTER, MAX_QUEUE_POSITION_EXPIRED, RESET_IN_PROGRESS
 from vwr.common.sanitize import deep_clean
 
 TOKEN_TABLE = os.environ["TOKEN_TABLE"]
@@ -46,6 +46,9 @@ def lambda_handler(event, _):
     }
 
     if EVENT_ID == client_event_id:
+        rc.getset(RESET_IN_PROGRESS, 1)
+        print('Reset in progress')
+
         # reset counters
         rc.getset(SERVING_COUNTER, 0)
         rc.getset(QUEUE_COUNTER, 0)
@@ -112,7 +115,11 @@ def lambda_handler(event, _):
                     'PointInTimeRecoveryEnabled': True
                 }
             )
-
+            print("DynamoDB tables recreated")
+            
+            rc.set(RESET_IN_PROGRESS, 0)
+            print('reset completed')
+            
             response = {
                     "statusCode": 200,
                     "headers": headers,
@@ -130,6 +137,7 @@ def lambda_handler(event, _):
             "body": json.dumps({"error": "Invalid event ID"})
         }
     print(response)
+
     return response
 
 

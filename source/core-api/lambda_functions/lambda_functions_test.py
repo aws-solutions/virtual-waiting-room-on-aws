@@ -486,15 +486,12 @@ class CoreApiTestCase(unittest.TestCase):
         self.assertEqual(body["error"], self.invalid_event_id_msg)
 
     @patch.object(reset_initial_state.rc, 'getset', return_value=0)
-    @patch.object(reset_initial_state.ddb_client, 'describe_table',
-                  return_value={})
-    @patch.object(reset_initial_state.ddb_client, 'delete_table',
-                  return_value={})
-    @patch.object(reset_initial_state.ddb_client, 'get_waiter',
-                  return_value=MagicMock().wait)
-    @patch.object(reset_initial_state.ddb_client, 'create_table',
-                  return_value={})
-    def test_reset_initial_state(self, mock_get, mock_describe, mock_delete, mock_waiter, mock_create):
+    @patch.object(reset_initial_state.ddb_client, 'describe_table', return_value={})
+    @patch.object(reset_initial_state.ddb_client, 'delete_table', return_value={})
+    @patch.object(reset_initial_state.ddb_client, 'get_waiter', return_value=MagicMock().wait)
+    @patch.object(reset_initial_state.ddb_client, 'create_table', return_value={})
+    @patch.object(reset_initial_state.rc, 'set', return_value=0)
+    def test_reset_initial_state(self, mock_rc_getset, mock_describe, mock_delete, mock_waiter, mock_create, mock_rc_set):
         """
         This function tests the reset_initial_state lambda function
         """
