@@ -8,7 +8,6 @@ It generates a token for a valid request that has been allowed to complete its t
 
 import json
 from http import HTTPStatus
-import queue
 from typing import Tuple
 from jwcrypto import jwk, jwt
 from time import time
