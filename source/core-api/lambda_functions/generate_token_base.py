@@ -8,6 +8,7 @@ It generates a token for a valid request that has been allowed to complete its t
 
 import json
 from http import HTTPStatus
+import queue
 from typing import Tuple
 from jwcrypto import jwk, jwt
 from time import time
@@ -46,7 +47,7 @@ def generate_token_base_method(
     # check if queue position is valid and not expired only if token not issued
     if enable_queue_position_expiry == 'true' and not is_requestid_in_token_table:
         queue_position_entry_time = int(queue_position_item['Item']['entry_time'])
-        (is_valid, serving_counter_item) = validate_queue_position_expiry(event_id, queue_number, queue_position_entry_time, 
+        (is_valid, serving_counter) = validate_queue_position_expiry(event_id, queue_number, queue_position_entry_time, 
                                         queue_position_expiry_period, rc, ddb_table_serving_counter_issued_at)
         if not is_valid:
             return { "statusCode": HTTPStatus.GONE.value, "headers": headers, "body": json.dumps({"error": "Queue position has expired"}) }
@@ -107,7 +108,7 @@ def generate_token_base_method(
     rc.incr(TOKEN_COUNTER, 1)
 
     if enable_queue_position_expiry == 'true':
-        update_queue_positions_served(event_id, serving_counter_item, ddb_table_serving_counter_issued_at) 
+        update_queue_positions_served(event_id, serving_counter, ddb_table_serving_counter_issued_at) 
 
     return {
         "statusCode": HTTPStatus.OK.value, 
@@ -214,7 +215,8 @@ def write_to_eventbus(events_client, event_id, event_bus_name, request_id) -> No
     )
 
 
-def validate_queue_position_expiry(event_id, queue_number, queue_position_entry_time, queue_position_expiry_period, rc, ddb_table_serving_counter_issued_at) -> Tuple[bool, object]:
+def validate_queue_position_expiry(event_id, queue_number, queue_position_entry_time, 
+    queue_position_expiry_period, rc, ddb_table_serving_counter_issued_at) -> Tuple[bool, int]:
     """
     Validates the queue position to see if it has expired
     Returns: (is_valid, serving_counter)
@@ -236,18 +238,19 @@ def validate_queue_position_expiry(event_id, queue_number, queue_position_entry_
     if current_time - queue_time > int(queue_position_expiry_period):
         return(False, None)
 
-    return (True, serving_counter_item)
+    return (True, int(serving_counter_item['serving_counter']))
 
 
 def update_queue_positions_served(event_id, serving_counter_item, ddb_table_serving_counter_issued_at) -> None:
     """
     Update the corresponding serving counter with queue positions served
     """
+    serving_counter = int(serving_counter_item['serving_counter'])
     ddb_table_serving_counter_issued_at.update_item(
         Key={
             'event_id': event_id,
-            'serving_counter': int(serving_counter_item['serving_counter'])
+            'serving_counter': serving_counter
         },
-        UpdateExpression='SET queue_positions_served = :val',
-        ExpressionAttributeValues={':val': serving_counter_item['queue_positions_served'] + 1}
+        UpdateExpression='SET queue_positions_served = queue_positions_served + :val',
+        ExpressionAttributeValues={':val': 1},
     )
