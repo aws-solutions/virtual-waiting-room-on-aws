@@ -41,7 +41,7 @@ def lambda_handler(event, _):
     """
     print(event)
     if int(rc.get(RESET_IN_PROGRESS)) != 0:
-        print('Reset in progress')
+        print('Reset in progress. Skipping execution')
         return
 
     current_time = int(time())

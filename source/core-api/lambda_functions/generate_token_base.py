@@ -51,20 +51,20 @@ def generate_token_base_method(
         if not is_valid:
             return { "statusCode": HTTPStatus.GONE.value, "headers": headers, "body": json.dumps({"error": "Queue position has expired"}) }
 
+    # check for session status (non-zero) and reject the request
+    if is_requestid_in_token_table and int(token_item['Item']['session_status']) != 0:
+        return {
+            "statusCode": HTTPStatus.GONE.value,
+            "headers": headers,
+            "body": json.dumps({"error": "Token corresponding to request id has expired"})
+        }
+
     keypair = create_jwk_keypair(secrets_client, secret_name_prefix)
     if is_requestid_in_token_table: 
         claims = create_claims_from_record(event_id, token_item)
         (access_token, refresh_token, id_token) = create_tokens(claims, keypair, is_key_id_in_header)
         expires = int(token_item['Item']['expires'])
         cur_time = int(time())
-
-        # check for session status (non-zero) and reject the request  
-        if int(token_item['Item']['session_status']) != 0:
-            return {
-                "statusCode": HTTPStatus.GONE.value,
-                "headers": headers,
-                "body": json.dumps({"error": "Token corresponding to request id has expired"})
-            }
 
         return {
             "statusCode": HTTPStatus.OK.value, 
