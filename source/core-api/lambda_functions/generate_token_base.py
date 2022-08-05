@@ -241,11 +241,10 @@ def validate_queue_position_expiry(event_id, queue_number, queue_position_entry_
     return (True, int(serving_counter_item['serving_counter']))
 
 
-def update_queue_positions_served(event_id, serving_counter_item, ddb_table_serving_counter_issued_at) -> None:
+def update_queue_positions_served(event_id, serving_counter, ddb_table_serving_counter_issued_at) -> None:
     """
     Update the corresponding serving counter with queue positions served
     """
-    serving_counter = int(serving_counter_item['serving_counter'])
     ddb_table_serving_counter_issued_at.update_item(
         Key={
             'event_id': event_id,
