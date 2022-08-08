@@ -101,6 +101,9 @@ def lambda_handler(event, _):
         previous_serving_counter_position = serving_counter_item_position
 
 def move_serving_counter(serving_counter_item, serving_counter_item_position, previous_serving_counter_position):
+    """
+    Function to move the serving counter based on queue postions served (indirectly expired positions)
+    """
     # increment the serving counter by taking the difference of counter item entries and subtract positions served in that range
     # [(Current counter - Previous counter) - (PositionsServed in that range)]
     increment_by = (serving_counter_item_position - previous_serving_counter_position) - int(serving_counter_item['queue_positions_served'])
