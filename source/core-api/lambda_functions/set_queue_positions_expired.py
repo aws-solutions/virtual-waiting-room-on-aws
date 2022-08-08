@@ -22,6 +22,7 @@ REDIS_PORT = os.environ["REDIS_PORT"]
 QUEUE_POSITION_ENTRYTIME_TABLE = os.environ["QUEUE_POSITION_ENTRYTIME_TABLE"]
 QUEUE_POSITION_EXPIRY_PERIOD = os.environ["QUEUE_POSITION_EXPIRY_PERIOD"]
 SERVING_COUNTER_ISSUEDAT_TABLE = os.environ["SERVING_COUNTER_ISSUEDAT_TABLE"]
+MV_SVC_QUEUE_POSITION_EXPIRY = os.environ["MV_SVC_QUEUE_POSITION_EXPIRY"]
 
 user_agent_extra = {"user_agent_extra": SOLUTION_ID}
 user_config = config.Config(**user_agent_extra)
@@ -93,21 +94,25 @@ def lambda_handler(event, _):
         else:
             print(f'Failed to set max queue position served: Current value: {max_queue_position_expired}')
 
-        # increment the serving counter by taking the difference of counter item entries and subtract positions served in that range
-        # [(Current counter - Previous counter) - (PositionsServed in that range)]
-        increment_by = (serving_counter_item_position - previous_serving_counter_position) - int(serving_counter_item['queue_positions_served'])
-        if increment_by > 0:
-            cur_serving = rc.incrby(SERVING_COUNTER, int(increment_by))
-            item = {
-                'event_id': EVENT_ID,
-                'serving_counter': cur_serving,
-                'issue_time': int(time()),
-                'queue_positions_served': 0
-            }
-            ddb_table_serving_counter_issued_at.put_item(Item=item)
-            print(f'Item: {item}')
-            print(f'Serving counter incremented by {increment_by}. Current value: {cur_serving}')
+        if MV_SVC_QUEUE_POSITION_EXPIRY == 'true':
+            move_serving_counter(serving_counter_item, serving_counter_item_position, previous_serving_counter_position)
 
         # set prevous serving counter position to item serving counter position for the loop
         previous_serving_counter_position = serving_counter_item_position
+
+def move_serving_counter(serving_counter_item, serving_counter_item_position, previous_serving_counter_position):
+    # increment the serving counter by taking the difference of counter item entries and subtract positions served in that range
+    # [(Current counter - Previous counter) - (PositionsServed in that range)]
+    increment_by = (serving_counter_item_position - previous_serving_counter_position) - int(serving_counter_item['queue_positions_served'])
+    if increment_by > 0:
+        cur_serving = rc.incrby(SERVING_COUNTER, int(increment_by))
+        item = {
+                    'event_id': EVENT_ID,
+                    'serving_counter': cur_serving,
+                    'issue_time': int(time()),
+                    'queue_positions_served': 0
+                }
+        ddb_table_serving_counter_issued_at.put_item(Item=item)
+        print(f'Item: {item}')
+        print(f'Serving counter incremented by {increment_by}. Current value: {cur_serving}')
         

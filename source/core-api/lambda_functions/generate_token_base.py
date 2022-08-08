@@ -49,7 +49,11 @@ def generate_token_base_method(
         (is_valid, serving_counter) = validate_queue_position_expiry(event_id, queue_number, queue_position_entry_time, 
                                         queue_position_expiry_period, rc, ddb_table_serving_counter_issued_at)
         if not is_valid:
-            return { "statusCode": HTTPStatus.GONE.value, "headers": headers, "body": json.dumps({"error": "Queue position has expired"}) }
+            return { 
+                "statusCode": HTTPStatus.GONE.value, 
+                "headers": headers, 
+                "body": json.dumps({"error": "Queue position has expired"}) 
+            }
 
     # check for session status (non-zero) and reject the request
     if is_requestid_in_token_table and int(token_item['Item']['session_status']) != 0:
@@ -60,6 +64,8 @@ def generate_token_base_method(
         }
 
     keypair = create_jwk_keypair(secrets_client, secret_name_prefix)
+
+    # retrive (create) existing token from information in table 
     if is_requestid_in_token_table: 
         claims = create_claims_from_record(event_id, token_item)
         (access_token, refresh_token, id_token) = create_tokens(claims, keypair, is_key_id_in_header)
@@ -75,12 +81,12 @@ def generate_token_base_method(
                     "refresh_token": refresh_token.serialize(), 
                     "id_token": id_token.serialize(), 
                     "token_type": "Bearer", 
-                    "expires_in": expires - cur_time
+                    "expires_in": max(expires - cur_time, 0)
                 }
             )
         }
 
-    # request_id is not in ddb_table, create and save record to ddb_table
+    # if request_id is not in ddb_table, create and save record to ddb_table
     iat = int(time())  # issued-at and not-before can be the same time (epoch seconds)
     nbf = iat
     exp = iat + validity_period # expiration (exp) is a time after iat and nbf, like 1 hour (epoch seconds)

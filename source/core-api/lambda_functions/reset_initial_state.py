@@ -118,13 +118,13 @@ def lambda_handler(event, _):
             print("DynamoDB tables recreated")
             
             rc.set(RESET_IN_PROGRESS, 0)
-            print('reset completed')
+            print('Reset completed')
             
             response = {
                     "statusCode": 200,
                     "headers": headers,
                     "body": json.dumps({
-                            "message": "Counters reset. DynamoDB tables recreated."
+                            "message": "Reset completed"
                     })
             }
         except Exception as other_exception:
