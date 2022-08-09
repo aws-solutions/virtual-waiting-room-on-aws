@@ -1890,8 +1890,8 @@
                         "SERVING_COUNTER_ISSUEDAT_TABLE": {
                             "Ref": "ServingCounterIssuedAtTable"
                         },
-                        "MV_SVC_QUEUE_POSITION_EXPIRY": {
-                            "Ref": "MoveServingCounterOnQueuePositionExpiry"
+                        "INCR_SVC_ON_QUEUE_POS_EXPIRY": {
+                            "Ref": "IncrSvcOnQueuePositionExpiry"
                         },
                         "EVENT_ID": {
                             "Ref": "EventId"
@@ -5764,8 +5764,8 @@
             ],
             "Default": "true"
         },
-        "MoveServingCounterOnQueuePositionExpiry": {
-            "Description": "If set to true, serving counter is automatically advanced on queue expiry",
+        "IncrSvcOnQueuePositionExpiry": {
+            "Description": "If set to true, serving counter is automatically advanced based on expired queue positions",
             "Type": "String",
             "AllowedValues": [
                 "true",

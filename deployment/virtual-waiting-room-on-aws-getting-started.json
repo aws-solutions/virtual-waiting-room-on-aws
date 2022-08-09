@@ -17,8 +17,8 @@
                     "EnableQueuePositionExpiry": {
                         "Ref": "EnableQueuePositionExpiry"
                     },
-                    "MoveServingCounterOnQueuePositionExpiry": {
-                        "Ref": "MoveServingCounterOnQueuePositionExpiry"
+                    "IncrSvcOnQueuePositionExpiry": {
+                        "Ref": "IncrSvcOnQueuePositionExpiry"
                     }                
                 }
             }
@@ -117,7 +117,7 @@
             ],
             "Default": "true"
         },
-        "MoveServingCounterOnQueuePositionExpiry": {
+        "IncrSvcOnQueuePositionExpiry": {
             "Description": "If set to true, serving counter is automatically advanced on queue expiry",
             "Type": "String",
             "AllowedValues": [
