@@ -110,6 +110,7 @@ def incr_serving_counter(serving_counter_item, serving_counter_item_position, pr
     
     # should never happen, addl guard
     if increment_by <= 0:
+        print(f'Increment value calculated as {increment_by}, incrementing serving counter skipped')
         return
 
     cur_serving = rc.incrby(SERVING_COUNTER, int(increment_by))
