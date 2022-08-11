@@ -5750,7 +5750,7 @@
             "Default": "1785"
         },
         "QueuePositionExpiryPeriod": {
-            "Description": "Expiry period of queue position once serving counter is available (seconds)",
+            "Description": "Time interval after which of a queue position is ineligible to obtain token (seconds)",
             "Type": "Number",
             "ConstraintDescription": "Please enter a value for this field.",
             "Default": "900"
