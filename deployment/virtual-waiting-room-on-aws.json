@@ -1896,6 +1896,9 @@
                         "EVENT_ID": {
                             "Ref": "EventId"
                         },
+                        "EVENT_BUS_NAME": {
+                            "Ref": "WaitingRoomEventBus"
+                        },
                         "SOLUTION_ID": {
                             "Fn::FindInMap": [
                                 "SolutionId",
@@ -4568,7 +4571,7 @@
                             "TargetOriginId": "waiting-room-public-api",
                             "ViewerProtocolPolicy": "https-only",
                             "CachePolicyId": {
-                                "Ref": "CachePolicy"
+                                "Ref": "QueuePositionExpiryCachePolicy"
                             },
                             "OriginRequestPolicyId": {
                                 "Ref": "OriginRequestPolicy"
@@ -4844,7 +4847,7 @@
                 "CachePolicyConfig": {
                     "DefaultTTL": 5,
                     "MaxTTL": 5,
-                    "MinTTL": 0,
+                    "MinTTL": 1,
                     "Name": {
                         "Fn::Sub": "${AWS::StackName}-CachePolicy"
                     },
@@ -4860,6 +4863,33 @@
                         "QueryStringsConfig": {
                             "QueryStringBehavior": "whitelist",
                             "QueryStrings": ["event_id"]
+                        }
+                    }
+                }
+            }
+        },
+        "QueuePositionExpiryCachePolicy": {
+            "Type": "AWS::CloudFront::CachePolicy",
+            "Properties": {
+                "CachePolicyConfig": {
+                    "DefaultTTL": 5,
+                    "MaxTTL": 5,
+                    "MinTTL": 1,
+                    "Name": {
+                        "Fn::Sub": "${AWS::StackName}-QposExpCachePolicy"
+                    },
+                    "ParametersInCacheKeyAndForwardedToOrigin": {
+                        "CookiesConfig": {
+                            "CookieBehavior": "none"
+                        },
+                        "EnableAcceptEncodingBrotli": true,
+                        "EnableAcceptEncodingGzip": true,
+                        "HeadersConfig": {
+                            "HeaderBehavior": "none"
+                        },
+                        "QueryStringsConfig": {
+                            "QueryStringBehavior": "whitelist",
+                            "QueryStrings": ["event_id", "request_id"]
                         }
                     }
                 }
