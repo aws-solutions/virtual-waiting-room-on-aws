@@ -45,10 +45,18 @@ def lambda_handler(event, _):
     }
 
     if client_event_id != EVENT_ID:
-        return {"statusCode": 400, "headers": headers, "body": json.dumps({"error": "Invalid event ID"})}
+        return {
+            "statusCode": 400,
+            "headers": headers,
+            "body": json.dumps({"error": "Invalid event ID"})
+        }
 
     queue_count = int(rc.get(QUEUE_COUNTER))
     token_count = int(rc.get(TOKEN_COUNTER))
     waiting_num = queue_count - token_count
 
-    return {"statusCode": 200, "headers": headers, "body": json.dumps({"waiting_num": waiting_num})}
+    return {
+        "statusCode": 200,
+        "headers": headers,
+        "body": json.dumps({"waiting_num": waiting_num})
+    }

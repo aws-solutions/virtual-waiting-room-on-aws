@@ -44,9 +44,17 @@ def lambda_handler(event, _):
     }
 
     if client_event_id != EVENT_ID:
-        return {"statusCode": 400, "headers": headers, "body": json.dumps({"error": "Invalid event ID"})}
+        return {
+            "statusCode": 400,
+            "headers": headers,
+            "body": json.dumps({"error": "Invalid event ID"})
+        }
 
     cur_serving = rc.get(SERVING_COUNTER)
     print(cur_serving)
     
-    return {"statusCode": 200, "headers": headers, "body": json.dumps({"serving_counter": cur_serving})}
+    return {
+        "statusCode": 200,
+        "headers": headers,
+        "body": json.dumps({"serving_counter": cur_serving})
+    }

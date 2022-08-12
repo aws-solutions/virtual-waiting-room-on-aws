@@ -92,7 +92,11 @@ def lambda_handler(event, _):
             if e.response['Error']['Code'] != 'ConditionalCheckFailedException':
                 raise e
             print(e)
-            response = {"statusCode": 404, "headers": headers, "body": json.dumps({"error": "Request ID doesn't exist or status already set."})}
+            response = {
+                "statusCode": 404,
+                "headers": headers, 
+                "body": json.dumps({"error": "Request ID doesn't exist or status already set."})
+            }
 
         except Exception as e:
             print(e)
@@ -103,7 +107,5 @@ def lambda_handler(event, _):
             "headers": headers,
             "body": json.dumps({"error": "Invalid event or request ID"})
         }
-        
     print(response)
-    
     return response
