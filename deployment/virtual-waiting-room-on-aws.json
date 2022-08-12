@@ -5183,6 +5183,98 @@
                 "TreatMissingData": "notBreaching"
             }
         },
+        "GetQueuePositionExpiryTimeErrorsAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Errors > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Errors",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "GetQueuePositionExpiryTime"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "GetQueuePositionExpiryTimeThrottlesAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Throttles > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Throttles",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "GetQueuePositionExpiryTime"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "SetQueuePositionExpiredErrorsAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Errors > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Errors",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "SetQueuePositionExpired"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "SetQueuePositionExpiredThrottlesAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Throttles > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Throttles",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "SetQueuePositionExpired"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
         "AuthGenerateTokenErrorsAlarm": {
             "Type": "AWS::CloudWatch::Alarm",
             "Properties": {
