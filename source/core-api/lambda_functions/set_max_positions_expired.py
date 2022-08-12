@@ -116,7 +116,7 @@ def incr_serving_counter(serving_counter_item, serving_counter_item_position, pr
         print(f'Increment value calculated as {increment_by}, incrementing serving counter skipped')
         return
 
-    cur_serving = rc.incrby(SERVING_COUNTER, int(increment_by))
+    cur_serving = int(rc.incrby(SERVING_COUNTER, int(increment_by)))
     item = {
         'event_id': EVENT_ID,
         'serving_counter': cur_serving,
@@ -127,7 +127,6 @@ def incr_serving_counter(serving_counter_item, serving_counter_item_position, pr
     print(f'Item: {item}')
     print(f'Serving counter incremented by {increment_by}. Current value: {cur_serving}')
 
-    # send increment serving counter 
     events_client.put_events(
         Entries=[
             {
