@@ -104,9 +104,9 @@ def lambda_handler(event, _):
     serving_counter_item = response['Items'][0]
     serving_counter_issue_time = int(serving_counter_item['issue_time'])
     
-    queue_position_entry_time = int(queue_position_item['entry_time'])    
+    queue_position_entry_time = int(queue_position_item['Item']['entry_time'])    
     queue_time = max(queue_position_entry_time, serving_counter_issue_time)
-    
+
     if current_time - queue_time > int(QUEUE_POSITION_EXPIRY_PERIOD):
         return {
             "statusCode": HTTPStatus.GONE.value,
