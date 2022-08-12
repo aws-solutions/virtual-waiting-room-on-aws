@@ -3415,6 +3415,9 @@
                     },
                     {
                         "Ref": "GenerateTokenRole"
+                    },
+                    {
+                        "Ref" : "QueuePositionRole"
                     }
                 ]
             }
