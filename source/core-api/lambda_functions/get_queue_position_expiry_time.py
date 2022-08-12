@@ -82,36 +82,31 @@ def lambda_handler(event, _):
 
     print(f'Queue number: {queue_number}')
 
-    if int(queue_number) > int(rc.get(SERVING_COUNTER)):
+    if queue_number > int(rc.get(SERVING_COUNTER)):
         return {
             "statusCode": HTTPStatus.ACCEPTED.value,
             "headers": headers,
             "body": json.dumps({"error": "Request ID not being served yet"})
         }
   
-    if int(queue_number) <= int(rc.get(MAX_QUEUE_POSITION_EXPIRED)):
+    if queue_number <= int(rc.get(MAX_QUEUE_POSITION_EXPIRED)):
         return {
             "statusCode": HTTPStatus.GONE.value,
             "headers": headers,
             "body": json.dumps({"error": "Queue position has expired"})
         }
 
-    response = ddb_table_queue_position_entry_time.query(
-        KeyConditionExpression=Key('queue_position').eq(int(queue_number)),
-        IndexName='QueuePositionIndex'
-    )
-    queue_position_item = response['Items'][0]
-    queue_position_entry_time = int(queue_position_item['entry_time'])
-
     # serving counter gte queue number, should always have atleast 1 result 
     response = ddb_table_serving_counter_issued_at.query(
-        KeyConditionExpression=Key('event_id').eq(EVENT_ID) & Key('serving_counter').gte(int(queue_number)),
+        KeyConditionExpression=Key('event_id').eq(EVENT_ID) & Key('serving_counter').gte(queue_number),
         Limit=1
     )
     serving_counter_item = response['Items'][0]
     serving_counter_issue_time = int(serving_counter_item['issue_time'])
-
+    
+    queue_position_entry_time = int(queue_position_item['entry_time'])    
     queue_time = max(queue_position_entry_time, serving_counter_issue_time)
+    
     if current_time - queue_time > int(QUEUE_POSITION_EXPIRY_PERIOD):
         return {
             "statusCode": HTTPStatus.GONE.value,
