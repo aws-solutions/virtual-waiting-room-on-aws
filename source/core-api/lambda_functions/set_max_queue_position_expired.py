@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-This module is the set_max_position_expired API handler.
+This module is the set_max_queue_position_expired API handler.
 It sets the MAX_QUEUE_POSITION_EXPIRED value and optionally increments the serving counter.
 """
 
