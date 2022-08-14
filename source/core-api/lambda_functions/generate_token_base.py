@@ -46,8 +46,9 @@ def generate_token_base_method(
     # check if queue position is valid and not expired only if token not issued
     if enable_queue_position_expiry == 'true' and not is_requestid_in_token_table:
         queue_position_entry_time = int(queue_position_item['Item']['entry_time'])
+        max_queue_position_expired = int(rc.get(MAX_QUEUE_POSITION_EXPIRED))
         (is_valid, serving_counter) = validate_queue_position_expiry(event_id, queue_number, queue_position_entry_time, 
-                                        queue_position_expiry_period, rc, ddb_table_serving_counter_issued_at)
+                                        queue_position_expiry_period, max_queue_position_expired, ddb_table_serving_counter_issued_at)
         if not is_valid:
             return { 
                 "statusCode": HTTPStatus.GONE.value, 
@@ -63,9 +64,10 @@ def generate_token_base_method(
             "body": json.dumps({"error": "Token corresponding to request id has expired"})
         }
 
+    # create JWK 
     keypair = create_jwk_keypair(secrets_client, secret_name_prefix)
 
-    # retrive (create) existing token from information in table 
+    # retrive (create) existing token information form in tokens_table 
     if is_requestid_in_token_table: 
         claims = create_claims_from_record(event_id, token_item)
         (access_token, refresh_token, id_token) = create_tokens(claims, keypair, is_key_id_in_header)
@@ -86,10 +88,10 @@ def generate_token_base_method(
             )
         }
 
-    # if request_id is not in ddb_table, create and save record to ddb_table
+    # if request_id is not in tokens_table, create and save record to tokens_table
     iat = int(time())  # issued-at and not-before can be the same time (epoch seconds)
     nbf = iat
-    exp = iat + validity_period # expiration (exp) is a time after iat and nbf, like 1 hour (epoch seconds)
+    exp = iat + validity_period # expiration (exp) is a time after iat and nbf
     token_item = {
         "event_id": event_id,
         "request_id": request_id,
@@ -221,18 +223,18 @@ def write_to_eventbus(events_client, event_id, event_bus_name, request_id) -> No
 
 
 def validate_queue_position_expiry(event_id, queue_number, queue_position_entry_time, 
-    queue_position_expiry_period, rc, ddb_table_serving_counter_issued_at) -> Tuple[bool, int]:
+    queue_position_expiry_period, max_queue_position_expired, ddb_table_serving_counter_issued_at) -> Tuple[bool, int]:
     """
     Validates the queue position to see if it has expired
     Returns: (is_valid, serving_counter)
     """
     current_time = int(time())
-    if int(queue_number) <= int(rc.get(MAX_QUEUE_POSITION_EXPIRED)):
+    if queue_number <= max_queue_position_expired:
         return (False, None)
 
     # serving counter gte queue number, should always have atleast 1 result 
     response = ddb_table_serving_counter_issued_at.query(
-        KeyConditionExpression=Key('event_id').eq(event_id) & Key('serving_counter').gte(int(queue_number)),
+        KeyConditionExpression=Key('event_id').eq(event_id) & Key('serving_counter').gte(queue_number),
         Limit=1
     )
     serving_counter_item = response['Items'][0]
@@ -256,5 +258,5 @@ def update_queue_positions_served(event_id, serving_counter, ddb_table_serving_c
             'serving_counter': serving_counter
         },
         UpdateExpression='SET queue_positions_served = queue_positions_served + :val',
-        ExpressionAttributeValues={':val': 1},
+        ExpressionAttributeValues={':val': 1}
     )

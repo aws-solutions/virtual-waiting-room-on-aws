@@ -1911,7 +1911,7 @@
                         }
                     }
                 },
-                "Handler": "set_max_positions_expired.lambda_handler",
+                "Handler": "set_max_position_expired.lambda_handler",
                 "Layers": [
                     {
                         "Ref": "RedisLayer"
