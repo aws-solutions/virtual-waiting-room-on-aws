@@ -47,12 +47,10 @@ def lambda_handler(event, _):
     """
     print(event)
     num_msg = len(event['Records'])
-
-    # this is done atomically
     cur_count = rc.incr(QUEUE_COUNTER, num_msg)
     print(cur_count)
-
     q_start_num = cur_count - (num_msg-1)
+    
     # iterate over msgs
     return_with_exception = False
     for msg in event['Records']:
@@ -79,13 +77,13 @@ def lambda_handler(event, _):
                 QueueUrl=QUEUE_URL,
                 ReceiptHandle=msg["receiptHandle"]
             )
-
             print(response)
-            q_start_num += 1 ## should this be incremented inside the if condition ???
+            q_start_num += 1 
         except Exception as exception:
             print(exception)
             return_with_exception = True
     if return_with_exception:
         raise Exception("one or more messages failed processing")
+
     # return the current count based on this batch process
     return cur_count

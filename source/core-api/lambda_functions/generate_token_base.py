@@ -64,7 +64,6 @@ def generate_token_base_method(
             "body": json.dumps({"error": "Token corresponding to request id has expired"})
         }
 
-    # create JWK 
     keypair = create_jwk_keypair(secrets_client, secret_name_prefix)
 
     # retrive (create) existing token information form in tokens_table 
@@ -225,8 +224,8 @@ def write_to_eventbus(events_client, event_id, event_bus_name, request_id) -> No
 def validate_queue_position_expiry(event_id, queue_number, queue_position_entry_time, 
     queue_position_expiry_period, max_queue_position_expired, ddb_table_serving_counter_issued_at) -> Tuple[bool, int]:
     """
-    Validates the queue position to see if it has expired
-    Returns: (is_valid, serving_counter)
+    Validates the queue position to see if it has expired. Serving counter corresponding to queue position.
+    Returns: (is_valid, serving_counter).
     """
     current_time = int(time())
     if queue_number <= max_queue_position_expired:
@@ -240,7 +239,7 @@ def validate_queue_position_expiry(event_id, queue_number, queue_position_entry_
     serving_counter_item = response['Items'][0]
     serving_counter_issue_time = int(serving_counter_item['issue_time'])
 
-    # time in queue greater than the expiry period 
+    # queue time should not be greater than the expiry period 
     queue_time = max(queue_position_entry_time, serving_counter_issue_time)
     if current_time - queue_time > int(queue_position_expiry_period):
         return(False, None)
