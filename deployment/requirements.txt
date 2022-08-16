@@ -5,6 +5,7 @@ botocore
 build
 cfn-lint
 chalice
+coverage
 crhelper
 cryptography
 docker
