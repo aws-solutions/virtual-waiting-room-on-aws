@@ -12,3 +12,4 @@ jwcrypto
 python-dateutil
 redis
 requests
+testresources
