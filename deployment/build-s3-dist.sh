@@ -148,6 +148,7 @@ echo "--------------------------------------------------------------------------
 echo "Core API"
 echo "------------------------------------------------------------------------------"
 # dependencies for custom lambda
+echo Custom Resources
 cd $source_dir/core-api/custom_resources
 rm -rf error.txt package
 mkdir package
@@ -165,10 +166,17 @@ zip -g virtual-waiting-room-on-aws-custom-resources-$TIMESTAMP.zip *.py
 mv virtual-waiting-room-on-aws-custom-resources-$TIMESTAMP.zip $build_dist_dir
 
 # zip up all the lambdas and copy them over to the build_dist_dir
+echo Lambda Functions
 cd $source_dir/core-api/lambda_functions
 rm -rf error.txt package
 mkdir package
-pip install $pkg_dir/virtual_waiting_room_on_aws_common-1.0.0-py3-none-any.whl --target ./package
+pip install $pkg_dir/virtual_waiting_room_on_aws_common-1.0.0-py3-none-any.whl --target ./package 2> error.txt
+RETVAL=$?
+if [ "$RETVAL" -ne "0" ]; then
+    echo "ERROR: System package installation failed."
+    cat error.txt
+    exit $RETVAL
+fi
 cd package
 zip -r9 ../deployment.zip .
 cd ../
