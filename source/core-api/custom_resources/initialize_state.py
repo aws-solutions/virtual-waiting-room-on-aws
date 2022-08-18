@@ -15,7 +15,6 @@ from aws_requests_auth.boto_utils import BotoAWSRequestsAuth
 import boto3
 from botocore import config
 
-
 # connection info and other globals
 helper = CfnResource()
 EVENT_ID = os.environ.get("EVENT_ID")
