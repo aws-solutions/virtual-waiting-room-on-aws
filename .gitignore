@@ -17,3 +17,4 @@ virtual_waiting_room_on_aws_common*
 deployment/pkg/
 node_modules/
 .env/
+.venv/
