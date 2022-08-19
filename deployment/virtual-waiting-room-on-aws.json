@@ -3958,6 +3958,20 @@
                 "Code": {
                     "ZipFile": "import cfnresponse\n\ndef lambda_handler(event, context):\n  responseData = {}\n  try:\n    input_string = str(event['ResourceProperties']['InputString'])\n    max_length = int(event['ResourceProperties']['MaxLength'])\n    responseData['returnValue'] = input_string[:max_length]\n    cfnresponse.send(event, context, 'SUCCESS', responseData)\n  except Exception as ex:\n    print(ex)\n    cfnresponse.send(event, context, 'FAILED', responseData)\n"
                 }
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W89",
+                            "reason": "Lambda does not need to be in the Waiting Room VPC."
+                        },
+                        {
+                            "id": "W92",
+                            "reason": "Lambda does not require ReservedConcurrentExecutions."
+                        }
+                    ]
+                }
             }
         },
         "StringClipLambdaRole": {
