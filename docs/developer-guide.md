@@ -355,6 +355,23 @@ The “Content-Type” header is always set to “application/json” with these
     8. Status codes:  
         200: Success  
         400: Invalid event ID
+7. /queue_pos_expiry
+    1. Description: Returns the remaining time in seconds before queue position expires
+    2. Authorization: NONE 
+    3. Method: GONE 
+    4. Content-Type: `application/json`
+    5. Query parameters: `event_id, request_id`
+    6. Request body: NONE
+    7. Response body:
+        `{
+            "expires_in": INTEGER
+        }`
+    8. Status codes:  
+        200: Success  
+        400: Invalid event ID  
+        410: Queue position has expired
+
+
 
 ## Private REST APIs
 
