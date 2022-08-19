@@ -5889,7 +5889,7 @@
             "Default": "1785"
         },
         "QueuePositionExpiryPeriod": {
-            "Description": "Time interval after which of a queue position is ineligible to obtain token (seconds)",
+            "Description": "Time interval beyond which a queue position is ineligible to generate a token (seconds)",
             "Type": "Number",
             "ConstraintDescription": "Please enter a value for this field.",
             "Default": "900"
