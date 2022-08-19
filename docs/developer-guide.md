@@ -221,6 +221,13 @@ Events emitted from the solution are:
         "request_id": REQUEST_ID,
         "status": STATUS_TEXT
         }`
+2. **automatic_serving_counter_incr**
+    1. Detail:
+        `{
+        'previous_serving_counter_position': PREVIOUS_SERVING_COUNTER,
+        'increment_by': INCREMENT_VALUE,
+        'current_serving_counter_position': SERVING_COUNTER
+        }`
 
 
 Periodic Event Generation for Metrics
