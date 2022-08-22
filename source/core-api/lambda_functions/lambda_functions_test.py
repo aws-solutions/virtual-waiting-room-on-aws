@@ -632,6 +632,8 @@ class CoreApiTestCase(unittest.TestCase):
                 _value =  int(mock_redis_cache[key]) + int(value)
                 mock_redis_cache[key] = _value
                 return _value
+            else:
+                return None
 
         set_max_queue_position_expired.rc = MagicMock()
         set_max_queue_position_expired.rc.get = Mock(side_effect=mock_get)
