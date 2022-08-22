@@ -647,8 +647,7 @@ class CoreApiTestCase(unittest.TestCase):
         # reset in progress test
         with patch('builtins.print') as mocked_print:
             mock_redis_cache['reset_in_progress'] = 1
-            response = set_max_queue_position_expired.lambda_handler(mock_event, None)
-            self.assertEqual(response, None)
+            set_max_queue_position_expired.lambda_handler(mock_event, None)
             mocked_print.assert_called_with('Reset in progress. Skipping execution')
         mock_redis_cache['reset_in_progress'] = 0
 
@@ -656,9 +655,8 @@ class CoreApiTestCase(unittest.TestCase):
         with patch.object(set_max_queue_position_expired.ddb_table_queue_position_entry_time, 'query', return_value={'Items': [] }):
             with patch('builtins.print') as mocked_print:
                 mock_redis_cache['queue_counter'] = 6
-                response = set_max_queue_position_expired.lambda_handler(mock_event, None)
+                set_max_queue_position_expired.lambda_handler(mock_event, None)
                 mocked_print.assert_called_with('No queue postions items eligible')
-                self.assertEqual(response, None)
 
         # # set max queue position expired (no svc increment, set os.environ INCR_SVC_ON_QUEUE_POS_EXPIRY to false)
         # with patch.object(set_max_queue_position_expired.ddb_table_queue_position_entry_time, 'query', 
