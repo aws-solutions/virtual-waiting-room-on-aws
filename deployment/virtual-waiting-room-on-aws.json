@@ -386,12 +386,65 @@
                                 "dynamodb:DescribeTable"
                             ],
                             "Effect": "Allow",
-                            "Resource": {
-                                "Fn::GetAtt": [
-                                    "TokenTable",
-                                    "Arn"
-                                ]
-                            },
+                            "Resource": [
+                                {
+                                    "Fn::GetAtt": [
+                                        "TokenTable",
+                                        "Arn"
+                                    ]
+                                },
+                                {
+                                    "Fn::Sub": [
+                                        "${TableArn}/index/*",
+                                        {
+                                            "TableArn": {
+                                                "Fn::GetAtt": [
+                                                    "TokenTable",
+                                                    "Arn"
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "Fn::GetAtt": [
+                                        "QueuePositionEntryTimeTable",
+                                        "Arn"
+                                    ]
+                                },
+                                {
+                                    "Fn::Sub": [
+                                        "${TableArn1}/index/*",
+                                        {
+                                            "TableArn1": {
+                                                "Fn::GetAtt": [
+                                                    "QueuePositionEntryTimeTable",
+                                                    "Arn"
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "Fn::GetAtt": [
+                                        "ServingCounterIssuedAtTable",
+                                        "Arn"
+                                    ]
+                                },
+                                {
+                                    "Fn::Sub": [
+                                        "${TableArn2}/index/*",
+                                        {
+                                            "TableArn2": {
+                                                "Fn::GetAtt": [
+                                                    "ServingCounterIssuedAtTable",
+                                                    "Arn"
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
                             "Principal": {
                                 "AWS": "*"
                             }
@@ -944,6 +997,12 @@
                                 "Extra"
                             ]
                         }, 
+                        "QUEUE_POSITION_ENTRYTIME_TABLE": {
+                            "Ref": "QueuePositionEntryTimeTable"
+                        },
+                        "ENABLE_QUEUE_POSITION_EXPIRY": {
+                            "Ref": "EnableQueuePositionExpiry"
+                        },
                         "STACK_NAME": {"Ref": "AWS::StackName"}
                     }
                 },
@@ -1054,6 +1113,18 @@
                         },
                         "VALIDITY_PERIOD": {
                             "Ref": "ValidityPeriod"
+                        },
+                        "QUEUE_POSITION_ENTRYTIME_TABLE": {
+                            "Ref": "QueuePositionEntryTimeTable"
+                        },
+                        "SERVING_COUNTER_ISSUEDAT_TABLE": {
+                            "Ref": "ServingCounterIssuedAtTable"
+                        },
+                        "QUEUE_POSITION_EXPIRY_PERIOD" : {
+                            "Ref": "QueuePositionExpiryPeriod"
+                        },
+                        "ENABLE_QUEUE_POSITION_EXPIRY": {
+                            "Ref": "EnableQueuePositionExpiry"
                         },
                         "EVENT_BUS_NAME": {
                             "Ref": "WaitingRoomEventBus"
@@ -1759,6 +1830,136 @@
                 }
             }
         },
+        "SetQueuePositionExpired": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": {
+                        "Fn::Join": [
+                            "-",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "S3Bucket"
+                                    ]
+                                },
+                                {
+                                    "Ref": "AWS::Region"
+                                }
+                            ]
+                        ]
+                    },
+                    "S3Key": {
+                        "Fn::Join": [
+                            "/",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "KeyPrefix"
+                                    ]
+                                },
+                                "virtual-waiting-room-on-aws-%%TIMESTAMP%%.zip"
+                            ]
+                        ]
+                    }
+                },
+                "Environment": {
+                    "Variables": {
+                        "REDIS_HOST": {
+                            "Fn::GetAtt": [
+                                "RedisReplicationGroup",
+                                "PrimaryEndPoint.Address"
+                            ]
+                        },
+                        "REDIS_PORT": {
+                            "Fn::GetAtt": [
+                                "RedisReplicationGroup",
+                                "PrimaryEndPoint.Port"
+                            ]
+                        },
+                        "QUEUE_POSITION_ENTRYTIME_TABLE": {
+                            "Ref": "QueuePositionEntryTimeTable"
+                        },
+                        "QUEUE_POSITION_EXPIRY_PERIOD" : {
+                            "Ref": "QueuePositionExpiryPeriod"
+                        },
+                        "SERVING_COUNTER_ISSUEDAT_TABLE": {
+                            "Ref": "ServingCounterIssuedAtTable"
+                        },
+                        "INCR_SVC_ON_QUEUE_POS_EXPIRY": {
+                            "Ref": "IncrSvcOnQueuePositionExpiry"
+                        },
+                        "EVENT_ID": {
+                            "Ref": "EventId"
+                        },
+                        "EVENT_BUS_NAME": {
+                            "Ref": "WaitingRoomEventBus"
+                        },
+                        "SOLUTION_ID": {
+                            "Fn::FindInMap": [
+                                "SolutionId",
+                                "UserAgent",
+                                "Extra"
+                            ]
+                        },
+                        "STACK_NAME": {
+                            "Ref": "AWS::StackName"
+                        }
+                    }
+                },
+                "Handler": "set_max_queue_position_expired.lambda_handler",
+                "Layers": [
+                    {
+                        "Ref": "RedisLayer"
+                    }
+                ],
+                "MemorySize": 1024,
+                "Role": {
+                    "Fn::GetAtt": [
+                        "QueuePositionRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "python3.8",
+                "Timeout": 30,
+                "VpcConfig": {
+                    "SecurityGroupIds": [
+                        {
+                            "Fn::GetAtt": [
+                                "WaitingRoomVpc",
+                                "DefaultSecurityGroup"
+                            ]
+                        }
+                    ],
+                    "SubnetIds": [
+                        {
+                            "Ref": "Subnet1"
+                        },
+                        {
+                            "Ref": "Subnet2"
+                        }
+                    ]
+                }
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W92",
+                            "reason": "Lambda does not require ReservedConcurrentExecutions."
+                        },
+                        {
+                            "id": "W58",
+                            "reason": "Permission to write CloudWatch logs has been associated with IAM policy instead."
+                        }
+                    ]
+                }
+            }
+        },
         "GenerateToken": {
             "Type": "AWS::Lambda::Function",
             "Properties": {
@@ -1821,6 +2022,18 @@
                         },
                         "VALIDITY_PERIOD": {
                             "Ref": "ValidityPeriod"
+                        },
+                        "QUEUE_POSITION_ENTRYTIME_TABLE": {
+                            "Ref": "QueuePositionEntryTimeTable"
+                        },
+                        "SERVING_COUNTER_ISSUEDAT_TABLE": {
+                            "Ref": "ServingCounterIssuedAtTable"
+                        },
+                        "QUEUE_POSITION_EXPIRY_PERIOD" : {
+                            "Ref": "QueuePositionExpiryPeriod"
+                        },
+                        "ENABLE_QUEUE_POSITION_EXPIRY": {
+                            "Ref": "EnableQueuePositionExpiry"
                         },
                         "EVENT_BUS_NAME": {
                             "Ref": "WaitingRoomEventBus"
@@ -1969,7 +2182,10 @@
                                 "UserAgent",
                                 "Extra"
                             ]
-                        }, 
+                        },
+                        "QUEUE_POSITION_ENTRYTIME_TABLE": {
+                            "Ref": "QueuePositionEntryTimeTable"
+                        },
                         "STACK_NAME": {"Ref": "AWS::StackName"}
                     }
                 },
@@ -2036,6 +2252,154 @@
                 "SourceArn": {
                     "Fn::Sub": [
                         "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApi}/*/GET/queue_num",
+                        {
+                            "RestApi": {
+                                "Ref": "PublicWaitingRoomApi"
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "GetQueuePositionExpiryTime": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": {
+                        "Fn::Join": [
+                            "-",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "S3Bucket"
+                                    ]
+                                },
+                                {
+                                    "Ref": "AWS::Region"
+                                }
+                            ]
+                        ]
+                    },
+                    "S3Key": {
+                        "Fn::Join": [
+                            "/",
+                            [
+                                {
+                                    "Fn::FindInMap": [
+                                        "SourceCode",
+                                        "General",
+                                        "KeyPrefix"
+                                    ]
+                                },
+                                "virtual-waiting-room-on-aws-%%TIMESTAMP%%.zip"
+                            ]
+                        ]
+                    }
+                },
+                "Environment": {
+                    "Variables": {
+                        "REDIS_HOST": {
+                            "Fn::GetAtt": [
+                                "RedisReplicationGroup",
+                                "PrimaryEndPoint.Address"
+                            ]
+                        },
+                        "REDIS_PORT": {
+                            "Fn::GetAtt": [
+                                "RedisReplicationGroup",
+                                "PrimaryEndPoint.Port"
+                            ]
+                        },
+                        "EVENT_ID": {
+                            "Ref": "EventId"
+                        },
+                        "SOLUTION_ID": {
+                            "Fn::FindInMap": [
+                                "SolutionId",
+                                "UserAgent",
+                                "Extra"
+                            ]
+                        },
+                        "QUEUE_POSITION_ENTRYTIME_TABLE": {
+                            "Ref": "QueuePositionEntryTimeTable"
+                        },
+                        "SERVING_COUNTER_ISSUEDAT_TABLE": {
+                            "Ref": "ServingCounterIssuedAtTable"
+                        },
+                        "QUEUE_POSITION_EXPIRY_PERIOD" : {
+                            "Ref": "QueuePositionExpiryPeriod"
+                        },
+                        "ENABLE_QUEUE_POSITION_EXPIRY": {
+                            "Ref": "EnableQueuePositionExpiry"
+                        },
+                        "STACK_NAME": {"Ref": "AWS::StackName"}
+                    }
+                },
+                "Handler": "get_queue_position_expiry_time.lambda_handler",
+                "Layers": [
+                    {
+                        "Ref": "RedisLayer"
+                    }
+                ],
+                "MemorySize": 1024,
+                "Role": {
+                    "Fn::GetAtt": [
+                        "QueuePositionRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "python3.8",
+                "Timeout": 30,
+                "VpcConfig": {
+                    "SecurityGroupIds": [
+                        {
+                            "Fn::GetAtt": [
+                                "WaitingRoomVpc",
+                                "DefaultSecurityGroup"
+                            ]
+                        }
+                    ],
+                    "SubnetIds": [
+                        {
+                            "Ref": "Subnet1"
+                        },
+                        {
+                            "Ref": "Subnet2"
+                        }
+                    ]
+                }
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W92",
+                            "reason": "Lambda does not require ReservedConcurrentExecutions."
+                        },
+                        {
+                            "id": "W58",
+                            "reason": "Permission to write CloudWatch logs has been associated with IAM policy instead."
+                        }
+                    ]
+                }
+            }
+        },
+        "GetQueuePositionExpiryTimePermission": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+                "FunctionName": {
+                    "Fn::GetAtt": [
+                        "GetQueuePositionExpiryTime",
+                        "Arn"
+                    ]
+                },
+                "Action": "lambda:InvokeFunction",
+                "Principal": "apigateway.amazonaws.com",
+                "SourceArn": {
+                    "Fn::Sub": [
+                        "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApi}/*/GET/queue_pos_expiry",
                         {
                             "RestApi": {
                                 "Ref": "PublicWaitingRoomApi"
@@ -2205,14 +2569,20 @@
                         },
                         "EVENT_ID": {
                             "Ref": "EventId"
-                        },                        
+                        },   
                         "SOLUTION_ID": {
                             "Fn::FindInMap": [
                                 "SolutionId",
                                 "UserAgent",
                                 "Extra"
                             ]
-                        }, 
+                        },
+                        "SERVING_COUNTER_ISSUEDAT_TABLE": {
+                            "Ref": "ServingCounterIssuedAtTable"
+                        },                 
+                        "ENABLE_QUEUE_POSITION_EXPIRY": {
+                            "Ref": "EnableQueuePositionExpiry"
+                        },
                         "STACK_NAME": {"Ref": "AWS::StackName"}
                     }
                 },
@@ -2225,7 +2595,7 @@
                 "MemorySize": 1024,
                 "Role": {
                     "Fn::GetAtt": [
-                        "LambdaVpcRole",
+                        "QueuePositionRole",
                         "Arn"
                     ]
                 },
@@ -2472,6 +2842,12 @@
                         "TOKEN_TABLE": {
                             "Ref": "TokenTable"
                         },
+                        "QUEUE_POSITION_ENTRYTIME_TABLE": {
+                            "Ref": "QueuePositionEntryTimeTable"
+                        },
+                        "SERVING_COUNTER_ISSUEDAT_TABLE" : {
+                            "Ref": "ServingCounterIssuedAtTable"
+                        },
                         "EVENT_ID": {
                             "Ref": "EventId"
                         },
@@ -2577,6 +2953,44 @@
                 "Policies": [
                     {
                         "PolicyName": "LambdaVpcRolePolicy",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": "secretsmanager:GetSecretValue",
+                                    "Resource": [
+                                        { "Fn::Sub": "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AWS::StackName}/redis-auth*" }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "QueuePositionRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "Policies": [
+                    {
+                        "PolicyName": "QueuePositionRolePolicy",
                         "PolicyDocument": {
                             "Version": "2012-10-17",
                             "Statement": [
@@ -2925,7 +3339,8 @@
                     {"Ref": "GenerateTokenRole"},
                     {"Ref": "GetTokenRole"},
                     {"Ref": "GenerateKeysRole"},
-                    {"Ref": "IntersectAZRole"}
+                    {"Ref": "IntersectAZRole"},
+                    {"Ref": "QueuePositionRole"}
                 ]
             },
             "Metadata": {
@@ -3000,6 +3415,9 @@
                     },
                     {
                         "Ref": "GenerateTokenRole"
+                    },
+                    {
+                        "Ref" : "QueuePositionRole"
                     }
                 ]
             }
@@ -3043,6 +3461,44 @@
                                             }
                                         }
                                     ]
+                                },
+                                {
+                                    "Fn::GetAtt": [
+                                        "QueuePositionEntryTimeTable",
+                                        "Arn"
+                                    ]
+                                },
+                                {
+                                    "Fn::Sub": [
+                                        "${TableArn1}/index/*",
+                                        {
+                                            "TableArn1": {
+                                                "Fn::GetAtt": [
+                                                    "QueuePositionEntryTimeTable",
+                                                    "Arn"
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "Fn::GetAtt": [
+                                        "ServingCounterIssuedAtTable",
+                                        "Arn"
+                                    ]
+                                },
+                                {
+                                    "Fn::Sub": [
+                                        "${TableArn2}/index/*",
+                                        {
+                                            "TableArn2": {
+                                                "Fn::GetAtt": [
+                                                    "ServingCounterIssuedAtTable",
+                                                    "Arn"
+                                                ]
+                                            }
+                                        }
+                                    ]
                                 }
                             ]
                         }
@@ -3060,6 +3516,15 @@
                     },
                     {
                         "Ref": "GenerateTokenRole"
+                    },
+                    {
+                        "Ref": "QueuePositionRole"
+                    },
+                    {
+                        "Ref": "AssignQueueRole"
+                    },
+                    {
+                        "Ref": "LambdaVpcRole"
                     }
                 ]
             }
@@ -3160,6 +3625,80 @@
                         "Projection": {
                             "ProjectionType": "ALL"
                         }
+                    }
+                ],
+                "PointInTimeRecoverySpecification": {
+                    "PointInTimeRecoveryEnabled": true
+                },
+                "SSESpecification": {
+                    "SSEEnabled": true
+                }
+            }
+        },
+        "QueuePositionEntryTimeTable": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+                "BillingMode": "PAY_PER_REQUEST",
+                "AttributeDefinitions": [
+                    {
+                        "AttributeName": "queue_position",
+                        "AttributeType": "N"
+                    },
+                    {
+                        "AttributeName": "request_id",
+                        "AttributeType": "S"
+                    }
+                ],
+                "KeySchema": [
+                    {
+                        "AttributeName": "request_id",
+                        "KeyType": "HASH"
+                    }
+                ],
+                "GlobalSecondaryIndexes": [
+                    {
+                        "IndexName": "QueuePositionIndex",
+                        "KeySchema": [
+                            {
+                                "AttributeName": "queue_position",
+                                "KeyType": "HASH"
+                            }
+                        ],
+                        "Projection": {
+                            "ProjectionType": "ALL"
+                        }
+                    }
+                ],
+                "PointInTimeRecoverySpecification": {
+                    "PointInTimeRecoveryEnabled": true
+                },
+                "SSESpecification": {
+                    "SSEEnabled": true
+                }
+            }
+        },
+        "ServingCounterIssuedAtTable": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+                "BillingMode": "PAY_PER_REQUEST",
+                "AttributeDefinitions": [
+                    {
+                        "AttributeName": "event_id",
+                        "AttributeType": "S"
+                    },
+                    {
+                        "AttributeName": "serving_counter",
+                        "AttributeType": "N"
+                    }
+                ],
+                "KeySchema": [
+                    {
+                        "AttributeName": "event_id",
+                        "KeyType": "HASH"
+                    },
+                    {
+                        "AttributeName": "serving_counter",
+                        "KeyType": "RANGE"
                     }
                 ],
                 "PointInTimeRecoverySpecification": {
@@ -3409,7 +3948,6 @@
         "StringClipLambdaCustomResource": {
             "Type": "AWS::Lambda::Function",
             "Properties": {
-                "FunctionName": "StringLambdaFunction",
                 "Runtime": "python3.8",
                 "Role": {
                     "Fn::GetAtt": ["StringClipLambdaRole", "Arn"]
@@ -3419,6 +3957,20 @@
                 "Timeout": 90,
                 "Code": {
                     "ZipFile": "import cfnresponse\n\ndef lambda_handler(event, context):\n  responseData = {}\n  try:\n    input_string = str(event['ResourceProperties']['InputString'])\n    max_length = int(event['ResourceProperties']['MaxLength'])\n    responseData['returnValue'] = input_string[:max_length]\n    cfnresponse.send(event, context, 'SUCCESS', responseData)\n  except Exception as ex:\n    print(ex)\n    cfnresponse.send(event, context, 'FAILED', responseData)\n"
+                }
+            },
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W89",
+                            "reason": "Lambda does not need to be in the Waiting Room VPC."
+                        },
+                        {
+                            "id": "W92",
+                            "reason": "Lambda does not require ReservedConcurrentExecutions."
+                        }
+                    ]
                 }
             }
         },
@@ -3761,6 +4313,28 @@
             },
             "Condition": "GenerateWaitingRoomEvents"
         },
+        "QueuePositionExpiredEventRule": {
+            "Type": "AWS::Events::Rule",
+            "Properties": {
+                "Description": "Marks items expired in the QueuePositionEntryTimeTable.",
+                "ScheduleExpression": "rate(1 minute)",
+                "State": "ENABLED",
+                "Targets": [
+                    {
+                        "Arn": {
+                            "Fn::GetAtt": [
+                                "SetQueuePositionExpired",
+                                "Arn"
+                            ]
+                        },
+                        "Id": {
+                            "Fn::Sub": "${AWS::StackName}-expiredEvents"
+                        }
+                    }
+                ]
+            },
+            "Condition": "SetQueuePositionExpiredEvents"
+        },
         "GenerateEventsRulePermissions": {
             "Type": "AWS::Lambda::Permission",
             "Properties": {
@@ -3781,6 +4355,26 @@
             },
             "Condition": "GenerateWaitingRoomEvents"
         },
+        "QueuePositionExpiredEventRulePermissions": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+                "FunctionName": {
+                    "Fn::GetAtt": [
+                        "SetQueuePositionExpired",
+                        "Arn"
+                    ]
+                },
+                "Action": "lambda:InvokeFunction",
+                "Principal": "events.amazonaws.com",
+                "SourceArn": {
+                    "Fn::GetAtt": [
+                        "QueuePositionExpiredEventRule",
+                        "Arn"
+                    ]
+                }
+            },
+            "Condition": "SetQueuePositionExpiredEvents"
+        },
         "InitializeStateCustomResource": {
             "Type": "AWS::CloudFormation::CustomResource",
             "DependsOn": ["GenerateKeysCustomResource", "UpdateDistributionCustomResource"],
@@ -3798,7 +4392,9 @@
             "Type": "AWS::Lambda::Function",
             "DependsOn": [
                 "TokenTable",
-                "RedisReplicationGroup"
+                "RedisReplicationGroup",
+                "QueuePositionEntryTimeTable",
+                "ServingCounterIssuedAtTable"
             ],
             "Properties": {
                 "Code": {
@@ -3972,6 +4568,32 @@
                                 "Ref": "OriginRequestPolicy"
                             },
                             "PathPattern": "/queue_num",
+                            "AllowedMethods": [
+                                "HEAD",
+                                "GET",
+                                "OPTIONS",
+                                "PUT",
+                                "PATCH",
+                                "POST",
+                                "DELETE"
+                            ],
+                            "CachedMethods": [
+                                "HEAD",
+                                "GET",
+                                "OPTIONS"
+                            ],
+                            "Compress": true
+                        },
+                        {
+                            "TargetOriginId": "waiting-room-public-api",
+                            "ViewerProtocolPolicy": "https-only",
+                            "CachePolicyId": {
+                                "Ref": "QueuePositionExpiryCachePolicy"
+                            },
+                            "OriginRequestPolicyId": {
+                                "Ref": "OriginRequestPolicy"
+                            },
+                            "PathPattern": "/queue_pos_expiry",
                             "AllowedMethods": [
                                 "HEAD",
                                 "GET",
@@ -4242,7 +4864,7 @@
                 "CachePolicyConfig": {
                     "DefaultTTL": 5,
                     "MaxTTL": 5,
-                    "MinTTL": 0,
+                    "MinTTL": 1,
                     "Name": {
                         "Fn::Sub": "${AWS::StackName}-CachePolicy"
                     },
@@ -4258,6 +4880,33 @@
                         "QueryStringsConfig": {
                             "QueryStringBehavior": "whitelist",
                             "QueryStrings": ["event_id"]
+                        }
+                    }
+                }
+            }
+        },
+        "QueuePositionExpiryCachePolicy": {
+            "Type": "AWS::CloudFront::CachePolicy",
+            "Properties": {
+                "CachePolicyConfig": {
+                    "DefaultTTL": 5,
+                    "MaxTTL": 5,
+                    "MinTTL": 1,
+                    "Name": {
+                        "Fn::Sub": "${AWS::StackName}-QposExpCachePolicy"
+                    },
+                    "ParametersInCacheKeyAndForwardedToOrigin": {
+                        "CookiesConfig": {
+                            "CookieBehavior": "none"
+                        },
+                        "EnableAcceptEncodingBrotli": true,
+                        "EnableAcceptEncodingGzip": true,
+                        "HeadersConfig": {
+                            "HeaderBehavior": "none"
+                        },
+                        "QueryStringsConfig": {
+                            "QueryStringBehavior": "whitelist",
+                            "QueryStrings": ["event_id", "request_id"]
                         }
                     }
                 }
@@ -4539,6 +5188,98 @@
                         "Name": "FunctionName",
                         "Value": {
                             "Ref": "AssignQueueNum"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "GetQueuePositionExpiryTimeErrorsAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Errors > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Errors",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "GetQueuePositionExpiryTime"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "GetQueuePositionExpiryTimeThrottlesAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Throttles > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Throttles",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "GetQueuePositionExpiryTime"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "SetQueuePositionExpiredErrorsAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Errors > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Errors",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "SetQueuePositionExpired"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "Statistic": "Maximum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching"
+            }
+        },
+        "SetQueuePositionExpiredThrottlesAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Throttles > 0",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "MetricName": "Throttles",
+                "Namespace": "AWS/Lambda",
+                "Dimensions": [
+                    {
+                        "Name": "FunctionName",
+                        "Value": {
+                            "Ref": "SetQueuePositionExpired"
                         }
                     }
                 ],
@@ -5109,6 +5850,14 @@
                 },
                 "true"
             ]
+        },
+        "SetQueuePositionExpiredEvents": {
+            "Fn::Equals": [
+                {
+                    "Ref": "EnableQueuePositionExpiry"
+                },
+                "true"
+            ]
         }
     },
     "Parameters": {
@@ -5138,6 +5887,30 @@
             "Type": "Number",
             "ConstraintDescription": "Please enter a value for this field.",
             "Default": "1785"
+        },
+        "QueuePositionExpiryPeriod": {
+            "Description": "Time interval after which of a queue position is ineligible to obtain token (seconds)",
+            "Type": "Number",
+            "ConstraintDescription": "Please enter a value for this field.",
+            "Default": "900"
+        },
+        "EnableQueuePositionExpiry": {
+            "Description": "If set to false, expiry period is not applied to queue position",
+            "Type": "String",
+            "AllowedValues": [
+                "true",
+                "false"
+            ],
+            "Default": "true"
+        },
+        "IncrSvcOnQueuePositionExpiry": {
+            "Description": "If set to true, serving counter is automatically advanced based on expired queue positions",
+            "Type": "String",
+            "AllowedValues": [
+                "true",
+                "false"
+            ],
+            "Default": "false"
         }
     },
     "Outputs": {

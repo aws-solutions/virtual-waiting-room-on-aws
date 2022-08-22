@@ -25,12 +25,13 @@ boto_session = boto3.session.Session()
 region = boto_session.region_name
 user_agent_extra = {"user_agent_extra": SOLUTION_ID}
 user_config = config.Config(**user_agent_extra)
-secrets_client = boto3.client('secretsmanager', config=user_config, endpoint_url="https://secretsmanager."+region+".amazonaws.com")
+secrets_client = boto3.client('secretsmanager', config=user_config, endpoint_url=f"https://secretsmanager.{region}.amazonaws.com")
+
 response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/redis-auth")
 redis_auth = response.get("SecretString")
 rc = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, ssl=True, decode_responses=True, password=redis_auth)
 
-def lambda_handler(event, context):
+def lambda_handler(event, _):
     """
     This function is the entry handler for Lambda.
     """
@@ -42,18 +43,18 @@ def lambda_handler(event, context):
         'Access-Control-Allow-Origin': '*'
     }
 
-    if client_event_id == EVENT_ID:
-        cur_serving = rc.get(SERVING_COUNTER)
-        print(cur_serving)
-        response = {
-            "statusCode": 200,
-            "headers": headers,
-            "body": json.dumps({"serving_counter": cur_serving})
-        }
-    else:
-        response = {
+    if client_event_id != EVENT_ID:
+        return {
             "statusCode": 400,
             "headers": headers,
             "body": json.dumps({"error": "Invalid event ID"})
         }
-    return response
+
+    cur_serving = rc.get(SERVING_COUNTER)
+    print(cur_serving)
+    
+    return {
+        "statusCode": 200,
+        "headers": headers,
+        "body": json.dumps({"serving_counter": cur_serving})
+    }

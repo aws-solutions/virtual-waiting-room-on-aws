@@ -11,11 +11,29 @@ THIRD PARTY COMPONENTS
 **********************
 This software includes third party software subject to the following copyrights:
 
-AWS SDK under the Apache License Version 2.0
-crhelper under the Apache License Version 2.0
-requests under the Apache License Version 2.0
-redis under the MIT License (MIT)
-jwcrypto under the GNU Lesser General Public License v3.0
-jquery under the MIT License (MIT)
-bootstrap under the MIT License (MIT)
+@vue/babel-preset-app under the MIT License (MIT)
+@vue/cli-plugin-babel under the MIT License (MIT)
+@vue/cli-plugin-eslint under the MIT License (MIT)
+@vue/cli-service under the MIT License (MIT)
+@vue/compiler-sfc under the MIT License (MIT)
+aws4fetch under the MIT License (MIT)
 axios under the MIT License (MIT)
+axios-retry under the Apache License Version 2.0
+AWS SDK under the Apache License Version 2.0
+bootstrap under the MIT License (MIT)
+core-js under the MIT License (MIT)
+crhelper under the Apache License Version 2.0
+eslint under the MIT License (MIT)
+eslint-plugin-vue under the MIT License (MIT)
+jquery under the MIT License (MIT)
+jwcrypto under the GNU Lesser General Public License v3.0
+lodash under the MIT License (MIT)
+moment under the MIT License (MIT)
+naive-ui under the MIT License (MIT)
+redis under the MIT License (MIT)
+requests under the Apache License Version 2.0
+simple-statistics under the ISC License
+vfonts under the MIT License (MIT)
+vue under the MIT License (MIT)
+vue-timers under the MIT License (MIT)
+vuex under the MIT License (MIT)

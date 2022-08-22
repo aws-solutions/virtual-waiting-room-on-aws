@@ -24,7 +24,7 @@ REDIS_HOST = os.environ["REDIS_HOST"]
 REDIS_PORT = os.environ["REDIS_PORT"]
 EVENT_ID = os.environ["EVENT_ID"]
 EVENT_BUS_NAME = os.environ["EVENT_BUS_NAME"]
-DDB_TABLE_NAME = os.environ["TOKEN_TABLE"]
+DDB_TOKEN_TABLE_NAME = os.environ["TOKEN_TABLE"]
 SOLUTION_ID = os.environ['SOLUTION_ID']
 SECRET_NAME_PREFIX = os.environ["STACK_NAME"]
 
@@ -32,20 +32,16 @@ user_agent_extra = {"user_agent_extra": SOLUTION_ID}
 user_config = config.Config(**user_agent_extra)
 boto_session = boto3.session.Session()
 region = boto_session.region_name
-ddb_resource = boto3.resource(
-    'dynamodb', endpoint_url="https://dynamodb."+region+".amazonaws.com", config=user_config)
-ddb_table = ddb_resource.Table(DDB_TABLE_NAME)
-events_client = boto3.client(
-    'events', endpoint_url="https://events."+region+".amazonaws.com", config=user_config)
+ddb_resource = boto3.resource('dynamodb', endpoint_url=f"https://dynamodb.{region}.amazonaws.com", config=user_config)
+ddb_table = ddb_resource.Table(DDB_TOKEN_TABLE_NAME)
+events_client = boto3.client('events', endpoint_url=f"https://events.{region}.amazonaws.com", config=user_config)
 status_codes = {1: "completed", -1: "abandoned"}
-
-secrets_client = boto3.client('secretsmanager', config=user_config, endpoint_url="https://secretsmanager."+region+".amazonaws.com")
+secrets_client = boto3.client('secretsmanager', config=user_config, endpoint_url=f"https://secretsmanager.{region}.amazonaws.com")
 response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/redis-auth")
 redis_auth = response.get("SecretString")
 rc = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, ssl=True, decode_responses=True, password=redis_auth)
 
-
-def lambda_handler(event, context):
+def lambda_handler(event, _):
     """
     This function is the entry handler for Lambda.
     """
@@ -59,6 +55,7 @@ def lambda_handler(event, context):
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*'
     }
+
     if client_event_id == EVENT_ID and is_valid_rid(request_id):
         try:
             result = ddb_table.update_item(
@@ -86,21 +83,21 @@ def lambda_handler(event, context):
                 ]
             )
             # increment counter tracking sessions completed
-            if status == 1:
-                rc.incr(COMPLETED_SESSION_COUNTER, 1)
-            elif status == -1:
+            if status == -1:
                 rc.incr(ABANDONED_SESSION_COUNTER, 1)
 
+            elif status == 1:
+                rc.incr(COMPLETED_SESSION_COUNTER, 1)
         except ClientError as e:
-            if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
-                print(e)
-                response = {
-                    "statusCode": 404,
-                    "headers": headers,
-                    "body": json.dumps({"error": "Request ID doesn't exist or status already set."})
-                }
-            else:
+            if e.response['Error']['Code'] != 'ConditionalCheckFailedException':
                 raise e
+            print(e)
+            response = {
+                "statusCode": 404,
+                "headers": headers, 
+                "body": json.dumps({"error": "Request ID doesn't exist or status already set."})
+            }
+
         except Exception as e:
             print(e)
             raise e

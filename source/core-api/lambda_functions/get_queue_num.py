@@ -19,19 +19,22 @@ REDIS_HOST = os.environ["REDIS_HOST"]
 REDIS_PORT = os.environ["REDIS_PORT"]
 EVENT_ID = os.environ["EVENT_ID"]
 SECRET_NAME_PREFIX = os.environ["STACK_NAME"]
-SOLUTION_ID = os.environ['SOLUTION_ID']
+SOLUTION_ID = os.environ["SOLUTION_ID"]
+QUEUE_POSITION_ENTRYTIME_TABLE = os.environ["QUEUE_POSITION_ENTRYTIME_TABLE"]
 
 boto_session = boto3.session.Session()
 region = boto_session.region_name
 user_agent_extra = {"user_agent_extra": SOLUTION_ID}
 user_config = config.Config(**user_agent_extra)
-secrets_client = boto3.client('secretsmanager', config=user_config, endpoint_url="https://secretsmanager."+region+".amazonaws.com")
+secrets_client = boto3.client('secretsmanager', config=user_config, endpoint_url=f"https://secretsmanager.{region}.amazonaws.com")
 response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/redis-auth")
 redis_auth = response.get("SecretString")
 rc = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, ssl=True, decode_responses=True, password=redis_auth)
+ddb_resource = boto3.resource('dynamodb', endpoint_url=f'https://dynamodb.{region}.amazonaws.com', config=user_config)
+ddb_table_queue_position_entry_time = ddb_resource.Table(QUEUE_POSITION_ENTRYTIME_TABLE)
 
 
-def lambda_handler(event, context):
+def lambda_handler(event, _):
     """
     This function is the entry handler for Lambda.
     """
@@ -45,17 +48,25 @@ def lambda_handler(event, context):
     }
 
     if client_event_id == EVENT_ID and is_valid_rid(request_id):
-        queue_number = rc.hget(request_id, "queue_number")
-        client_record = rc.hgetall(request_id)
+        queue_position_item = ddb_table_queue_position_entry_time.get_item(Key={"request_id": request_id})
+        queue_number = int(queue_position_item['Item']['queue_position']) if 'Item' in queue_position_item else None
+
         if queue_number:
             print(queue_number)
             response = {
                 "statusCode": 200,
                 "headers": headers,
-                "body": json.dumps(client_record)
+                "body": json.dumps(
+                    {
+                        'queue_number': queue_number,
+                        'entry_time': int(queue_position_item['Item']['entry_time']),
+                        'event_id': queue_position_item['Item']['event_id'],
+                        'status': int(queue_position_item['Item']['status'])
+                    }
+                )
             }
         else:
-            # request wasn't found in redis but event_id is valid
+            # request wasn't found in dynamodb table but event_id is valid
             response = {
                 "statusCode": 202,
                 "headers": headers,
@@ -67,4 +78,5 @@ def lambda_handler(event, context):
             "headers": headers,
             "body": json.dumps({"error": "Invalid event or request ID"})
         }
+
     return response

@@ -21,7 +21,7 @@ user_agent_extra = {"user_agent_extra": SOLUTION_ID}
 user_config = config.Config(**user_agent_extra)
 client = boto3.client('secretsmanager', config=user_config)
 
-def lambda_handler(event, context):
+def lambda_handler(event, _):
     """
     This function is the entry handler for Lambda.
     """
