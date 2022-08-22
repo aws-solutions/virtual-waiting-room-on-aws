@@ -1,8 +1,20 @@
-import os
+from os import environ
+from time import sleep
+
 import boto3
 
 
+# TODO: see if there is a way to programatically retrieve the AMIs
+amazon2linux_ami = {
+    'us-east-1': 'ami-0742b4e673072066f',
+    'us-east-2': 'ami-05d72852800cbf29e',
+    'us-west-1': 'ami-0577b787189839998',
+    'us-west-2': 'ami-0518bb0e75d3619ca'
+}
 
+# To help identify resources belonging to the load test
+tag_name_coordinator = "aws-waiting-room-load-coordinator"
+tag_name_worker = "aws-waiting-room-load-worker"
 
 # mapping the region to the environment variable name
 sg_env_var = {
@@ -107,11 +119,11 @@ def create_coordinator(params):
                 "AssociatePublicIpAddress": True,
                 "DeleteOnTermination": True,
                 "DeviceIndex": 0,
-                "Groups": [os.environ[sg_env_var[region]]]
+                "Groups": [environ[sg_env_var[region]]]
             }
         ],
         IamInstanceProfile={
-            "Name": os.environ.get("EC2_INSTANCE_PROFILE_NAME")
+            "Name": environ.get("EC2_INSTANCE_PROFILE_NAME")
         },
         UserData=cmd_coordinator % (params["gituser"], params["gituserpass"], params["test"])
     )
@@ -200,7 +212,7 @@ def create_workers(params):
                 }
             ],
         IamInstanceProfile={
-            "Name": os.environ.get("EC2_INSTANCE_PROFILE_NAME")
+            "Name": environ.get("EC2_INSTANCE_PROFILE_NAME")
         },
             UserData=cmd
         )

@@ -1,277 +1,293 @@
 #!/usr/bin/env python3
+import os
 
-import argparse
-import json
-import sys
+from PyInquirer import prompt
 
-import boto3
-
-
-def load_configuration(filepath):
-    # read the configuration file provided
-    with open(filepath, "rt") as configuration_file:
-        configuration = json.loads(configuration_file.read())
-    # all regions involved
-    configuration["regions"] = sorted(
-        set(configuration['worker_regions'] +
-            [configuration['coordinator_region']]))
-    return configuration
+from controller import LoadTestController
 
 
-def instance_filter(tag_name):
-    return [
-        {
-            'Name': 'tag-key',
-            'Values': [tag_name]
-        },
-        {
-            'Name':
-            'instance-state-name',
-            'Values':
-            ['pending', 'running', 'shutting-down', 'stopping', 'stopped']
-        },
-    ]
+ACTIONS = [
+    'start new test',
+    'add workers to existing test'
+]
 
+INSTANCE_TYPES = [
+    'c5.xlarge',
+    'c5.2xlarge',
+    'c5.4xlarge'
+]
 
-def inventory_ec2(region, configuration):
-    instances = {}
-    ec2_client = boto3.client("ec2", region_name=region)
-    for instance_role, tag_name in [[
-            "coordinators", configuration["tags"]["coordinator"]
-    ], ["workers", configuration["tags"]["worker"]]]:
-        instances[instance_role] = []
-        # check for instances with our tags
-        response = ec2_client.describe_instances(
-            Filters=instance_filter(tag_name))
-        reservations = response.get("Reservations", [])
-        for item in reservations:
-            instances[instance_role] = instances[instance_role] + item.get(
-                'Instances', [])
-        while "NextToken" in response:
-            response = ec2_client.describe_instances(
-                Filters=instance_filter(tag_name),
-                NextToken=response["NextToken"])
-            reservations = response.get("Reservations", [])
-            for item in reservations:
-                instances[instance_role] = instances[instance_role] + item.get(
-                    'Instances', [])
-    return instances
+REGIONS = [
+    'us-east-1',
+    'us-east-2',
+    'us-west-1',
+    'us-west-2'
+]
 
+startup_questions = [
+    {
+        'type': 'input',
+        'name': 'gituser',
+        'message': 'code commit git user:',
+        'default': "gituser-at-727583892702"
+    },
+    {
+        'type': 'password',
+        'name': 'gituserpass',
+        'message': 'code commit git user password: ',
+        'default': "J3BcwnLlReGJt0CApVSFQ16SR6ZOp3rlKaCxrvwWjAs="
+    },
+    {
+        'type': 'list',
+        'name': 'action',
+        'message': 'action to perform',
+        'choices': ACTIONS,
+        'default': ACTIONS[0]
+    },
+]
 
-def security_group_filter(tag_key):
-    return [
-        {
-            'Name': 'tag-key',
-            'Values': [tag_key]
-        },
-    ]
-
-
-def inventory_security_groups(region, configuration):
-    security_groups = []
-    ec2_client = boto3.client("ec2", region_name=region)
-    # check for security groups with our tags
-    response = ec2_client.describe_security_groups(
-        Filters=security_group_filter(configuration["tags"]["security_group"]))
-    security_groups = security_groups + response.get("SecurityGroups", [])
-    while "NextToken" in response:
-        response = ec2_client.describe_security_groups(
-            Filters=security_group_filter(
-                configuration["tags"]["security_group"]),
-            NextToken=response["NextToken"])
-        security_groups = security_groups + response.get("SecurityGroups", [])
-    return security_groups
-
-
-def inventory_loadtest(configuration):
-    inventory = {}
-    for region in configuration["regions"]:
-        inventory[region] = {}
-        inventory[region]["instances"] = inventory_ec2(region, configuration)
-        # check for security groups with our tags
-        inventory[region]["security_groups"] = inventory_security_groups(
-            region, configuration)
-    return inventory
-
-
-def clean_loadtest(configuration):
-    pass
-
-
-def summarize_inventory(inventory):
-    summary = {"coordinators": {}, "workers": {}, "security_groups": {}}
-    for region_name in inventory:
-        summary["coordinators"][region_name] = []
-        summary["workers"][region_name] = []
-        summary["security_groups"][region_name] = []
-        for instance in inventory[region_name]["instances"]["coordinators"]:
-            summary["coordinators"][region_name].append({
-                'InstanceId':
-                instance.get('InstanceId', ""),
-                'PublicIpAddress':
-                instance.get('PublicIpAddress', "")
-            })
-        for instance in inventory[region_name]["instances"]["workers"]:
-            summary["workers"][region_name].append({
-                'InstanceId':
-                instance.get('InstanceId', ""),
-                'PublicIpAddress':
-                instance.get('PublicIpAddress', "")
-            })
-        for instance in inventory[region_name]["security_groups"]:
-            summary["security_groups"][region_name].append({
-                "GroupName":
-                instance.get("GroupName", ""),
-                "GroupId":
-                instance.get("GroupId", "")
-            })
-    return summary
-
-
-def assess_inventory(summary):
-    assessment = {
-        "workers_present": True,
-        "security_groups_ready": True,
-        "security_groups_need_clean": True,
-        "coordinators_present": True
+start_test_questions = [
+    {
+        'type': 'input',
+        'name': 'test',
+        'message': 'test to run (without .py)',
+        'default': 'get_jwt_test'
+    },
+    {
+        'type': 'list',
+        'name': 'coordinator_instance_type',
+        'message': 'load test coordinator instance type',
+        'choices': INSTANCE_TYPES,
+        'default': INSTANCE_TYPES[2]
+    },
+    {
+        'type': 'list',
+        'name': 'coordinator_region',
+        'message': 'what region should the load test coordinator be deployed into?',
+        'choices': REGIONS,
+        'default': REGIONS[3]
+    },
+    {
+        'type': 'list',
+        'name': 'worker_instance_type',
+        'message': 'load test worker instance type',
+        'choices': INSTANCE_TYPES,
+        'default': INSTANCE_TYPES[2]
+    },
+    {
+        'type': 'checkbox',
+        'name': 'worker_regions',
+        'message': 'what regions should load test workers be deployed into?',
+        'choices': [
+            {
+                "name": "us-east-1",
+                "checked": True
+            },
+            {
+                "name": "us-east-2",
+                "checked": True
+            },
+            {
+                "name": "us-west-1",
+                "checked": True
+            },
+            {
+                "name": "us-west-2",
+                "checked": True
+            },
+        ]
+    },
+    {
+        'type': 'input',
+        'name': 'worker_instances_per_region',
+        'message': 'how many worker instances should be deployed into the selected regions?',
+        'default': '10',
+    },
+    {
+        'type': 'list',
+        'name': 'worker_processes_per_instance',
+        'message': 'how many worker processes should be started on each worker instance?',
+        'choices': [
+            '4',
+            '8',
+            '16',
+            '32'
+        ],
+        'default': '16',
     }
-    # check each region involved that it has the needed resources
-    for region_name in summary["security_groups"]:
-        if not region_name in assessment:
-            assessment[region_name] = {}
-        assessment[region_name]["security_groups"] = len(
-            summary["security_groups"][region_name])
-        assessment["security_groups_ready"] = assessment[
-            "security_groups_ready"] and (
-                assessment[region_name]["security_groups"] == 1)
-        assessment["security_groups_need_clean"] = assessment[
-            "security_groups_need_clean"] or (
-                assessment[region_name]["security_groups"] > 1)
-    for region_name in summary["workers"]:
-        if not region_name in assessment:
-            assessment[region_name] = {}
-        assessment[region_name]["workers"] = len(
-            summary["workers"][region_name])
-        assessment["workers_present"] = assessment["workers_present"] or (
-            assessment[region_name]["workers"] > 0)
-    for region_name in summary["coordinators"]:
-        if not region_name in assessment:
-            assessment[region_name] = {}
-        assessment[region_name]["coordinators"] = len(
-            summary["coordinators"][region_name])
-        assessment[
-            "coordinators_present"] = assessment["coordinators_present"] or (
-                assessment[region_name]["coordinators"] > 0)
-    return assessment
+
+]
+
+confirm_questions = [
+    {
+        'type': 'confirm',
+        'name': 'confirm',
+        'message': 'confirm choices',
+        'default': False
+    }
+]
 
 
-def create_security_group(region_name, configuration):
-    ec2_client = boto3.client("ec2", region_name=region_name)
-    response = ec2_client.create_security_group(Description='string',
-                                                GroupName='string',
-                                                VpcId='string',
-                                                TagSpecifications=[
-                                                    {
-                                                        'ResourceType':
-                                                        'security-group',
-                                                        'Tags': [
-                                                            {
-                                                                'Key':
-                                                                configuration["tags"]["security_group"],
-                                                                'Value':
-                                                                'true'
-                                                            },
-                                                        ]
-                                                    },
-                                                ],
-                                                DryRun=True | False)
-    response = ec2_client.modify_security_group_rules(
-    GroupId='string',
-    SecurityGroupRules=[
-        {
-            'SecurityGroupRuleId': 'string',
-            'SecurityGroupRule': {
-                'IpProtocol': 'string',
-                'FromPort': 123,
-                'ToPort': 123,
-                'CidrIpv4': 'string',
-                'CidrIpv6': 'string',
-                'PrefixListId': 'string',
-                'ReferencedGroupId': 'string',
-                'Description': 'string'
-            }
-        },
-    ],
-    DryRun=True|False
-)
+test_running_questions = [
+    {
+        'type': 'list',
+        'name': 'action',
+        'message': 'test is running. what action would you like to perform?',
+        'choices': [
+            'add workers',
+            'terminate test'
+        ]
+    }
+]
+
+add_workers_questions = [
+    {
+        'type': 'input',
+        'name': 'coordinator_ip',
+        'message': 'coordinator ip address',
+    },
+    {
+        'type': 'input',
+        'name': 'test',
+        'message': 'test to run (without .py)',
+        'default': 'get_jwt_test'
+    },
+    {
+        'type': 'list',
+        'name': 'worker_instance_type',
+        'message': 'load test worker instance type',
+        'choices': INSTANCE_TYPES,
+        'default': INSTANCE_TYPES[2]
+    },
+    {
+        'type': 'checkbox',
+        'name': 'worker_regions',
+        'message': 'what regions should load test workers be deployed into?',
+        'choices': [
+            {
+                "name": "us-east-1",
+                "checked": True
+            },
+            {
+                "name": "us-east-2"
+            },
+            {
+                "name": "us-west-1"
+            },
+            {
+                "name": "us-west-2"
+            },
+        ]
+    },
+    {
+        'type': 'input',
+        'name': 'worker_instances_per_region',
+        'message': 'how many worker instances should be deployed into the selected regions?',
+        'default': '10',
+    },
+    {
+        'type': 'list',
+        'name': 'worker_processes_per_instance',
+        'message': 'how many worker processes should be started on each worker instance?',
+        'choices': [
+            '4',
+            '8',
+            '16'
+        ],
+        'default': '16',
+    }
+]
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-        description=
-        """Control the Virtual Waiting Room on AWS Load Testing Tools""")
-    parser.add_argument('--file',
-                        required=True,
-                        help='JSON configuration file')
-    parser.add_argument('--action',
-                        choices=["start", "stop", "clean", "show"],
-                        help='Configure and launch instances')
-    parser.add_argument('--print',
-                        action='store_true',
-                        help='Pretty-print JSON configuration')
+    print()
+    print("~" * 64)
+    print(" " * 16 + "Load Test Controller CLI")
+    print("~" * 64)
+    print()
 
-    args = parser.parse_args()
-    configuration = load_configuration(args.file)
+    startup = prompt(startup_questions)
+    ltc = LoadTestController(startup["gituser"], startup["gituserpass"])
 
-    # print the configuration
-    if args.print:
-        print(json.dumps(configuration, indent=4))
+    if startup["action"] == "start new test":
+        print("starting new test...\n")
+        start = None
+        start_confirm = False
+        while not start_confirm:
+            start = prompt(start_test_questions)
+            print("="*64)
+            print('starting parameters:')
+            print('test to run: tests/%s.py' % start["test"])
+            print('coordinator instance type: %s' % start["coordinator_instance_type"])
+            print('coordinator region: %s' % start["coordinator_region"])
+            print('worker instance type: %s' % start["worker_instance_type"])
+            print('worker processes per instance: %s' % start["worker_processes_per_instance"])
+            print('worker regions: %s' % start["worker_regions"])
+            print('worker instances per region: %s' % start["worker_instances_per_region"])
+            print("="*64)
+            start_confirm = prompt(confirm_questions)["confirm"]
 
-    if args.action == "show":
-        inventory = inventory_loadtest(configuration)
-        summary = summarize_inventory(inventory)
-        print(json.dumps(summary, indent=4, default=str))
+        ltc.start_test(
+            start["test"],
+            start["coordinator_instance_type"],
+            start["coordinator_region"],
+            start["worker_instance_type"],
+            int(start["worker_processes_per_instance"]),
+            int(start["worker_instances_per_region"]),
+            start["worker_regions"]
+        )
 
-    if args.action == "clean":
-        print("clean")
-        pass
+        if os.uname().sysname == "Darwin":
+            print("I see you're on a mac... let me get that for you.")
+            print("will need to refresh the page when coordinator is ready")
+            os.system('open http://%s:8089' % ltc.coordinator_ip)
 
-    if args.action == "start":
-        inventory = inventory_loadtest(configuration)
-        summary = summarize_inventory(inventory)
-        assessment = assess_inventory(summary)
-        exit_error = False
-        if assessment["workers_present"] or assessment["coordinators_present"]:
-            print(
-                "coordinator or worker instances are found, run '--action stop' or '--action clean' to terminate these"
-            )
-            exit_error = True
-        if assessment["security_groups_need_clean"]:
-            print(
-                "more than one tagged security group found in specified regions, run '--action clean' to remove these"
-            )
-            exit_error = True
-        if exit_error:
-            sys.exit(1)
+        test_running = True
+        while test_running:
+            running = prompt(test_running_questions)
 
-        # create missing security groups
-        for region_name in configuration["regions"]:
-            if len(inventory[region_name]["security_groups"]) == 0:
-                # create a security group for this region
-                pass
+            if running["action"] == "terminate test":
+                ltc.teardown_test()
+                test_running = False
 
-        # update inventory/summary/assessment
+            elif running["action"] == "add workers":
+                workers_to_add = prompt(add_workers_questions[1:])
+                ltc.add_workers(
+                    workers_to_add["test"],
+                    workers_to_add["worker_instance_type"],
+                    int(workers_to_add["worker_instances_per_region"]),
+                    int(workers_to_add["worker_processes_per_instance"]),
+                    workers_to_add["worker_regions"],
+                    ltc.coordinator_ip
+                )
 
-        # deploy the coordinator
-        # wait/get the coordinator public IP address
+    elif startup["action"] == "add workers to existing test":
+        workers_to_add = prompt(add_workers_questions)
+        ltc.add_workers(
+            workers_to_add["test"],
+            workers_to_add["worker_instance_type"],
+            int(workers_to_add["worker_instances_per_region"]),
+            int(workers_to_add["worker_processes_per_instance"]),
+            workers_to_add["worker_regions"],
+            workers_to_add["coordinator_ip"]
+        )
 
-        # launch the workers
-        # print counts of launched instances (coordinator + workers)
-        pass
+        test_running = True
+        while test_running:
+            running = prompt(test_running_questions)
 
-    if args.action == "stop":
-        print("stop")
-        # enumerate ec2s for each region involved
-        # check tags if this is a coordinator or worker
-        # terminate it if so
-        # print counts of terminated instances
-        pass
+            if running["action"] == "terminate test":
+                ltc.teardown_test()
+                test_running = False
+
+            elif running["action"] == "add workers":
+                workers_to_add = prompt(add_workers_questions[1:])
+                ltc.add_workers(
+                    workers_to_add["test"],
+                    workers_to_add["worker_instance_type"],
+                    int(workers_to_add["worker_instances_per_region"]),
+                    int(workers_to_add["worker_processes_per_instance"]),
+                    workers_to_add["worker_regions"],
+                    ltc.coordinator_ip
+                )
+
+    print("have an AWSome day.")
