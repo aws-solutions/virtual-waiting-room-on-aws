@@ -7,6 +7,7 @@ This module is the unit test for the core API Lambda functions.
 # pylint: disable=R0902 
 
 import os
+from tkinter.messagebox import NO
 import unittest
 import time
 from unittest.mock import Mock, patch, MagicMock
@@ -626,6 +627,8 @@ class CoreApiTestCase(unittest.TestCase):
         def mock_set(key, value):
             if mock_redis_cache:
                 mock_redis_cache[key] = value
+                return "OK"
+            return None
         
         def mock_incr(key, value):
             if mock_redis_cache:
