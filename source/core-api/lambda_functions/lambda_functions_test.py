@@ -7,7 +7,6 @@ This module is the unit test for the core API Lambda functions.
 # pylint: disable=R0902 
 
 import os
-from tkinter.messagebox import NO
 import unittest
 import time
 from unittest.mock import Mock, patch, MagicMock
