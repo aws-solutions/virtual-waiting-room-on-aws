@@ -211,15 +211,22 @@ Events emitted from the solution are:
 1. **token_generated**
     1. Detail:
         `{
-        "event_id": EVENT_ID,
-        "request_id":REQUEST_ID
+            "event_id": EVENT_ID,
+            "request_id":REQUEST_ID
         }`
 2. **session_updated**
     1. Detail:
         `{
-        "event_id": EVENT_ID,
-        "request_id": REQUEST_ID,
-        "status": STATUS_TEXT
+            "event_id": EVENT_ID,
+            "request_id": REQUEST_ID,
+            "status": STATUS_TEXT
+        }`
+2. **automatic_serving_counter_incr**
+    1. Detail:
+        `{
+            'previous_serving_counter_position': PREVIOUS_SERVING_COUNTER,
+            'increment_by': INCREMENT_VALUE,
+            'current_serving_counter_position': SERVING_COUNTER
         }`
 
 
@@ -355,6 +362,23 @@ The “Content-Type” header is always set to “application/json” with these
     8. Status codes:  
         200: Success  
         400: Invalid event ID
+7. /queue_pos_expiry
+    1. Description: Returns the remaining time in seconds before queue position expires
+    2. Authorization: NONE 
+    3. Method: GET 
+    4. Content-Type: `application/json`
+    5. Query parameters: `event_id, request_id`
+    6. Request body: NONE
+    7. Response body:
+        `{
+            "expires_in": INTEGER
+        }`
+    8. Status codes:  
+        200: Success  
+        400: Invalid event ID  
+        410: Queue position has expired
+
+
 
 ## Private REST APIs
 

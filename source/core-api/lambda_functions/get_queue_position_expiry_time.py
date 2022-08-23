@@ -117,5 +117,5 @@ def lambda_handler(event, _):
     return {
         "statusCode": HTTPStatus.OK.value,
         "headers": headers,
-        "body": json.dumps({"Expires_in": int(QUEUE_POSITION_EXPIRY_PERIOD) - (current_time - queue_time)})
+        "body": json.dumps({"expires_in": int(QUEUE_POSITION_EXPIRY_PERIOD) - (current_time - queue_time)})
     }
