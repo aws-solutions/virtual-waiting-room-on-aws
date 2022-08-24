@@ -44,6 +44,15 @@ REQUEST_SCOPES = ['openid']
 GRANT_TYPES = ['authorization_code']
 
 
+def bad_request():
+    """
+    This is a helper function that returns a standard client error response for several cases below.
+    """
+    return Response(status_code=400,
+                    body='Bad Request',
+                    headers={'Content-Type': 'text/plain'})
+
+
 def extract_oidc_request():
     """
     This function retrieves the parameters for the OIDC request
@@ -103,9 +112,7 @@ def authorize():
         app.log.info('invalid /authorize request')
     except (KeyError, IndexError, TypeError):
         app.log.error('validation failed')
-    return Response(status_code=400,
-                    body='Bad Request',
-                    headers={'Content-Type': 'text/plain'})
+    return bad_request()
 
 
 @app.route('/token',
@@ -157,9 +164,7 @@ def token():
             app.log.info('invalid /token request')
     except (KeyError, IndexError, TypeError):
         print_exception()
-    return Response(status_code=400,
-                    body='Bad Request',
-                    headers={'Content-Type': 'text/plain'})
+    return bad_request()
 
 
 @app.route('/userInfo', methods=['GET'])
@@ -204,9 +209,7 @@ def userinfo():
             app.log.info("tokens don't match")
     except (KeyError, IndexError, TypeError):
         app.log.error('validation failed')
-    return Response(status_code=400,
-                    body='Bad Request',
-                    headers={'Content-Type': 'text/plain'})
+    return bad_request()
 
 
 @app.route('/.well-known/openid-configuration', methods=['GET'])
