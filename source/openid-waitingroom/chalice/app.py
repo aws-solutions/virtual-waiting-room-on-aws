@@ -45,6 +45,9 @@ GRANT_TYPES = ['authorization_code']
 
 
 def bad_request():
+    """
+    This is a helper function that returns a standard client error response for several cases below.
+    """
     return Response(status_code=400,
                     body='Bad Request',
                     headers={'Content-Type': 'text/plain'})
