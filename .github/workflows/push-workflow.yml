@@ -117,7 +117,7 @@ jobs:
       [
         trufflehog-scan-job,
         bandit-check-job,
-        pylint-check-job,
+#         pylint-check-job,
         jshint-check-job,
         eslint-check-job,
         codeql-check-job
