@@ -11,9 +11,5 @@ def deep_clean(text):
     """
     Escape and clean all undesirable characters and tags in the input
     """
-    return bleach.clean(text,
-                        tags=[],
-                        attributes={},
-                        styles=[],
-                        strip=True,
-                        strip_comments=True)
+    return bleach.clean(text, tags=[], attributes={}, styles=[], strip=True, strip_comments=True)
+    
