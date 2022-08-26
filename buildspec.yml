@@ -3,7 +3,7 @@ version: 0.2
 phases:
   install:
     runtime-versions:
-      nodejs: 12
+      nodejs: 16
       python: 3.8
     commands:
       - echo "nothing to do in install"
@@ -20,7 +20,7 @@ phases:
       - chmod +x ./build-open-source-dist.sh && ./build-open-source-dist.sh $SOLUTION_NAME
       - echo "Open Source Dist completed `date`"
       - echo "Installing dependencies and executing unit tests - `pwd`"
-      - pip install ./pkg/virtual_waiting_room_on_aws_common-1.0.0-py3-none-any.whl && chmod +x ./run-unit-tests.sh && ./run-unit-tests.sh
+      - pip install ./pkg/virtual_waiting_room_on_aws_common-1.1.0-py3-none-any.whl && chmod +x ./run-unit-tests.sh && ./run-unit-tests.sh
       - echo "Installing dependencies and executing unit tests completed `date`"
   post_build:
     commands:

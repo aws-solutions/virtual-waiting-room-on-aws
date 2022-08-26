@@ -45,7 +45,7 @@ def create(event, _):
     auth = BotoAWSRequestsAuth(aws_host=parsed.netloc,
                                 aws_region=region,
                                 aws_service='execute-api')
-    response = requests.post(core_api, json=body, auth=auth)
+    response = requests.post(core_api, json=body, auth=auth, timeout=600)
     print(response.status_code)
 
 @helper.update

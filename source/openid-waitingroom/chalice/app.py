@@ -37,6 +37,7 @@ PRIVATE_API_ENDPOINT = os.environ.get("PRIVATE_API_ENDPOINT")
 API_REGION = os.environ.get("API_REGION")
 CLIENT_SECRET_ID = os.environ.get("CLIENT_SECRET_ID")
 ISSUER = os.environ.get("ISSUER")
+TIMEOUT = 60
 
 # these are open ID parameter values this module supports
 RESPONSE_TYPES = ['code']
@@ -152,7 +153,7 @@ def token():
             auth = BotoAWSRequestsAuth(aws_host=parsed.netloc,
                                        aws_region=API_REGION,
                                        aws_service='execute-api')
-            response = requests.post(generate_token_api, json=body, auth=auth)
+            response = requests.post(generate_token_api, json=body, auth=auth, timeout=TIMEOUT)
             # app.log.info(response.text)
             if response.status_code == 200:
                 return Response(status_code=200,
@@ -197,7 +198,7 @@ def userinfo():
         auth = BotoAWSRequestsAuth(aws_host=parsed.netloc,
                                    aws_region=API_REGION,
                                    aws_service='execute-api')
-        response = requests.post(private_api, json=body, auth=auth)
+        response = requests.post(private_api, json=body, auth=auth, timeout=TIMEOUT)
         if response.status_code == 200:
             clean_tokens = json.loads(response.text)
             clean_access_token = clean_tokens.get("access_token")
@@ -252,7 +253,7 @@ def jwks_json():
     public_jwk = {}
     public_api = f'{PUBLIC_API_ENDPOINT}/public_key?event_id={WAITING_ROOM_EVENT_ID}'
     try:
-        response = requests.get(public_api)
+        response = requests.get(public_api, timeout=TIMEOUT)
         if response.status_code == 200:
             public_jwk = json.loads(response.text)
     except (OSError, RuntimeError):

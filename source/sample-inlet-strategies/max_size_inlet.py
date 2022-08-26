@@ -22,6 +22,7 @@ EVENT_ID = os.environ.get("EVENT_ID")
 CORE_API_ENDPOINT = os.environ.get("CORE_API_ENDPOINT")
 CORE_API_REGION = os.environ.get("CORE_API_REGION")
 MAX_SIZE = int(os.environ.get("MAX_SIZE"))
+TIMEOUT = 60
 
 increment_by_api = f'{CORE_API_ENDPOINT}/increment_serving_counter'
 update_status_api = f'{CORE_API_ENDPOINT}/update_session'
@@ -60,7 +61,7 @@ def lambda_handler(event, context):
         
         # Call num_active_tokens and subtract result from max allowed users
         payload = {"event_id": EVENT_ID}
-        response = requests.get(active_tokens_api, params=payload, auth=auth)
+        response = requests.get(active_tokens_api, params=payload, auth=auth, timeout=TIMEOUT)
         active_tokens = response.json()["active_tokens"]
         capacity = MAX_SIZE - int(active_tokens)
 
@@ -81,7 +82,7 @@ def lambda_handler(event, context):
         print(f"exited: {exited}, num_updated_tokens: {num_updated_tokens}, capacity: {capacity}, increment_by: {increment_by}")
         # only increment counter if exited information was present or tokens were actually updated
         if exited or num_updated_tokens > 0:
-            response = requests.post(increment_by_api, json=body, auth=auth)
+            response = requests.post(increment_by_api, json=body, auth=auth, timeout=TIMEOUT)
             result = response.json()
     print(result)    
     return result
@@ -100,7 +101,7 @@ def update_tokens(status, request_ids, auth):
     }
     for request_id in request_ids:
         body["request_id"] = request_id
-        response = requests.post(update_status_api, json=body, auth=auth)
+        response = requests.post(update_status_api, json=body, auth=auth, timeout=TIMEOUT)
         if response.status_code == 200:
             num_updated_tokens += 1
         print(response.content.decode())

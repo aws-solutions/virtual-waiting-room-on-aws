@@ -19,5 +19,4 @@ def claim_dict(encoded_token):
     if len(payload) % 4:
         # not a multiple of 4, add padding:
         payload += '=' * (4 - len(payload) % 4)
-    claims = json.loads(base64.b64decode(payload).decode('utf-8'))
-    return claims
+    return json.loads(base64.b64decode(payload).decode('utf-8'))
