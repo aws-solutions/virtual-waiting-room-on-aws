@@ -38,7 +38,7 @@ def get_public_key():
         # retrieve from the core API
         api_endpoint = f'{PUBLIC_API_ENDPOINT}/public_key?event_id={WAITING_ROOM_EVENT_ID}'
         try:
-            response = requests.get(api_endpoint)
+            response = requests.get(api_endpoint, timeout=60)
             if response.status_code == 200:
                 with open(local_key_file, 'wt', encoding='utf-8') as cache_file:
                     cache_file.write(response.text)
