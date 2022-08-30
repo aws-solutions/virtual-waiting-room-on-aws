@@ -11,14 +11,19 @@
 template_dir="$PWD"
 source_dir="$template_dir/../source"
 
+echo "Installing coverage"
+pip install coverage
+
 echo "------------------------------------------------------------------------------"
 echo " Test core API functions"
 echo "------------------------------------------------------------------------------"
 cd $source_dir/core-api/lambda_functions
-python lambda_functions_tests.py -v
+coverage run lambda_functions_tests.py
+coverage xml
 
 echo "------------------------------------------------------------------------------"
 echo " Test core API custom resources functions"
 echo "------------------------------------------------------------------------------"
 cd $source_dir/core-api/custom_resources
-python custom_resource_tests.py -v
+coverage run custom_resource_tests.py
+coverage xml
