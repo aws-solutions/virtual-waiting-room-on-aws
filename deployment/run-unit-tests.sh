@@ -11,9 +11,6 @@
 template_dir="$PWD"
 source_dir="$template_dir/../source"
 
-echo "Installing coverage"
-pip install coverage
-
 echo "------------------------------------------------------------------------------"
 echo " Test core API functions"
 echo "------------------------------------------------------------------------------"
