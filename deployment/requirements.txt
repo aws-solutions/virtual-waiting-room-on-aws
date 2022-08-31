@@ -14,3 +14,4 @@ python-dateutil
 redis
 requests
 testresources
+coverage
