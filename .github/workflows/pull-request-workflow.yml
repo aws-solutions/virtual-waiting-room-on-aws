@@ -150,7 +150,7 @@ jobs:
           safety check -r deployment/requirements.txt
       - name: Install required system packages
         run: |
-          pip install --upgrade -r deployment/requirements.txt 2> error.txt
+          pip install -r deployment/requirements.txt 2> error.txt
           if [ -s error.txt ]; then
             echo "ERROR: System package installation failed."
             cat error.txt
