@@ -15,10 +15,14 @@ echo "--------------------------------------------------------------------------
 echo " Test core API functions"
 echo "------------------------------------------------------------------------------"
 cd $source_dir/core-api/lambda_functions
-python lambda_functions_tests.py -v
+coverage run lambda_functions_tests.py
+coverage xml
+sed -i -- 's/filename\=\"/filename\=\"source\/core-api\/lambda_functions\//g' coverage.xml
 
 echo "------------------------------------------------------------------------------"
 echo " Test core API custom resources functions"
 echo "------------------------------------------------------------------------------"
 cd $source_dir/core-api/custom_resources
-python custom_resource_tests.py -v
+coverage run custom_resource_tests.py
+coverage xml
+sed -i -- 's/filename\=\"/filename\=\"source\/core-api\/custom_resources\//g' coverage.xml

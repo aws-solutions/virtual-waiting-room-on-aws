@@ -16,7 +16,7 @@ REGIONS="ap-northeast-1 ap-south-1 ap-southeast-1 ca-central-1 eu-central-1 eu-n
 ACL="public-read"
 DEPLOY_TYPE="dev"
 SOLUTION_NAME="virtual-waiting-room-on-aws"
-VERSION="v1.0.0"
+VERSION="v1.1.0"
 
 while getopts 'a:b:p:r:s:t:v:h' OPTION; do
   case "$OPTION" in
@@ -41,7 +41,7 @@ while getopts 'a:b:p:r:s:t:v:h' OPTION; do
     h)
       echo
       echo "script usage: $(basename $0) [-b BucketBasename] [-s SolutionName] [-v VersionString] [-r RegionsForDeploy] [-a ACLSettings(public-read|none)] [-t DeployType(dev|release)]" >&2
-      echo "example usage: ./$(basename $0) -b swr -s virtual-waiting-room-on-aws -v v1.0.0 -r \"us-west-2 us-east-1\" -a public-read -t dev" >&2
+      echo "example usage: ./$(basename $0) -b swr -s virtual-waiting-room-on-aws -v v1.1.0 -r \"us-west-2 us-east-1\" -a public-read -t dev" >&2
       echo
       exit 1
       ;;

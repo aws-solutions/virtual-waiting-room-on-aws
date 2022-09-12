@@ -169,6 +169,7 @@ jobs:
       - name: Run unit tests
         run: |
           cd deployment
+          pip install pkg/virtual_waiting_room_on_aws_common-1.1.0-py3-none-any.whl
           ./run-unit-tests.sh
   
   pa11y-check-job:

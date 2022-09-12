@@ -289,3 +289,79 @@ The following sequence diagram shows the steps that are used with the Virtual Wa
 
 ![Use API Gateway Authorizer Sequence Diagram](use-api-gateway-authorizer.jpg)
 
+
+
+
+
+## Understanding Queue Position Expiry
+
+### Template parameters pertaining to queue position expiry 
+1. EnableQueuePositionExpiry = allowed values of true or false.  
+If set to `False`, queue position expiry period is not applicable.
+
+2. QueuePositionExpiryPeriod (*QPExP*) = value is specified in seconds.  
+It is the time interval beyond which a queue is ineligible to generate a token.
+
+3. IncrSvcOnQueuePositionExpiry (*IncSCQP*) = allowed values of true or false.  
+If set to `True`, SC is automatically advanced based on expired queue positions that were unable to generate tokens.
+
+### Some definitions  
+-   Queue position entry time (*QPET*) = time at which a particular RID enters the queue  
+-   Token request time (*TRT*) = time at which RID requests a token, approx. current time
+-   Serving Counter issue time (*SCIT*) = time at which the serving counter is incremented  
+-   Time in Queue (*TIQ*) = calculated based on eligibility to obtain a token when a particular *RID* gets in the queue  
+-   Max Queue Position Expired (*MQPE*) = marker for upper limit of queue positions that have expired (calculated metric) 
+    -   If `QP <= MQPE` then we know the corresponding queue positions has expired without the need to check it's *TIQ*
+
+### How do the related Dynamo DB tables look like?
+Queue Position EntryTime Table  
+Updated when when a request id enters a queue.  
+Example:  
+|Request Id | Queue Position | Entry time | Status | 
+---- | --- | --- | --- | 
+1a02207b-92d5-48e0-820f-59329a86230c | 1 |  166023612 | 0
+7678f7fb-6535-4a06-a3ca-acbf62120e15 | 4 |  166023620 | 0
+c5ba2727-5e3f-43a2-9705-b4cad7c4198a | 2 |  166023614 | 0
+4369451c-5070-44a6-a5c7-421ff976bedb | 5 |  166023622 | 0
+32b6d7be-fd56-4a6a-a71c-25a15fab5089 | 3 |  166023615 | 0
+
+Serving Counter IssuedAt Table (*SCIT*)  
+Updated when the serving counter is incremented.  
+The cumulative value is recorded in the Serving Counter column.  
+Queue positions served is updated when a token is successfully generated for a queue position in the serving counter range  
+Example: 
+|Event Id|Serving Counter| Issue time | Queue Positions Served| 
+---- | --- | --- | --- | 
+|Sample | 10 | 166023600 | 8
+|Sample | 25 | 166023610 | 15
+|Sample | 45 | 166023620 | 6
+|Sample | 100 | 166023690 | 49
+
+### How does *QPExP* work?  
+Scenarios when you get in the queue: 
+1. Serving Counter (SC) >= Queue position (QP)  
+In this case, the TIQ is the time till the generation of JWT token is requested  
+`TIQ =  TRT - QPET`
+2. Serving Counter < Queue Position  
+RID is eligible to obtain a token only when SC >= QP  
+In this case TIQ is calculated from the time once the SC >= QP  
+`TIQ = TRT - SCIT` 
+
+Succinctly `TIQ = Max(QPET, SCIT)`  
+If `TIQ > QPET` then the *RID is no longer eligible* to obtain a JWT token else a token is generated
+
+### Lambda: set_max_queue_position_expired
+This function is invoked periodically every minute. 
+This checks the boundary values of *SCIT* if there is an expired QP corresponding to that value.  
+If such a queue position exists then the MQPE value is set to that particular SC.  
+We obtain values from *SCIT* with the condition `SC > MQPT` 
+
+### Lambda: get_queue_position_expiry_time
+This is invoked by calling the public_api?eventId=EvtId&requestId=reqId  
+If `TIQ > QPET` then the remaining time is returned in seconds else an error message is returned 
+
+### Automatic Serving Counter increment based on expired queue positions. How does IncSCQP work ?  
+In set_max_queue_position lambda, if `IncSCQP == True` then the serving counter is advanced using the following logic  
+Increment the serving counter by taking the difference of counter item entries and subtract positions served in that range  
+`Increment by = [(Current counter - Previous counter) - (Queue positions served in that range)]`  
+This is done to recover *SC* values that were not used due to *QPExp*
