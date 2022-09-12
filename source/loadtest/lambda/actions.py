@@ -8,9 +8,8 @@ start and stop the load testing operations.
 
 # pylint: disable=line-too-long
 
-from distutils.command.config import config
 import json
-import random
+import secrets
 from os import environ
 from time import sleep
 
@@ -103,7 +102,7 @@ def create_coordinator(params):
             "DeleteOnTermination": True,
             "DeviceIndex": 0,
             "Groups": [environ["SECURITY_GROUP"]],
-            "SubnetId": random.choice(COORDINATOR_SUBNETS)
+            "SubnetId": secrets.choice(COORDINATOR_SUBNETS)
         }],
         IamInstanceProfile={"Name": environ.get("EC2_INSTANCE_PROFILE_NAME")},
         UserData=CMD_COORDINATOR %

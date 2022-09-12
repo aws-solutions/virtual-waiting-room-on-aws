@@ -18,6 +18,10 @@ REGION_FILTER = """^(us\-|eu\-west|ca\-)"""
 BOTO3_CONFIG = Config(retries={'max_attempts': 25})
 
 class InstanceTypes():
+    """
+    This class is responsible for retrieving and
+    filtering instance types for testing choices
+    """
 
     def __init__(self) -> None:
         self.ec2_client = boto3.client("ec2", config=BOTO3_CONFIG)
@@ -61,7 +65,10 @@ class InstanceTypes():
 
 
 class Regions():
-
+    """
+    This class is responsible for retrieving and
+    filtering region names for test choices
+    """
     def __init__(self) -> None:
         self.names = sorted(
             boto3.session.Session().get_available_regions(service_name="ec2"))

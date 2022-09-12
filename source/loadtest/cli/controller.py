@@ -4,6 +4,10 @@
 This module is responsible for interacting with the
 Lambda Function controller to issues commands
 """
+
+# pylint: disable=line-too-long,consider-using-dict-items
+
+
 import json
 import uuid
 
@@ -68,6 +72,10 @@ class LoadTestController:
                     worker_processes_per_instance,
                     worker_regions,
                     coordinator_ip=None):
+        """
+        This function is responsible for sending the command to
+        add more workers to an existing test
+        """
         if not self.coordinator_ip and not coordinator_ip:
             raise ValueError("a coordinator ip must be provided")
 
@@ -79,6 +87,10 @@ class LoadTestController:
                              worker_processes_per_instance, worker_regions)
 
     def teardown_test(self):
+        """
+        This function is responsible for sending the 
+        command to terminate EC2 instances
+        """
         print(f"destroying resources for test: {self.test_id}")
 
         for region in self.instances:

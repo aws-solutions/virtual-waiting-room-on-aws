@@ -1,17 +1,18 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
-
+"""
+This class defines the most common qualities of a test
+"""
 from locust import between, constant
 
 from custom_locust import CustomLocust
-from config.config import MIN_WAIT, MAX_WAIT, WAIT_TYPE
+from config.config import MAX_WAIT, WAIT_TYPE
 
 
 class BaseTest(CustomLocust):
     """
-    Define common client (simulated user_ behavior here.
-
-    All test cases should be derived from here.
+    Define common client (simulated user behavior here)
+    All test cases should be derived from here
     """
     abstract = True
 
@@ -22,9 +23,9 @@ class BaseTest(CustomLocust):
         wait_time = between(MAX_WAIT, MAX_WAIT)
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # add any properties here
-
-    # on_start is performed at the beginning of the test. good place to do things like signup
-    def on_start(self):
         pass
+
+    def on_start(self):
+        """
+        on_start is performed at the beginning of the test
+        """

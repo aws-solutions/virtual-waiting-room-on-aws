@@ -1,8 +1,5 @@
-import functools
-import time
-
-from locust import events
-
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 """
 Decorators:
     @require_authentication:
@@ -14,16 +11,21 @@ Decorators:
 """
 
 
+# pylint: disable=inconsistent-return-statements
+
+import functools
+import time
+
+from locust import events
+
+
 def require_authentication(func):
     """ Simple decorator to check for the authentication """
 
     @functools.wraps(func)
     def wrap(self, *args, **kwargs):
-        if not (
-                self.HEADERS.get("TODO")
-                and self.HEADERS.get("MAYBETODO")
-                and self.HEADERS.get("Authorization")
-        ):
+        if not (self.HEADERS.get("TODO") and self.HEADERS.get("MAYBETODO")
+                and self.HEADERS.get("Authorization")):
             raise Exception("Not Authenticated")
         return func(self, *args, **kwargs)
 

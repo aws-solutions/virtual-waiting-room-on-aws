@@ -1,23 +1,30 @@
-# need to monkey-patch before requests is imported
-# https://github.com/gevent/gevent/issues/1016
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+"""
+This class defines the most common qualities of a test
+"""
+
+# pylint: disable=too-many-instance-attributes
+
 import gevent.monkey
 
 gevent.monkey.patch_all()
 
 import json
-import threading
 
 import requests
 
-from decorators import capture_stats, require_authentication
+from decorators import capture_stats
 from config.config import EVENT_ID
 
 REQUEST_TIMEOUT_SECONDS = 20
+
 
 class CustomClient:
     """
     A custom requests based rest client.
     """
+
     def __init__(self, environment):
         # we derive the base_url for the rest api from the URL passed to the load test UI
         self.environment = environment
@@ -56,9 +63,11 @@ class CustomClient:
         """
         request_body = {"event_id": self.event_id}
         response = self.session.post(url=self.public_api_base_url +
-                                 "/assign_queue_num",
-                                 headers=self.headers,
-                                 data=json.dumps(request_body), stream=False, timeout=REQUEST_TIMEOUT_SECONDS)
+                                     "/assign_queue_num",
+                                     headers=self.headers,
+                                     data=json.dumps(request_body),
+                                     stream=False,
+                                     timeout=REQUEST_TIMEOUT_SECONDS)
         if response.status_code == 200:
             self.request_id = response.json()["api_request_id"]
             # print("request id: %s" % self.request_id)
@@ -78,15 +87,14 @@ class CustomClient:
                     "status": STATUS (1 = successfully entered, -1 = invalid request sent)
                 }
         """
-        query_str = "event_id=%s&request_id=%s" % (self.event_id,
-                                                   self.request_id)
-        response = self.session.get(url=self.public_api_base_url + "/queue_num?" +
-                                query_str,
-                                headers=self.headers, stream=False, timeout=REQUEST_TIMEOUT_SECONDS)
+        query_str = f"event_id={self.event_id}&request_id={self.request_id}"
+        response = self.session.get(url=self.public_api_base_url +
+                                    "/queue_num?" + query_str,
+                                    headers=self.headers,
+                                    stream=False,
+                                    timeout=REQUEST_TIMEOUT_SECONDS)
         if response.status_code == 200:
             self.queue_num = int(response.json()["queue_number"])
-            # print("assigned queue num: %s" % self.queue_num)
-        #response.close()
         return response
 
     @capture_stats
@@ -98,10 +106,12 @@ class CustomClient:
                     "serving_counter": INTEGER
                 }
         """
-        query_str = "event_id=%s" % (self.event_id)
+        query_str = f"event_id={self.event_id}"
         response = self.session.get(url=self.public_api_base_url +
-                                "/serving_num?" + query_str,
-                                headers=self.headers, stream=False, timeout=REQUEST_TIMEOUT_SECONDS)
+                                    "/serving_num?" + query_str,
+                                    headers=self.headers,
+                                    stream=False,
+                                    timeout=REQUEST_TIMEOUT_SECONDS)
         # print(response.status_code)
         if response.status_code == 200:
             serving_counter = int(response.json()["serving_counter"])
@@ -120,10 +130,12 @@ class CustomClient:
                     "waiting_num": INTEGER
                 }
         """
-        query_str = "event_id=%s" % (self.event_id)
-        response = self.session.get(url=self.public_api_base_url + "/waiting_num?" +
-                            query_str,
-                            headers=self.headers, stream=False, timeout=REQUEST_TIMEOUT_SECONDS)
+        query_str = f"event_id={self.event_id}"
+        response = self.session.get(url=self.public_api_base_url +
+                                    "/waiting_num?" + query_str,
+                                    headers=self.headers,
+                                    stream=False,
+                                    timeout=REQUEST_TIMEOUT_SECONDS)
         #response.close()
         return response
 
@@ -140,8 +152,10 @@ class CustomClient:
                 }
         """
         response = self.session.get(url=self.public_api_base_url +
-                            "/public_key?event_id=%s" % self.event_id,
-                            headers=self.headers, stream=False, timeout=REQUEST_TIMEOUT_SECONDS)
+                                    f"/public_key?event_id={self.event_id}",
+                                    headers=self.headers,
+                                    stream=False,
+                                    timeout=REQUEST_TIMEOUT_SECONDS)
         #response.close()
         return response
 
@@ -165,9 +179,11 @@ class CustomClient:
             "request_id": self.request_id
         }
         response = self.session.post(url=self.public_api_base_url +
-                                 "/generate_token",
-                                 headers=self.headers,
-                                 data=json.dumps(request_body), stream=False, timeout=REQUEST_TIMEOUT_SECONDS)
+                                     "/generate_token",
+                                     headers=self.headers,
+                                     data=json.dumps(request_body),
+                                     stream=False,
+                                     timeout=REQUEST_TIMEOUT_SECONDS)
         # print(response)
         if response.status_code == 200:
             self.access_token = response.json()["access_token"]
@@ -176,7 +192,7 @@ class CustomClient:
             self.finished = True
         #response.close()
         return response
-    
+
     @capture_stats
     def regenerate_token(self):
         """
@@ -197,9 +213,11 @@ class CustomClient:
             "request_id": self.request_id
         }
         response = self.session.post(url=self.public_api_base_url +
-                                 "/generate_token",
-                                 headers=self.headers,
-                                 data=json.dumps(request_body), stream=False, timeout=REQUEST_TIMEOUT_SECONDS)
+                                     "/generate_token",
+                                     headers=self.headers,
+                                     data=json.dumps(request_body),
+                                     stream=False,
+                                     timeout=REQUEST_TIMEOUT_SECONDS)
         # print(response)
         if response.status_code == 200:
             self.access_token = response.json()["access_token"]

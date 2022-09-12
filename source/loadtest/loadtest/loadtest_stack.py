@@ -1,3 +1,9 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+"""
+This module is responsible for the defining the top-level stack contents
+"""
+
 import json
 
 from aws_cdk import Stack, Duration, RemovalPolicy, CfnOutput
@@ -10,14 +16,12 @@ LOCUST_COORDINATOR_WORKERS_PORT = 5557
 
 
 class LoadTestStack(Stack):
+    """
+    This class is defines the infrastructure required to run load tests
+    """
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
-        """
-        Defines the infrastructure required to run load tests
-        """
-
         super().__init__(scope, construct_id, **kwargs)
-
         loadtest_bucket = aws_s3.Bucket(
             self,
             "loadtest",
