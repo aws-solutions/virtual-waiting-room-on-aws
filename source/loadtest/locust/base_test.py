@@ -3,6 +3,9 @@
 """
 This class defines the most common qualities of a test
 """
+
+# pylint: disable=no-name-in-module
+
 from locust import between, constant
 
 from custom_locust import CustomLocust

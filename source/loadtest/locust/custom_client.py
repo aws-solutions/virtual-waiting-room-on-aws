@@ -4,7 +4,7 @@
 This class defines the most common qualities of a test
 """
 
-# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes,no-name-in-module
 
 import gevent.monkey
 

@@ -5,6 +5,8 @@
 This module is responsible for synthesizing a new stack
 """
 
+# pylint: disable=no-name-in-module
+
 import aws_cdk
 
 from loadtest.loadtest_stack import LoadTestStack
