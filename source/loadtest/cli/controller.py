@@ -13,7 +13,7 @@ import uuid
 
 import boto3
 
-from config import Regions, REGION_FILTER, BOTO3_CONFIG
+from config import Regions, DEFAULT_REGION_FILTER, BOTO3_CONFIG
 
 REGIONS = Regions()
 
@@ -44,7 +44,7 @@ class LoadTestController:
         This function starts the load testing coordinator and workers
         """
         if not worker_regions:
-            worker_regions = REGIONS.list(REGION_FILTER)
+            worker_regions = REGIONS.list(DEFAULT_REGION_FILTER)
 
         self.test_id = str(uuid.uuid4())
 

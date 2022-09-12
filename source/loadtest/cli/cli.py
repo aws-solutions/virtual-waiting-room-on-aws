@@ -10,7 +10,7 @@ import boto3
 
 from PyInquirer import prompt
 from controller import LoadTestController
-from config import ACTIONS, InstanceTypes, Regions, INSTANCE_FILTER, REGION_FILTER, BOTO3_CONFIG
+from config import ACTIONS, InstanceTypes, Regions, DEFAULT_INSTANCE_FILTER, DEFAULT_REGION_FILTER, BOTO3_CONFIG
 
 REGIONS = Regions()
 INSTANCE_TYPES = InstanceTypes()
@@ -44,7 +44,7 @@ startup_questions = [
 ]
 
 worker_region_choices = []
-for name in REGIONS.list(REGION_FILTER):
+for name in REGIONS.list(DEFAULT_REGION_FILTER):
     worker_region_choices.append({"name": name, "checked": True})
 
 start_test_questions = [{
@@ -53,15 +53,19 @@ start_test_questions = [{
     'message': 'test to run (without .py)',
     'default': 'get_jwt_test'
 }, {
-    'type': 'list',
-    'name': 'coordinator_instance_type',
-    'message': 'load test coordinator instance type',
-    'choices': INSTANCE_TYPES.list(INSTANCE_FILTER),
+    'type':
+    'list',
+    'name':
+    'coordinator_instance_type',
+    'message':
+    'load test coordinator instance type',
+    'choices':
+    INSTANCE_TYPES.list(DEFAULT_INSTANCE_FILTER),
 }, {
     'type': 'list',
     'name': 'worker_instance_type',
     'message': 'load test worker instance type',
-    'choices': INSTANCE_TYPES.list(INSTANCE_FILTER)
+    'choices': INSTANCE_TYPES.list(DEFAULT_INSTANCE_FILTER)
 }, {
     'type': 'checkbox',
     'name': 'worker_regions',
