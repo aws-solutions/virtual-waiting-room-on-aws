@@ -4,6 +4,8 @@
 This module defines a custom client for testing
 """
 
+# pylint: disable=no-name-in-module,useless-parent-delegation
+
 import logging
 import logging.handlers
 import sys
@@ -20,7 +22,7 @@ class TestGetJWT(BaseTest):
     """
 
     def __init__(self, *args, **kwargs):
-        pass
+        super().__init__(*args, **kwargs)
 
     def on_start(self):
         """

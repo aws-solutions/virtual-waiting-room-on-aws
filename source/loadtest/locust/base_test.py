@@ -4,7 +4,7 @@
 This class defines the most common qualities of a test
 """
 
-# pylint: disable=no-name-in-module
+# pylint: disable=no-name-in-module,useless-parent-delegation
 
 from locust import between, constant
 
@@ -26,7 +26,7 @@ class BaseTest(CustomLocust):
         wait_time = between(MAX_WAIT, MAX_WAIT)
 
     def __init__(self, *args, **kwargs):
-        pass
+        super().__init__(*args, **kwargs)
 
     def on_start(self):
         """

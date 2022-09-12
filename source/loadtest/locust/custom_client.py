@@ -26,6 +26,7 @@ class CustomClient:
     """
 
     def __init__(self, environment):
+        
         # we derive the base_url for the rest api from the URL passed to the load test UI
         self.environment = environment
         self.public_api_base_url, self.private_api_base_url = environment.host.split(

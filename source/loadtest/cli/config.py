@@ -11,9 +11,9 @@ from botocore.config import Config
 
 ACTIONS = ['start new test', 'add workers to existing test']
 
-DEFAULT_INSTANCE_FILTER = """^t3\."""
+DEFAULT_INSTANCE_FILTER = """^(t3|c5|m5)\."""
 
-DEFAULT_REGION_FILTER = """^(us\-|eu\-west|ca\-)"""
+DEFAULT_REGION_FILTER = """^(us\-|eu\-west|ca\-|ap\-northeast\-1$|ap\-southeast\-1$)"""
 
 BOTO3_CONFIG = Config(retries={'max_attempts': 25})
 
