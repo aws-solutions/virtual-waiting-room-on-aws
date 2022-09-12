@@ -1,6 +1,6 @@
 from locust import User
 
-from src.custom_client import CustomClient
+from custom_client import CustomClient
 
 
 class CustomLocust(User):

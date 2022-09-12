@@ -1,24 +1,29 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+"""
+This module is responsible for interacting with the
+Lambda Function controller to issues commands
+"""
 import json
 import uuid
 
 import boto3
 
+from config import Regions, REGION_FILTER, BOTO3_CONFIG
 
-ALL_REGIONS = [
-    'us-east-1',
-    'us-east-2',
-    'us-west-1',
-    'us-west-2'
-]
-
-LAMBDA_FUNCTION_NAME = "loadtest_controller"
+REGIONS = Regions()
 
 
 class LoadTestController:
-    def __init__(self, git_user, git_pass):
-        self.git_user = git_user
-        self.git_pass = git_pass
-        self.lambda_client = boto3.client('lambda')
+    """
+    This class is responsible for encapsulating the
+    commands for Lambda function controller
+    """
+
+    def __init__(self, event_id, lamda_arn):
+        self.event_id = event_id
+        self.lamda_arn = lamda_arn
+        self.lambda_client = boto3.client('lambda', config=BOTO3_CONFIG)
         self.test_id = None
         self.coordinator_ip = None
         self.instances = {}
@@ -31,24 +36,30 @@ class LoadTestController:
                    worker_processes_per_instance=2,
                    worker_instances_per_region=10,
                    worker_regions=None):
-
+        """
+        This function starts the load testing coordinator and workers
+        """
         if not worker_regions:
-            worker_regions = ALL_REGIONS
+            worker_regions = REGIONS.list(REGION_FILTER)
 
         self.test_id = str(uuid.uuid4())
 
-        print("~"*64)
-        print("starting load test: %s" % self.test_id)
-        print("running test: %s" % test)
+        print("~" * 64)
+        print(f"starting load test: {self.test_id}")
+        print(f"running test: {test}")
         print("using worker regions:")
         print(*worker_regions)
-        print("using worker type: %s" % worker_instance_type)
-        print("workers instances per region: %s" % worker_instances_per_region)
-        print("worker processes per instance: %s" % worker_processes_per_instance)
-        print("~"*64)
+        print(f"using worker type: {worker_instance_type}")
+        print(f"workers instances per region: {worker_instances_per_region}")
+        print(
+            f"worker processes per instance: {worker_processes_per_instance}")
+        print("~" * 64)
 
-        self._create_coordinator(test, coordinator_instance_type, coordinator_region)
-        self._create_workers(test, worker_instance_type, worker_instances_per_region, worker_processes_per_instance, worker_regions)
+        self._create_coordinator(test, coordinator_instance_type,
+                                 coordinator_region)
+        self._create_workers(test, worker_instance_type,
+                             worker_instances_per_region,
+                             worker_processes_per_instance, worker_regions)
 
     def add_workers(self,
                     test,
@@ -63,23 +74,19 @@ class LoadTestController:
         if coordinator_ip:
             self.coordinator_ip = coordinator_ip
 
-        self._create_workers(
-            test,
-            worker_instance_type,
-            worker_instances_per_region,
-            worker_processes_per_instance,
-            worker_regions
-        )
+        self._create_workers(test, worker_instance_type,
+                             worker_instances_per_region,
+                             worker_processes_per_instance, worker_regions)
 
     def teardown_test(self):
-        print("destroying resources for test: %s" % self.test_id)
+        print(f"destroying resources for test: {self.test_id}")
 
         for region in self.instances:
-            print("-"*32)
-            print("region: %s" % region)
+            print("-" * 32)
+            print(f"region: {region}")
             print("instances:")
             print(*self.instances[region])
-            print("-"*32)
+            print("-" * 32)
 
         event = {
             "action": "destroy",
@@ -89,32 +96,30 @@ class LoadTestController:
         }
 
         result = self.lambda_client.invoke(
-            FunctionName=LAMBDA_FUNCTION_NAME,
+            FunctionName=self.lamda_arn,
             InvocationType='RequestResponse',
-            Payload=bytes(json.dumps(event).encode('utf-8'))
-        )
+            Payload=bytes(json.dumps(event).encode('utf-8')))
 
         result = json.loads(result["Payload"].read())
-        result_body = json.loads(result["body"])
+        # result_body = json.loads(result["body"])
 
-    def _create_coordinator(self, test, coordinator_instance_type, coordinator_region):
+    def _create_coordinator(self, test, coordinator_instance_type,
+                            coordinator_region):
         event = {
             "action": "create_coordinator",
             "params": {
                 "coordinator_instance_type": coordinator_instance_type,
                 "coordinator_region": coordinator_region,
-                "gituser": self.git_user,
-                "gituserpass": self.git_pass,
-                "test": "test/%s.py" % test,
+                "event_id": self.event_id,
+                "test": f"{test}.py",
                 "test_id": self.test_id,
             }
         }
 
         result = self.lambda_client.invoke(
-            FunctionName=LAMBDA_FUNCTION_NAME,
+            FunctionName=self.lamda_arn,
             InvocationType='RequestResponse',
-            Payload=bytes(json.dumps(event).encode('utf-8'))
-        )
+            Payload=bytes(json.dumps(event).encode('utf-8')))
 
         result = json.loads(result["Payload"].read())
         result_body = json.loads(result["body"])
@@ -122,14 +127,11 @@ class LoadTestController:
         self._update_instances(result_body["instance_ids"])
         self.coordinator_ip = result_body["coordinator_ip"]
         print("Locust UI can be reached at: ")
-        print("http://%s:8089" % self.coordinator_ip)
+        print(f"http://{self.coordinator_ip}:8089")
 
-    def _create_workers(self,
-                        test,
-                        worker_instance_type,
+    def _create_workers(self, test, worker_instance_type,
                         worker_instances_per_region,
-                        worker_processes_per_instance,
-                        worker_regions):
+                        worker_processes_per_instance, worker_regions):
 
         if not self.test_id:
             self.test_id = "added to a running test"
@@ -138,9 +140,8 @@ class LoadTestController:
             "action": "create_workers",
             "params": {
                 "coordinator_ip": self.coordinator_ip,
-                "gituser": self.git_user,
-                "gituserpass": self.git_pass,
-                "test": "test/%s.py" % test,
+                "event_id": self.event_id,
+                "test": f"{test}.py",
                 "test_id": self.test_id,
                 "worker_instance_type": worker_instance_type,
                 "worker_instances_per_region": worker_instances_per_region,
@@ -150,10 +151,9 @@ class LoadTestController:
         }
 
         result = self.lambda_client.invoke(
-            FunctionName=LAMBDA_FUNCTION_NAME,
+            FunctionName=self.lamda_arn,
             InvocationType='RequestResponse',
-            Payload=bytes(json.dumps(event).encode('utf-8'))
-        )
+            Payload=bytes(json.dumps(event).encode('utf-8')))
 
         result = json.loads(result["Payload"].read())
         result_body = json.loads(result["body"])

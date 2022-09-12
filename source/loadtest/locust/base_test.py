@@ -1,8 +1,11 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 
 from locust import between, constant
 
-from src.custom_locust import CustomLocust
-from src.config.config import MIN_WAIT, MAX_WAIT, WAIT_TYPE
+from custom_locust import CustomLocust
+from config.config import MIN_WAIT, MAX_WAIT, WAIT_TYPE
+
 
 class BaseTest(CustomLocust):
     """
@@ -18,13 +21,10 @@ class BaseTest(CustomLocust):
     else:
         wait_time = between(MAX_WAIT, MAX_WAIT)
 
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # add any properties here
 
-
     # on_start is performed at the beginning of the test. good place to do things like signup
     def on_start(self):
         pass
-

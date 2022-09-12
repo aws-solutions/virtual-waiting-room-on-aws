@@ -2,7 +2,7 @@ from time import sleep
 
 from locust import task
 
-from src.base_test import BaseTest
+from base_test import BaseTest
 
 import resource
 #print(resource.getrlimit(resource.RLIMIT_NOFILE))

@@ -9,8 +9,8 @@ import threading
 
 import requests
 
-from src.decorators import capture_stats, require_authentication
-from src.config.config import EVENT_ID
+from decorators import capture_stats, require_authentication
+from config.config import EVENT_ID
 
 REQUEST_TIMEOUT_SECONDS = 20
 

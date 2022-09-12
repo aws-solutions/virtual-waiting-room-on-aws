@@ -1,41 +1,38 @@
 #!/usr/bin/env python3
-import os
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+"""
+This module is responsible for handling CLI commands from the user and
+interacting with the Lambda Function controller deployed by the stack.
+"""
+
+import boto3
 
 from PyInquirer import prompt
-
 from controller import LoadTestController
+from config import ACTIONS, InstanceTypes, Regions, INSTANCE_FILTER, REGION_FILTER, BOTO3_CONFIG
 
-
-ACTIONS = [
-    'start new test',
-    'add workers to existing test'
-]
-
-INSTANCE_TYPES = [
-    'c5.xlarge',
-    'c5.2xlarge',
-    'c5.4xlarge'
-]
-
-REGIONS = [
-    'us-east-1',
-    'us-east-2',
-    'us-west-1',
-    'us-west-2'
-]
+REGIONS = Regions()
+INSTANCE_TYPES = InstanceTypes()
 
 startup_questions = [
     {
         'type': 'input',
-        'name': 'gituser',
-        'message': 'code commit git user:',
-        'default': "gituser-at-727583892702"
+        'name': 'event_id',
+        'message': 'Virtual Waiting Room event ID',
+        'default': 'Sample'
     },
     {
-        'type': 'password',
-        'name': 'gituserpass',
-        'message': 'code commit git user password: ',
-        'default': "J3BcwnLlReGJt0CApVSFQ16SR6ZOp3rlKaCxrvwWjAs="
+        'type': 'input',
+        'name': 'stack_name',
+        'message': 'Load testing CDK stack name',
+        'default': 'LoadTestStack'
+    },
+    {
+        'type': 'input',
+        'name': 'stack_region',
+        'message': 'Load testing CDK stack region',
+        'default': boto3.session.Session().region_name
     },
     {
         'type': 'list',
@@ -46,157 +43,92 @@ startup_questions = [
     },
 ]
 
-start_test_questions = [
-    {
-        'type': 'input',
-        'name': 'test',
-        'message': 'test to run (without .py)',
-        'default': 'get_jwt_test'
-    },
-    {
-        'type': 'list',
-        'name': 'coordinator_instance_type',
-        'message': 'load test coordinator instance type',
-        'choices': INSTANCE_TYPES,
-        'default': INSTANCE_TYPES[2]
-    },
-    {
-        'type': 'list',
-        'name': 'coordinator_region',
-        'message': 'what region should the load test coordinator be deployed into?',
-        'choices': REGIONS,
-        'default': REGIONS[3]
-    },
-    {
-        'type': 'list',
-        'name': 'worker_instance_type',
-        'message': 'load test worker instance type',
-        'choices': INSTANCE_TYPES,
-        'default': INSTANCE_TYPES[2]
-    },
-    {
-        'type': 'checkbox',
-        'name': 'worker_regions',
-        'message': 'what regions should load test workers be deployed into?',
-        'choices': [
-            {
-                "name": "us-east-1",
-                "checked": True
-            },
-            {
-                "name": "us-east-2",
-                "checked": True
-            },
-            {
-                "name": "us-west-1",
-                "checked": True
-            },
-            {
-                "name": "us-west-2",
-                "checked": True
-            },
-        ]
-    },
-    {
-        'type': 'input',
-        'name': 'worker_instances_per_region',
-        'message': 'how many worker instances should be deployed into the selected regions?',
-        'default': '10',
-    },
-    {
-        'type': 'list',
-        'name': 'worker_processes_per_instance',
-        'message': 'how many worker processes should be started on each worker instance?',
-        'choices': [
-            '4',
-            '8',
-            '16',
-            '32'
-        ],
-        'default': '16',
-    }
+worker_region_choices = []
+for name in REGIONS.list(REGION_FILTER):
+    worker_region_choices.append({"name": name, "checked": True})
 
-]
+start_test_questions = [{
+    'type': 'input',
+    'name': 'test',
+    'message': 'test to run (without .py)',
+    'default': 'get_jwt_test'
+}, {
+    'type': 'list',
+    'name': 'coordinator_instance_type',
+    'message': 'load test coordinator instance type',
+    'choices': INSTANCE_TYPES.list(INSTANCE_FILTER),
+}, {
+    'type': 'list',
+    'name': 'worker_instance_type',
+    'message': 'load test worker instance type',
+    'choices': INSTANCE_TYPES.list(INSTANCE_FILTER)
+}, {
+    'type': 'checkbox',
+    'name': 'worker_regions',
+    'message': 'what regions should load test workers be deployed into?',
+    'choices': worker_region_choices
+}, {
+    'type': 'input',
+    'name': 'worker_instances_per_region',
+    'message':
+    'how many worker instances should be deployed into the selected regions?',
+    'default': '5',
+}, {
+    'type': 'list',
+    'name': 'worker_processes_per_instance',
+    'message':
+    'how many worker processes should be started on each worker instance?',
+    'choices': ['4', '8', '16', '32'],
+    'default': '16',
+}]
 
-confirm_questions = [
-    {
-        'type': 'confirm',
-        'name': 'confirm',
-        'message': 'confirm choices',
-        'default': False
-    }
-]
+confirm_questions = [{
+    'type': 'confirm',
+    'name': 'confirm',
+    'message': 'confirm choices',
+    'default': False
+}]
 
+test_running_questions = [{
+    'type': 'list',
+    'name': 'action',
+    'message': 'test is running. what action would you like to perform?',
+    'choices': ['add workers', 'terminate test']
+}]
 
-test_running_questions = [
-    {
-        'type': 'list',
-        'name': 'action',
-        'message': 'test is running. what action would you like to perform?',
-        'choices': [
-            'add workers',
-            'terminate test'
-        ]
-    }
-]
-
-add_workers_questions = [
-    {
-        'type': 'input',
-        'name': 'coordinator_ip',
-        'message': 'coordinator ip address',
-    },
-    {
-        'type': 'input',
-        'name': 'test',
-        'message': 'test to run (without .py)',
-        'default': 'get_jwt_test'
-    },
-    {
-        'type': 'list',
-        'name': 'worker_instance_type',
-        'message': 'load test worker instance type',
-        'choices': INSTANCE_TYPES,
-        'default': INSTANCE_TYPES[2]
-    },
-    {
-        'type': 'checkbox',
-        'name': 'worker_regions',
-        'message': 'what regions should load test workers be deployed into?',
-        'choices': [
-            {
-                "name": "us-east-1",
-                "checked": True
-            },
-            {
-                "name": "us-east-2"
-            },
-            {
-                "name": "us-west-1"
-            },
-            {
-                "name": "us-west-2"
-            },
-        ]
-    },
-    {
-        'type': 'input',
-        'name': 'worker_instances_per_region',
-        'message': 'how many worker instances should be deployed into the selected regions?',
-        'default': '10',
-    },
-    {
-        'type': 'list',
-        'name': 'worker_processes_per_instance',
-        'message': 'how many worker processes should be started on each worker instance?',
-        'choices': [
-            '4',
-            '8',
-            '16'
-        ],
-        'default': '16',
-    }
-]
+add_workers_questions = [{
+    'type': 'input',
+    'name': 'coordinator_ip',
+    'message': 'coordinator ip address',
+}, {
+    'type': 'input',
+    'name': 'test',
+    'message': 'test to run (without .py)',
+    'default': 'get_jwt_test'
+}, {
+    'type': 'list',
+    'name': 'worker_instance_type',
+    'message': 'load test worker instance type',
+    'choices': INSTANCE_TYPES
+}, {
+    'type': 'checkbox',
+    'name': 'worker_regions',
+    'message': 'what regions should load test workers be deployed into?',
+    'choices': worker_region_choices
+}, {
+    'type': 'input',
+    'name': 'worker_instances_per_region',
+    'message':
+    'how many worker instances should be deployed into the selected regions?',
+    'default': '10',
+}, {
+    'type': 'list',
+    'name': 'worker_processes_per_instance',
+    'message':
+    'how many worker processes should be started on each worker instance?',
+    'choices': ['4', '8', '16'],
+    'default': '16',
+}]
 
 if __name__ == '__main__':
     print()
@@ -206,7 +138,15 @@ if __name__ == '__main__':
     print()
 
     startup = prompt(startup_questions)
-    ltc = LoadTestController(startup["gituser"], startup["gituserpass"])
+    cloudformation = boto3.client("cloudformation",
+                                  region_name=startup["stack_region"],
+                                  config=BOTO3_CONFIG)
+    response = cloudformation.describe_stacks(StackName=startup["stack_name"])
+    stack = next((item for item in response["Stacks"]
+                  if item['StackName'] == startup["stack_name"]), None)
+    lambda_arn = next((item['OutputValue'] for item in stack["Outputs"]
+                       if item['OutputKey'] == 'LambdaControllerArn'), None)
+    ltc = LoadTestController(startup["event_id"], lambda_arn)
 
     if startup["action"] == "start new test":
         print("starting new test...\n")
@@ -214,32 +154,34 @@ if __name__ == '__main__':
         start_confirm = False
         while not start_confirm:
             start = prompt(start_test_questions)
-            print("="*64)
+            print("=" * 64)
             print('starting parameters:')
-            print('test to run: tests/%s.py' % start["test"])
-            print('coordinator instance type: %s' % start["coordinator_instance_type"])
-            print('coordinator region: %s' % start["coordinator_region"])
-            print('worker instance type: %s' % start["worker_instance_type"])
-            print('worker processes per instance: %s' % start["worker_processes_per_instance"])
-            print('worker regions: %s' % start["worker_regions"])
-            print('worker instances per region: %s' % start["worker_instances_per_region"])
-            print("="*64)
+            print(f'test to run: tests/{start["test"]}.py')
+            print(
+                f'coordinator instance type: {start["coordinator_instance_type"]}'
+            )
+            print(f'coordinator region: {startup["stack_region"]}')
+            print(f'worker instance type: {start["worker_instance_type"]}')
+            print(
+                f'worker processes per instance: {start["worker_processes_per_instance"]}'
+            )
+            print(f'worker regions: {start["worker_regions"]}')
+            print(
+                f'worker instances per region: {start["worker_instances_per_region"]}'
+            )
+            print("=" * 64)
             start_confirm = prompt(confirm_questions)["confirm"]
 
-        ltc.start_test(
-            start["test"],
-            start["coordinator_instance_type"],
-            start["coordinator_region"],
-            start["worker_instance_type"],
-            int(start["worker_processes_per_instance"]),
-            int(start["worker_instances_per_region"]),
-            start["worker_regions"]
-        )
+        ltc.start_test(start["test"], start["coordinator_instance_type"],
+                       startup["stack_region"], start["worker_instance_type"],
+                       int(start["worker_processes_per_instance"]),
+                       int(start["worker_instances_per_region"]),
+                       start["worker_regions"])
 
-        if os.uname().sysname == "Darwin":
-            print("I see you're on a mac... let me get that for you.")
-            print("will need to refresh the page when coordinator is ready")
-            os.system('open http://%s:8089' % ltc.coordinator_ip)
+        # if os.uname().sysname == "Darwin":
+        #     print("I see you're on a mac... let me get that for you.")
+        #     print("will need to refresh the page when coordinator is ready")
+        #     os.system(f'open http://{ltc.coordinator_ip}:8089')
 
         test_running = True
         while test_running:
@@ -256,20 +198,16 @@ if __name__ == '__main__':
                     workers_to_add["worker_instance_type"],
                     int(workers_to_add["worker_instances_per_region"]),
                     int(workers_to_add["worker_processes_per_instance"]),
-                    workers_to_add["worker_regions"],
-                    ltc.coordinator_ip
-                )
+                    workers_to_add["worker_regions"], ltc.coordinator_ip)
 
     elif startup["action"] == "add workers to existing test":
         workers_to_add = prompt(add_workers_questions)
-        ltc.add_workers(
-            workers_to_add["test"],
-            workers_to_add["worker_instance_type"],
-            int(workers_to_add["worker_instances_per_region"]),
-            int(workers_to_add["worker_processes_per_instance"]),
-            workers_to_add["worker_regions"],
-            workers_to_add["coordinator_ip"]
-        )
+        ltc.add_workers(workers_to_add["test"],
+                        workers_to_add["worker_instance_type"],
+                        int(workers_to_add["worker_instances_per_region"]),
+                        int(workers_to_add["worker_processes_per_instance"]),
+                        workers_to_add["worker_regions"],
+                        workers_to_add["coordinator_ip"])
 
         test_running = True
         while test_running:
@@ -286,8 +224,6 @@ if __name__ == '__main__':
                     workers_to_add["worker_instance_type"],
                     int(workers_to_add["worker_instances_per_region"]),
                     int(workers_to_add["worker_processes_per_instance"]),
-                    workers_to_add["worker_regions"],
-                    ltc.coordinator_ip
-                )
+                    workers_to_add["worker_regions"], ltc.coordinator_ip)
 
-    print("have an AWSome day.")
+    print("Exiting")
