@@ -78,8 +78,7 @@ export default {
     expires() {
       // return the token expiration in ms timestamp
       if (this.hasToken) {
-        const timestamp = this.claims.exp * 1000;
-        return timestamp;
+        return this.claims.exp * 1000;
       } else {
         return 0;
       }
