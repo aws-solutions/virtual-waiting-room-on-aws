@@ -14,7 +14,7 @@ from time import time
 from boto3.dynamodb.conditions import Key
 from counters import MAX_QUEUE_POSITION_EXPIRED, SERVING_COUNTER, TOKEN_COUNTER
 
-# nosonar
+# NOSONAR
 def generate_token_base_method(
         event_id, request_id, headers, rc, enable_queue_position_expiry, queue_position_expiry_period, 
         secrets_client, secret_name_prefix, validity_period, issuer, events_client, event_bus_name, is_key_id_in_header,

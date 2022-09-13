@@ -79,13 +79,11 @@ def lambda_handler(event, _):
             )
             print(response)
             q_start_num += 1 
-        # nosonar
-        except Exception as exception:
+        except Exception as exception: # NOSONAR
             print(exception)
             return_with_exception = True
     if return_with_exception:
-        # nosonar
-        raise Exception("one or more messages failed processing") 
+        raise Exception("one or more messages failed processing") # NOSONAR
 
     # return the current count based on this batch process
     return cur_count
