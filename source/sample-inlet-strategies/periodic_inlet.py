@@ -28,7 +28,7 @@ CLOUDWATCH_ALARM = os.environ.get("CLOUDWATCH_ALARM")
 cw_client = boto3.client('cloudwatch')
 TIMEOUT = 60
 
-def lambda_handler(event, context):
+def lambda_handler(event, _):
     """
     This function is responsible for incrementing the serving counter on a periodic basis
     """

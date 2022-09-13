@@ -60,7 +60,7 @@ def extract_oidc_request():
     """
     request = app.current_request
     # extract the query parameters sent from the site
-    query_params = request.query_params if not request.query_params is None else {}
+    query_params = request.query_params if request.query_params is not None else {}
     client_id = deep_clean(unquote(query_params.get('client_id', '')))
     redirect_uri = deep_clean(unquote(query_params.get('redirect_uri', '')))
     response_type = deep_clean(unquote(query_params.get('response_type', '')))
