@@ -29,7 +29,7 @@ update_status_api = f'{CORE_API_ENDPOINT}/update_session'
 active_tokens_api = f'{CORE_API_ENDPOINT}/num_active_tokens'
 num_updated_tokens = 0
 
-def lambda_handler(event, context):
+def lambda_handler(event, _):
     """
     This function is responsible for processing an SNS message to update serving counter
     """
