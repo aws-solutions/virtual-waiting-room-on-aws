@@ -30,7 +30,7 @@ export default {
   name: "App",
   data() {
     // default data model
-    const model = {
+    return {
       configuration: {
         endpoints: {
           valid: false,
@@ -43,7 +43,6 @@ export default {
         },
       },
     };
-    return model;
   },
   created() {
     document.title = "Virtual Waiting Room on AWS Control Panel";

@@ -99,13 +99,13 @@ def lambda_handler(event, _):
 
         if INCR_SVC_ON_QUEUE_POS_EXPIRY == 'true':
             queue_positions_served = int(serving_counter_item['queue_positions_served'])
-            incr_serving_counter(queue_positions_served, serving_counter_item_position, previous_serving_counter_position)
+            incr_serving_counter(rc, queue_positions_served, serving_counter_item_position, previous_serving_counter_position)
 
         # set prevous serving counter position to item serving counter position for the loop
         previous_serving_counter_position = serving_counter_item_position
 
 
-def incr_serving_counter(queue_positions_served, serving_counter_item_position, previous_serving_counter_position):
+def incr_serving_counter(rc, queue_positions_served, serving_counter_item_position, previous_serving_counter_position):
     """
     Function to increment the serving counter based on queue postions served (indirectly expired positions)
     """

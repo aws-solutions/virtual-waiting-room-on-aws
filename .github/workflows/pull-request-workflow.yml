@@ -150,7 +150,7 @@ jobs:
           safety check -r deployment/requirements.txt
       - name: Install required system packages
         run: |
-          pip install --upgrade --force-reinstall -r deployment/requirements.txt 2> error.txt
+          pip install -r deployment/requirements.txt 2> error.txt
           if [ -s error.txt ]; then
             echo "ERROR: System package installation failed."
             cat error.txt
@@ -169,6 +169,7 @@ jobs:
       - name: Run unit tests
         run: |
           cd deployment
+          pip install pkg/virtual_waiting_room_on_aws_common-1.1.0-py3-none-any.whl
           ./run-unit-tests.sh
   
   pa11y-check-job:

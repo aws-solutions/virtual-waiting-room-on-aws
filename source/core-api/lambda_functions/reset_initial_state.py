@@ -121,11 +121,9 @@ def lambda_handler(event, _):
             print('Reset completed')
             
             response = {
-                    "statusCode": 200,
-                    "headers": headers,
-                    "body": json.dumps({
-                            "message": "Reset completed"
-                    })
+                "statusCode": 200,
+                "headers": headers,
+                "body": json.dumps({ "message": "Reset completed" })
             }
         except Exception as other_exception:
             print(other_exception)

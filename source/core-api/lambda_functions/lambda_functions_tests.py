@@ -31,6 +31,7 @@ os.environ["QUEUE_POSITION_ENTRYTIME_TABLE"] = "queue_position_entry_time_table"
 os.environ["SERVING_COUNTER_ISSUEDAT_TABLE"] = "serving_counter_issuedat_table"
 os.environ["QUEUE_POSITION_EXPIRY_PERIOD"] = "100"
 os.environ["ENABLE_QUEUE_POSITION_EXPIRY"] = "true"
+os.environ["INCR_SVC_ON_QUEUE_POS_EXPIRY"] = "true"
 
 # patch the boto3 client calls before importing all the functions we need to test
 patcher = patch('botocore.client.BaseClient._make_api_call')
@@ -50,6 +51,7 @@ import get_serving_num
 import get_waiting_num
 import increment_serving_counter
 import get_queue_position_expiry_time
+import set_max_queue_position_expired
 #patcher.stop()
 
 class CoreApiTestCase(unittest.TestCase):
@@ -604,7 +606,75 @@ class CoreApiTestCase(unittest.TestCase):
                 mock_event = {'queryStringParameters': {'event_id': self.event_id, 'request_id': self.request_id}}
                 response = get_queue_position_expiry_time.lambda_handler(mock_event, None)
                 self.assertEqual(response["statusCode"], 200)
-                self.assertTrue(isinstance(json.loads(response['body'])["Expires_in"], int))
+                self.assertTrue(isinstance(json.loads(response['body'])["expires_in"], int))
+
+
+    @patch.object(set_max_queue_position_expired.ddb_table_serving_counter_issued_at, 'query', 
+        return_value= { 'Items': [
+                {'serving_counter' : 10, 'queue_positions_served': 8, 'issue_time': int(time.time()) - 1000},
+                {'serving_counter' : 25, 'queue_positions_served': 11, 'issue_time': int(time.time()) - 500 }
+            ] }
+        )
+    def test_set_max_queue_position_expired(self, mock_table):
+        """
+        This function tests the get_queue_position_expiry_time lambda function
+        """
+        mock_redis_cache = {'max_queue_position_expired': '0', 'serving_counter': '0' }
+        def mock_get(key):
+            return mock_redis_cache[key]
+
+        def mock_set(key, value):
+            if mock_redis_cache:
+                mock_redis_cache[key] = value
+                return "OK"
+            return None
+        
+        def mock_incr(key, value):
+            if mock_redis_cache:
+                _value =  int(mock_redis_cache[key]) + int(value)
+                mock_redis_cache[key] = _value
+                return _value
+            return None
+
+        set_max_queue_position_expired.rc = MagicMock()
+        set_max_queue_position_expired.rc.get = Mock(side_effect=mock_get)
+        set_max_queue_position_expired.rc.set = Mock(side_effect=mock_set)
+        set_max_queue_position_expired.rc.incrby = Mock(side_effect=mock_incr)
+
+        mock_event = {'id': '3475893474', 'detail-type': 'Scheduled Event', 'source': 'aws.events', 'account': 'dummy123' }
+
+        # reset in progress test
+        with patch('builtins.print') as mocked_print:
+            mock_redis_cache['reset_in_progress'] = 1
+            set_max_queue_position_expired.lambda_handler(mock_event, None)
+            mocked_print.assert_called_with('Reset in progress. Skipping execution')
+        mock_redis_cache['reset_in_progress'] = 0
+
+        # no queue positions eligible
+        with patch.object(set_max_queue_position_expired.ddb_table_queue_position_entry_time, 'query', return_value={'Items': [] }):
+            with patch('builtins.print') as mocked_print:
+                mock_redis_cache['queue_counter'] = 6
+                set_max_queue_position_expired.lambda_handler(mock_event, None)
+                mocked_print.assert_called_with('No queue postions items eligible')
+
+        # # set max queue position expired (no svc increment, set os.environ INCR_SVC_ON_QUEUE_POS_EXPIRY to false)
+        # with patch.object(set_max_queue_position_expired.ddb_table_queue_position_entry_time, 'query', 
+        #     return_value={'Items': [{"queue_position": 12, "event_id": "abc123", "entry_time": int(time.time()) - 150, "status": 1}] }):
+        #     with patch.object(set_max_queue_position_expired, 'incr_serving_counter') as mock_method:
+        #         set_max_queue_position_expired.lambda_handler(mock_event, None)
+        #         self.assertEqual(mock_redis_cache['max_queue_position_expired'], 25)
+        #         mock_method.assert_not_called()
+
+        # set max queue position expired (with svc increment)
+        with patch.object(set_max_queue_position_expired.ddb_table_queue_position_entry_time, 'query', 
+            return_value={'Items': [{"queue_position": 12, "event_id": "abc123", "entry_time": int(time.time()) - 150, "status": 1}] }):
+            with patch.object(set_max_queue_position_expired.ddb_table_serving_counter_issued_at, 'put_item', return_value=None) as mock_svc_table:
+                with patch.object(set_max_queue_position_expired.events_client, 'put_events', return_value=None) as mock_events_client:
+                    set_max_queue_position_expired.lambda_handler(mock_event, None)
+                    self.assertEqual(mock_redis_cache['max_queue_position_expired'], 25)
+                    self.assertEqual(mock_redis_cache['serving_counter'], 2 + 4)      
+                    mock_events_client.assert_called()
+                    mock_svc_table.assert_called()  
         
 if __name__ == '__main__':
     unittest.main()
