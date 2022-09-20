@@ -1,7 +1,7 @@
 {
   "name": "control-panel",
   "description": "This project is a sample control panel for managing an instance of Virtual Waiting Room on AWS",
-  "author": "AWS Solutions (https://aws.amazon.com/solutions/)",
+  "author": "Amazon Web Services (https://aws.amazon.com/solutions)",
   "version": "0.1.0",
   "private": true,
   "license": "Apache-2.0",
