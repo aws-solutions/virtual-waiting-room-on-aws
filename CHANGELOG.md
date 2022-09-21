@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Create 2 more core-api Lambda functions for 
     - getting queue position expiry time (get_queue_position_expiry_time)
     - setting the max queue position expired (set_max_queue_position_expired)
-- Deployment Temaplates
+- Deployment Templates
     - addl template parameters QueuePositionExpiryPeriod, EnableQueuePositionExpiry, IncrSvcOnQueuePositionExpiry
     - parameters included in the getting started template 
     - new Cloudfront cache policy QueuePositionExpiryCachePolicy
