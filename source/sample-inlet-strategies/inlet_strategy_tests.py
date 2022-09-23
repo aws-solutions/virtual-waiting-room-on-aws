@@ -7,8 +7,6 @@ This module is provides unit tests for the inlet strategies module.
 import json
 import time
 import unittest
-from unittest.mock import patch, MagicMock
-from botocore.exceptions import ClientError
 
 SNS_EVENT = {
     "Records": [{
@@ -26,30 +24,36 @@ SNS_EVENT = {
 
 
 class InletStrategyUnitTestException(Exception):
+    """
+    This class is an exception subclass for unit testing errors
+    """
 
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
 
 
 def environ_get_mock(key, default_value=None):
+    """
+    This function is the mocked (replaced) function for returning environment variables
+    """
+    result = ""
     if key == "EVENT_ID":
-        return "641EE9DD-57BE-437E-B157-BAD15F3D6408"
+        result = "641EE9DD-57BE-437E-B157-BAD15F3D6408"
     elif key == "CORE_API_ENDPOINT":
-        return "https://www.example.com"
+        result = "https://www.example.com"
     elif key == "CORE_API_REGION":
-        return "us-east-1"
+        result = "us-east-1"
     elif key == "MAX_SIZE":
-        return "100"
+        result = "100"
     elif key == "INCREMENT_BY":
-        return "100"
+        result = "100"
     elif key == "START_TIME":
-        return str(int(time.time()))
+        result = str(int(time.time()))
     elif key == "END_TIME":
-        return str(int(time.time()))
+        result = str(int(time.time()))
     elif default_value is not None:
-        return default_value
-    else:
-        return ""
+        result = default_value
+    return result
 
 
 @patch('os.environ.get', new=environ_get_mock)
