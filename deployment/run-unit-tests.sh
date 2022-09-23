@@ -26,3 +26,11 @@ cd $source_dir/core-api/custom_resources
 coverage run custom_resource_tests.py
 coverage xml
 sed -i -- 's/filename\=\"/filename\=\"source\/core-api\/custom_resources\//g' coverage.xml
+
+echo "------------------------------------------------------------------------------"
+echo " Test inlet strategy Lambda functions"
+echo "------------------------------------------------------------------------------"
+cd $source_dir/sample-inlet-strategies
+coverage run inlet_strategy_tests.py
+coverage xml
+sed -i -- 's/filename\=\"/filename\=\"source\/sample-inlet-strategies\//g' coverage.xml
