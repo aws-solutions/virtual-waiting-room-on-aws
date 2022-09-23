@@ -14,26 +14,93 @@ This software includes third party software subject to the following copyrights:
 @vue/babel-preset-app under the MIT License (MIT)
 @vue/cli-plugin-babel under the MIT License (MIT)
 @vue/cli-plugin-eslint under the MIT License (MIT)
+@vue/cli-plugin-router the MIT License (MIT)
 @vue/cli-service under the MIT License (MIT)
 @vue/compiler-sfc under the MIT License (MIT)
+async-timeout under the Apache License Version 2.0
+attrs under the MIT License (MIT)
+AWS SDK under the Apache License Version 2.0
+aws-requests-auth under the BSD License
+aws-sam-translator under the Apache License Version 2.0
 aws4fetch under the MIT License (MIT)
+awscli under the Apache License Version 2.0
 axios under the MIT License (MIT)
 axios-retry under the Apache License Version 2.0
-AWS SDK under the Apache License Version 2.0
+bandit under the Apache License Version 2.0
+blessed under the MIT License (MIT)
 bootstrap under the MIT License (MIT)
+boto3 under the Apache License Version 2.0
+botocore under the Apache License Version 2.0
+build under the MIT License (MIT)
+certifi under the Mozilla Public License 2.0
+cffi under the MIT License (MIT)
+cfn-lint under the MIT License (MIT)
+chalice under the Apache License Version 2.0
+charset-normalizer under the MIT License (MIT)
+click under the BSD License
+colorama under the BSD License
 core-js under the MIT License (MIT)
+coverage under the Apache License Version 2.0
 crhelper under the Apache License Version 2.0
+cryptography under the Apache License Version 2.0
+Deprecated under the MIT License (MIT)
+docker under the Apache License Version 2.0
+docutils under the BSD License
+dparse under the MIT License (MIT)
 eslint under the MIT License (MIT)
 eslint-plugin-vue under the MIT License (MIT)
+gitdb under the BSD License
+GitPython under the BSD License
+idna under the BSD License
+inquirer under the MIT License (MIT)
+jmespath under the MIT License (MIT)
 jquery under the MIT License (MIT)
+jschema-to-python under the MIT License (MIT)
+jsonpatch under the BSD License
+jsonpickle under the BSD License
+jsonpointer under the BSD License
+jsonschema under the MIT License (MIT)
+junit-xml under the MIT License (MIT)
 jwcrypto under the GNU Lesser General Public License v3.0
 lodash under the MIT License (MIT)
 moment under the MIT License (MIT)
 naive-ui under the MIT License (MIT)
+networkx under the MIT License (MIT)
+packaging under the BSD License
+pbr under the Apache License Version 2.0
+pep517 under the MIT License (MIT)
+piprot under the MIT License (MIT)
+pyasn1 under the MIT License (MIT)
+pycparser under the BSD License
+pyparsing under the MIT License (MIT)
+pyrsistent under the MIT License (MIT)
+python-dateutil under the Apache License Version 2.0
+python-editor under the Apache License Version 2.0
+PyYAML under the MIT License (MIT)
+readchar under the MIT License (MIT)
 redis under the MIT License (MIT)
 requests under the Apache License Version 2.0
+requests-futures under the Apache License Version 2.0
+rsa under the Apache License Version 2.0
+ruamel.yaml under the MIT License (MIT)
+ruamel.yaml.clib under the MIT License (MIT)
+s3transfer under the Apache License Version 2.0
+safety under the MIT License (MIT)
+sarif-om under the MIT License (MIT)
 simple-statistics under the ISC License
+six under the MIT License (MIT)
+smmap under the BSD License
+stevedore under the Apache License Version 2.0
+testresources under the BSD License
+toml under the MIT License (MIT)
+tomli under the MIT License (MIT)
+typing-extensions under the Python Software Foundation License
+urllib3 under the MIT License (MIT)
 vfonts under the MIT License (MIT)
 vue under the MIT License (MIT)
+vue-router the MIT License (MIT)
 vue-timers under the MIT License (MIT)
 vuex under the MIT License (MIT)
+wcwidth under the MIT License (MIT)
+websocket-client under the Apache License Version 2.0
+wrapt under the BSD License
