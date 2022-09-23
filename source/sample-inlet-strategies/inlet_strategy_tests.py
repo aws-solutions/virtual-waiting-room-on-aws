@@ -7,6 +7,7 @@ This module is provides unit tests for the inlet strategies module.
 import json
 import time
 import unittest
+from unittest.mock import patch
 
 SNS_EVENT = {
     "Records": [{
