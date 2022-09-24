@@ -16,6 +16,7 @@ TESTING_PUBLIC_KEY = """
 "e": "AQAB"}
 """
 
+#nosec B105
 TESTING_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjMwMzY5NGM4YTMzOTRjNTlhZWM4MjYwZTM0Nzg3ZjlhIiwidHlwIjoiSldUIn0.eyJhdWQiOiJTYW1wbGUiLCJleHAiOjE2NjM5Nzc5NjIsImlhdCI6MTY2Mzk3NzY2MiwiaXNzIjoiaHR0cHM6Ly9tYTgwY2VvZmFrLmV4ZWN1dGUtYXBpLnVzLWVhc3QtMS5hbWF6b25hd3MuY29tL2FwaSIsIm5iZiI6MTY2Mzk3NzY2MiwicXVldWVfcG9zaXRpb24iOjI1ODIsInN1YiI6ImUzN2EyZTk2LWZlOTgtNGQ1Zi04NWM5LWIwNDczMzFmOWVmYiIsInRva2VuX3VzZSI6ImFjY2VzcyJ9.UkYE9edglO6kPN5_r3wy9OeP15w7iB3M7tDCDzPr3wxGehfBJaZv1J-K4-VnJ4q04BLXtExnOlFG2TVHak1zdOClt47ioUmBJ-eyva2YtWWTOhIgBR_pC2dDXR3MCJ1sHyD5_EpfzgBDjD_BwbyOesi_h72CSTTcusGv-wiIiJR85C3rLn3eVjoziFoWl0X2O0SSDkxkxWCNRX6tWf9z983OUX7OL02rh0q2M6iKtokIvzDcL4imgvrho9M9eIKV66kF3VN7GqE2sIifv5ClrOVvQA4x0OY1K6Z5TOVQ0936-81BYBABASrRqUlMPfSYcZDbj2uW5HI1TgcEfBwJug"
 
 
@@ -35,7 +36,7 @@ def environ_get_mock(key, default_value=None):
     result = ""
     if key == "WAITING_ROOM_EVENT_ID":
         result = "641EE9DD-57BE-437E-B157-BAD15F3D6408"
-    elif key == "PUBLIC_API_ENDPOINT" or key == "ISSUER":
+    elif key in ["PUBLIC_API_ENDPOINT", "ISSUER"]:
         result = "https://www.example.com"
     elif default_value is not None:
         result = default_value
@@ -43,6 +44,9 @@ def environ_get_mock(key, default_value=None):
 
 
 def get_public_key():
+    """
+    This function for returning a mock public key used with JWT
+    """
     return json.loads(TESTING_PUBLIC_KEY)
 
 
