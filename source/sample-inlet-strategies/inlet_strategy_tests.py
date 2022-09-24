@@ -15,7 +15,8 @@ SNS_EVENT = {
             "Message":
             json.dumps({
                 "completed": ["FC4FBD08-D930-42CD-8F0E-D7333B5979A5"],
-                "abandoned": ["5188734F-7FFC-4AA0-B485-24660723F8AC"]
+                "abandoned": ["5188734F-7FFC-4AA0-B485-24660723F8AC"],
+                "exited": "10"
             }),
             "Subject":
             "TestInvoke"
@@ -52,6 +53,8 @@ def environ_get_mock(key, default_value=None):
         result = str(int(time.time()))
     elif key == "END_TIME":
         result = str(int(time.time()))
+    elif key == "CLOUDWATCH_ALARM":
+        result = "NonExistantAlarmName"
     elif default_value is not None:
         result = default_value
     return result
