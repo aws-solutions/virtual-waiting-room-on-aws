@@ -6,8 +6,8 @@ This module is the unit test for the shared functions.
 """
 
 import unittest
-import validate
-import jwt
+from . import validate
+from . import jwt
 
 class SharedResourcesTests(unittest.TestCase):
     """

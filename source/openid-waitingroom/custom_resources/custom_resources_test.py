@@ -63,9 +63,9 @@ class CustomResourcesTest(unittest.TestCase):
         """
         generate_client_secret.delete(self.mock_event, None)
         mock_client.assert_called_once()
-        self.assertEquals(mock_client.call_args[0][0], 'secretsmanager')
+        self.assertEqual(mock_client.call_args[0][0], 'secretsmanager')
         self.assertEqual(mock_client.mock_calls[1][0], "().delete_secret")
-        self.assertCountEqual(mock_client.mock_calls[1][2]["SecretId"], f'{self.sercret_prefix}/client_secret')
+        self.assertEqual(mock_client.mock_calls[1][2]["SecretId"], f'{self.sercret_prefix}/client_secret')
         
     @patch('boto3.client')
     def test_generate_redirecturis_secret_create(self, mock_client):
@@ -75,7 +75,7 @@ class CustomResourcesTest(unittest.TestCase):
       
         generate_redirect_uris_secret.create(self.mock_event, None)
         mock_client.assert_called_once()
-        self.assertEquals(mock_client.call_args[0][0], 'secretsmanager')
+        self.assertEqual(mock_client.call_args[0][0], 'secretsmanager')
         self.assertEqual(mock_client.mock_calls[1][0], "().create_secret")
         self.assertEqual(mock_client.mock_calls[1][2]["Name"], f'{self.sercret_prefix}/redirect_uris')
         self.assertEqual(mock_client.mock_calls[1][2]["SecretString"], json.dumps(self.PLACEHOLDER_URIS, indent=4))
@@ -88,7 +88,7 @@ class CustomResourcesTest(unittest.TestCase):
         """
         generate_redirect_uris_secret.delete(self.mock_event, None)
         mock_client.assert_called_once()
-        self.assertEquals(mock_client.call_args[0][0], 'secretsmanager')
+        self.assertEqual(mock_client.call_args[0][0], 'secretsmanager')
         self.assertEqual(mock_client.mock_calls[1][0], "().delete_secret")
         self.assertEqual(mock_client.mock_calls[1][2]["SecretId"], f'{self.sercret_prefix}/redirect_uris')
 
