@@ -76,9 +76,10 @@ def put_web_contents(bucket_name):
                 content_type = "binary/octet-stream"
             with open(local, 'rb') as data:
                 client.put_object(Bucket=bucket_name,
-                                  Key=remote,
-                                  Body=data,
-                                  ContentType=content_type)
+                    Key=remote,
+                    Body=data,
+                    ContentType=content_type
+                )
 
 
 def put_api_endpoints_js(bucket_name, apis):

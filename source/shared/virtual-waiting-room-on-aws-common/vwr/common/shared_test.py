@@ -5,10 +5,8 @@
 This module is the unit test for the shared functions.
 """
 
-import os
 import unittest
 from unittest.mock import patch
-from requests.models import Response
 import validate
 import jwt
 
@@ -21,11 +19,7 @@ class SharedResourcesTests(unittest.TestCase):
         """
         This function is responsible for setting up the overall environment before each test
         """
-        self.request_id = "5a571026-3bdd-4c36-aaed-323cb4c37262"
-        # self.invalid_id = "6b571026-4c36-3bdd-3bdd-323cb4c37263"
-        # # self.event_id = os.environ["EVENT_ID"]
-        # self.invalid_event_id_msg = "Invalid event ID"
-        # self.invalid_request_id_msg = "Invalid request ID"
+        pass
 
     def tearDown(self):
         """
@@ -38,6 +32,7 @@ class SharedResourcesTests(unittest.TestCase):
         """
         Tests valid rid 
         """
+        
         request_id = "26a07142-098a-4bea-b67d-1fe5a098bf29"
         self.assertTrue(validate.is_valid_rid(request_id))
 
@@ -49,6 +44,10 @@ class SharedResourcesTests(unittest.TestCase):
         
 
     def test_jwt_payload(self):
+        """
+        Function to test JWT payload 
+        """
+
         text = 'A.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.B'
 
         payload = jwt.claim_dict(text)
@@ -64,6 +63,7 @@ class SharedResourcesTests(unittest.TestCase):
         payload = jwt.claim_dict(text)
         expected = {'sub': '1234567890', 'name': 'Mary Jane', 'iat': 1516239022 }
         self.assertNotEqual(payload, expected)
+
 
 if __name__ == "__main":
     unittest.main()
