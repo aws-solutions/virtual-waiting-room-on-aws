@@ -6,7 +6,6 @@ This module is the unit test for the shared functions.
 """
 
 import unittest
-from unittest.mock import patch
 import validate
 import jwt
 
@@ -19,7 +18,6 @@ class SharedResourcesTests(unittest.TestCase):
         """
         This function is responsible for setting up the overall environment before each test
         """
-        pass
 
     def tearDown(self):
         """
