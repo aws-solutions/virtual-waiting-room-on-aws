@@ -26,8 +26,9 @@ START_TIME = int(os.environ.get("START_TIME"))
 END_TIME = int(os.environ.get("END_TIME"))
 CLOUDWATCH_ALARM = os.environ.get("CLOUDWATCH_ALARM")
 cw_client = boto3.client('cloudwatch')
+TIMEOUT = 60
 
-def lambda_handler(event, context):
+def lambda_handler(event, _):
     """
     This function is responsible for incrementing the serving counter on a periodic basis
     """
@@ -57,7 +58,7 @@ def lambda_handler(event, context):
         auth = BotoAWSRequestsAuth(aws_host=parsed.netloc,
                                     aws_region=CORE_API_REGION,
                                     aws_service='execute-api')
-        response = requests.post(core_api, json=body, auth=auth)
+        response = requests.post(core_api, json=body, auth=auth, timeout=TIMEOUT)
         print(response.status_code)
         print(response.content.decode())
         result = {

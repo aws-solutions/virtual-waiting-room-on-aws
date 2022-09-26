@@ -17,12 +17,12 @@ Adding, removing and updating the top-level subsystems of a Virtual Waiting Room
 
 |Template	|Description	|
 |---	|---	|
-|aws-virtual-waiting-room-api-gateway-cw-logs-role.template	|Use this template to add a default role ARN to API Gateway at the account-level for CloudWatch logging permissions	|
-|aws-virtual-waiting-room.template	|This is the core security, public and private REST APIs, storage configuration and logic for creating waiting room events	|
-|aws-virtual-waiting-room-openid.template	|Open ID identity provider for waiting room integration with authorization interfaces	|
-|aws-virtual-waiting-room-authorizers.template	|Lambda authorizer designed for waiting room-issued tokens and intended for protecting end-users' APIs	|
-|aws-virtual-waiting-room-sample-inlet-strategy.template	|Sample inlet strategies intended for use between a commerce/reservation site and the waiting room. Inlet strategies help encapsulate logic to determine when to allow more users into the target site.	|
-|aws-virtual-waiting-room-sample.template	|Minimal web and API Gateway configuration for  a waiting room and commerce site	|
+|virtual-waiting-room-on-aws-api-gateway-cw-logs-role.template	|Use this template to add a default role ARN to API Gateway at the account-level for CloudWatch logging permissions	|
+|virtual-waiting-room-on-aws.template	|This is the core security, public and private REST APIs, storage configuration and logic for creating waiting room events	|
+|virtual-waiting-room-on-aws-openid.template	|Open ID identity provider for waiting room integration with authorization interfaces	|
+|virtual-waiting-room-on-aws-authorizers.template	|Lambda authorizer designed for waiting room-issued tokens and intended for protecting end-users' APIs	|
+|virtual-waiting-room-on-aws-sample-inlet-strategy.template	|Sample inlet strategies intended for use between a commerce/reservation site and the waiting room. Inlet strategies help encapsulate logic to determine when to allow more users into the target site.	|
+|virtual-waiting-room-on-aws-sample.template	|Minimal web and API Gateway configuration for  a waiting room and commerce site	|
 
 Each template provides a layer of functionality for building Virtual Waiting Rooms and integrating it with a web site.
 
@@ -211,15 +211,22 @@ Events emitted from the solution are:
 1. **token_generated**
     1. Detail:
         `{
-        "event_id": EVENT_ID,
-        "request_id":REQUEST_ID
+            "event_id": EVENT_ID,
+            "request_id":REQUEST_ID
         }`
 2. **session_updated**
     1. Detail:
         `{
-        "event_id": EVENT_ID,
-        "request_id": REQUEST_ID,
-        "status": STATUS_TEXT
+            "event_id": EVENT_ID,
+            "request_id": REQUEST_ID,
+            "status": STATUS_TEXT
+        }`
+2. **automatic_serving_counter_incr**
+    1. Detail:
+        `{
+            'previous_serving_counter_position': PREVIOUS_SERVING_COUNTER,
+            'increment_by': INCREMENT_VALUE,
+            'current_serving_counter_position': SERVING_COUNTER
         }`
 
 
@@ -326,7 +333,7 @@ The “Content-Type” header is always set to “application/json” with these
     8. Status codes:  
         200: Success  
         202: Request ID not processed yet  
-        404: Invalid event or request ID 
+        400: Invalid event or request ID 
 5. `/serving_num`
     1. Description: Returns the current serving position in the queue. Requests with an equal or lower position in the waiting room can request tokens from the API.
     2. Authorization: NONE
@@ -340,7 +347,7 @@ The “Content-Type” header is always set to “application/json” with these
         }`
     8. Status codes:  
         200: Success  
-        404: Invalid event ID
+        400: Invalid event ID
 6. `/waiting_num`
     1. Description: Returns the number users currently queued in the waiting room and have not been issued a token yet.
     2. Authorization: NONE
@@ -354,7 +361,24 @@ The “Content-Type” header is always set to “application/json” with these
         }`
     8. Status codes:  
         200: Success  
-        404: Invalid event ID
+        400: Invalid event ID
+7. /queue_pos_expiry
+    1. Description: Returns the remaining time in seconds before queue position expires
+    2. Authorization: NONE 
+    3. Method: GET 
+    4. Content-Type: `application/json`
+    5. Query parameters: `event_id, request_id`
+    6. Request body: NONE
+    7. Response body:
+        `{
+            "expires_in": INTEGER
+        }`
+    8. Status codes:  
+        200: Success  
+        400: Invalid event ID  
+        410: Queue position has expired
+
+
 
 ## Private REST APIs
 

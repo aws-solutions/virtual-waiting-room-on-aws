@@ -37,11 +37,21 @@ PRIVATE_API_ENDPOINT = os.environ.get("PRIVATE_API_ENDPOINT")
 API_REGION = os.environ.get("API_REGION")
 CLIENT_SECRET_ID = os.environ.get("CLIENT_SECRET_ID")
 ISSUER = os.environ.get("ISSUER")
+TIMEOUT = 60
 
 # these are open ID parameter values this module supports
 RESPONSE_TYPES = ['code']
 REQUEST_SCOPES = ['openid']
 GRANT_TYPES = ['authorization_code']
+
+
+def bad_request():
+    """
+    This is a helper function that returns a standard client error response for several cases below.
+    """
+    return Response(status_code=400,
+                    body='Bad Request',
+                    headers={'Content-Type': 'text/plain'})
 
 
 def extract_oidc_request():
@@ -50,7 +60,7 @@ def extract_oidc_request():
     """
     request = app.current_request
     # extract the query parameters sent from the site
-    query_params = request.query_params if not request.query_params is None else {}
+    query_params = request.query_params if request.query_params is not None else {}
     client_id = deep_clean(unquote(query_params.get('client_id', '')))
     redirect_uri = deep_clean(unquote(query_params.get('redirect_uri', '')))
     response_type = deep_clean(unquote(query_params.get('response_type', '')))
@@ -103,9 +113,7 @@ def authorize():
         app.log.info('invalid /authorize request')
     except (KeyError, IndexError, TypeError):
         app.log.error('validation failed')
-    return Response(status_code=400,
-                    body='Bad Request',
-                    headers={'Content-Type': 'text/plain'})
+    return bad_request()
 
 
 @app.route('/token',
@@ -145,7 +153,7 @@ def token():
             auth = BotoAWSRequestsAuth(aws_host=parsed.netloc,
                                        aws_region=API_REGION,
                                        aws_service='execute-api')
-            response = requests.post(generate_token_api, json=body, auth=auth)
+            response = requests.post(generate_token_api, json=body, auth=auth, timeout=TIMEOUT)
             # app.log.info(response.text)
             if response.status_code == 200:
                 return Response(status_code=200,
@@ -157,9 +165,7 @@ def token():
             app.log.info('invalid /token request')
     except (KeyError, IndexError, TypeError):
         print_exception()
-    return Response(status_code=400,
-                    body='Bad Request',
-                    headers={'Content-Type': 'text/plain'})
+    return bad_request()
 
 
 @app.route('/userInfo', methods=['GET'])
@@ -192,7 +198,7 @@ def userinfo():
         auth = BotoAWSRequestsAuth(aws_host=parsed.netloc,
                                    aws_region=API_REGION,
                                    aws_service='execute-api')
-        response = requests.post(private_api, json=body, auth=auth)
+        response = requests.post(private_api, json=body, auth=auth, timeout=TIMEOUT)
         if response.status_code == 200:
             clean_tokens = json.loads(response.text)
             clean_access_token = clean_tokens.get("access_token")
@@ -204,9 +210,7 @@ def userinfo():
             app.log.info("tokens don't match")
     except (KeyError, IndexError, TypeError):
         app.log.error('validation failed')
-    return Response(status_code=400,
-                    body='Bad Request',
-                    headers={'Content-Type': 'text/plain'})
+    return bad_request()
 
 
 @app.route('/.well-known/openid-configuration', methods=['GET'])
@@ -249,7 +253,7 @@ def jwks_json():
     public_jwk = {}
     public_api = f'{PUBLIC_API_ENDPOINT}/public_key?event_id={WAITING_ROOM_EVENT_ID}'
     try:
-        response = requests.get(public_api)
+        response = requests.get(public_api, timeout=TIMEOUT)
         if response.status_code == 200:
             public_jwk = json.loads(response.text)
     except (OSError, RuntimeError):

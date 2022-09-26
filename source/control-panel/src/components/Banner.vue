@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 
 <template>
   <div class="d-flex justify-content-center">
-    <p class="h4">AWS Virtual Waiting Room Control Panel</p>
+    <p class="h4">Virtual Waiting Room on AWS Control Panel</p>
   </div>
 </template>
 

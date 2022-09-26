@@ -1,0 +1,10 @@
+{
+    "esversion": 11,
+    "browser": true,
+    "loopfunc": true,
+    "globals": {
+        "console": true,
+        "define": true,
+        "require": true
+    }
+}

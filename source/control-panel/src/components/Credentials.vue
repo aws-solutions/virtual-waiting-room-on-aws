@@ -49,11 +49,10 @@ export default {
   name: "Credentials",
   props: ["credentials"],
   data() {
-    let configuration = {
+    return {
       valid: false,
       formCredentials: reactive(this.credentials),
     };
-    return configuration;
   },
   emits: ["inputChanged"],
   mounted() {

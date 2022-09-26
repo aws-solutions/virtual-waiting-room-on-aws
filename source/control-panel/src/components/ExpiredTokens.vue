@@ -12,9 +12,7 @@ SPDX-License-Identifier: Apache-2.0
       <!-- show the last connect status -->
       Expired Tokens
       <span v-if="updateSuccess" class="badge bg-success mx-2">connected</span>
-      <span v-if="updateError" class="badge bg-danger mx-2"
-        >check configuration</span
-      >
+      <span v-if="updateError" class="badge bg-danger mx-2">check configuration</span>
     </p>
     <!-- show the last expired tokens count retrieved -->
     <p class="h2 m-2">{{ expiredTokens }}</p>
@@ -23,8 +21,7 @@ SPDX-License-Identifier: Apache-2.0
 
 <script>
 import { mixin as VueTimers } from "vue-timers";
-import axios from "axios";
-import { aws4Interceptor } from "aws4-axios";
+import { AwsClient } from 'aws4fetch';
 // longer update interval since this call is more expensive
 const UPDATE_INTERVAL_MS = 30000;
 export default {
@@ -56,36 +53,29 @@ export default {
         this.configuration.endpoints.valid &&
         this.configuration.eventData.valid
       ) {
-        // update the counter
-        const client = axios.create();
-        // sign the request using the keys in the configuration object
-        const interceptor = aws4Interceptor(
-          {
-            region: this.configuration.endpoints.regionName,
-            service: "execute-api",
-          },
-          {
-            accessKeyId: this.configuration.credentials.accessKey,
-            secretAccessKey: this.configuration.credentials.secretAccessKey,
-            sessionToken: this.configuration.credentials.sessionToken,
-          }
-        );
-        client.interceptors.request.use(interceptor);
-        // add the event ID to the query parameters
-        client
-          .get(
-            `${this.configuration.endpoints.privateApiUrl}/expired_tokens?event_id=${this.configuration.eventData.id}`
-          )
-          .then((res) => {
-            // update the expired token count in the data model
-            this.expiredTokens = res.data.length;
-            this.updateSuccess = true;
-            this.updateError = false;
-          })
-          .catch(() => {
-            this.updateSuccess = false;
-            this.updateError = true;
-          });
+        const aws = new AwsClient({
+          accessKeyId: this.configuration.credentials.accessKey,
+          secretAccessKey: this.configuration.credentials.secretAccessKey,
+          sessionToken: this.configuration.credentials.sessionToken,
+          service: "execute-api",
+          region: this.configuration.endpoints.regionName
+        });
+        const url = `${this.configuration.endpoints.privateApiUrl}/expired_tokens?event_id=${this.configuration.eventData.id}`;
+        const local_this = this;
+        aws.fetch(url, {
+          method: "GET"
+        }).then(function (response) {
+          return response.json();
+        }).then(function (json) {
+          // update the expired token count in the data model
+          local_this.expiredTokens = json.length;
+          local_this.updateSuccess = true;
+          local_this.updateError = false;
+        }).catch((error) => {
+          console.error(error);
+          local_this.updateSuccess = false;
+          local_this.updateError = true;
+        });
       } else {
         this.updateSuccess = false;
         this.updateError = false;

@@ -9,7 +9,7 @@
 # Paramenters:
 #  - source-bucket-base-name: Name for the S3 bucket location where the template will source the Lambda
 #    code from. The template will append '-[region_name]' to this bucket name.
-#    For example: ./build-s3-dist.sh solutions v1.0.0
+#    For example: ./build-s3-dist.sh solutions v1.1.0
 #    The template will then expect the source code to be located in the solutions-[region_name] bucket
 #
 #  - solution-name: name of the solution for consistency
@@ -17,7 +17,7 @@
 #  - version-code: version of the package
 
 function symbol_update {
-    TEMPLATES=`find . -name '*aws-virtual-waiting-room*.template' -type f `
+    TEMPLATES=`find . -name '*virtual-waiting-room-on-aws*.template' -type f `
 
     echo $TEMPLATES | \
         xargs -n 1 sed -i -e "s/%%TIMESTAMP%%/$TIMESTAMP/g"
@@ -40,12 +40,12 @@ while getopts ':h' OPTION; do
     h)
       echo
       echo "script usage: $(basename $0) DIST_OUTPUT_BUCKET SOLUTION_NAME VERSION"
-      echo "example usage: ./$(basename $0) mybucket aws-virtual-waiting-room v1.0.0"
+      echo "example usage: ./$(basename $0) mybucket virtual-waiting-room-on-aws v1.1.0"
       echo
       echo "If no arguments are passed in, the following default values are used:"
       echo "DIST_OUTPUT_BUCKET=rodeolabz"
-      echo "SOLUTION_NAME=aws-virtual-waiting-room"
-      echo "VERSION=v1.0.0"
+      echo "SOLUTION_NAME=virtual-waiting-room-on-aws"
+      echo "VERSION=v1.1.0"
       echo
       echo "You may export export these variables in your environment and call the script using those variables:"
       echo "./$(basename $0) \$DIST_OUTPUT_BUCKET \$SOLUTION_NAME \$VERSION"
@@ -73,14 +73,14 @@ if [ -z "$1" ]
 fi
 if [ -z "$2" ] 
   then
-    echo "Setting default solution name to aws-virtual-waiting-room."
-    SOLUTION_NAME='aws-virtual-waiting-room'
+    echo "Setting default solution name to virtual-waiting-room-on-aws."
+    SOLUTION_NAME='virtual-waiting-room-on-aws'
 fi
 
 if [ -z "$3" ]
   then
-    echo "Setting default version to v1.0.0"
-    VERSION='v1.0.0'
+    echo "Setting default version to v1.1.0"
+    VERSION='v1.1.0'
 fi
 
 template_dir="$PWD" # /deployment
@@ -107,9 +107,9 @@ mkdir -p $pkg_dir
 
 
 echo "------------------------------------------------------------------------------"
-echo "aws-virtual-waiting-room-common package"
+echo "virtual-waiting-room-on-aws-common package"
 echo "------------------------------------------------------------------------------"
-cd $source_dir/shared/aws-virtual-waiting-room-common
+cd $source_dir/shared/virtual-waiting-room-on-aws-common
 python -m build -o $pkg_dir
 
 
@@ -128,8 +128,8 @@ if [ "$RETVAL" -ne "0" ]; then
     cat error.txt
     exit $RETVAL
 fi
-zip -r aws-virtual-waiting-room-redis-layer-$TIMESTAMP.zip python/
-mv aws-virtual-waiting-room-redis-layer-$TIMESTAMP.zip $build_dist_dir
+zip -r virtual-waiting-room-on-aws-redis-layer-$TIMESTAMP.zip python/
+mv virtual-waiting-room-on-aws-redis-layer-$TIMESTAMP.zip $build_dist_dir
 rm -rf $layer_dir/*
 
 echo "------------------------------------------------------------------------------"
@@ -138,8 +138,8 @@ echo "--------------------------------------------------------------------------
 cd $template_dir
 ./docker_build.sh
 cd $source_dir
-zip -r aws-virtual-waiting-room-jwcrypto-layer-$TIMESTAMP.zip python/
-mv aws-virtual-waiting-room-jwcrypto-layer-$TIMESTAMP.zip $build_dist_dir
+zip -r virtual-waiting-room-on-aws-jwcrypto-layer-$TIMESTAMP.zip python/
+mv virtual-waiting-room-on-aws-jwcrypto-layer-$TIMESTAMP.zip $build_dist_dir
 
 # clean up the entire site-packages/layer dir
 rm -rf python
@@ -148,6 +148,7 @@ echo "--------------------------------------------------------------------------
 echo "Core API"
 echo "------------------------------------------------------------------------------"
 # dependencies for custom lambda
+echo Custom Resources
 cd $source_dir/core-api/custom_resources
 rm -rf error.txt package
 mkdir package
@@ -159,21 +160,28 @@ if [ "$RETVAL" -ne "0" ]; then
     exit $RETVAL
 fi
 cd package
-zip -r9 ../aws-virtual-waiting-room-custom-resources-$TIMESTAMP.zip .
+zip -r9 ../virtual-waiting-room-on-aws-custom-resources-$TIMESTAMP.zip .
 cd ../
-zip -g aws-virtual-waiting-room-custom-resources-$TIMESTAMP.zip *.py
-mv aws-virtual-waiting-room-custom-resources-$TIMESTAMP.zip $build_dist_dir
+zip -g virtual-waiting-room-on-aws-custom-resources-$TIMESTAMP.zip *.py
+mv virtual-waiting-room-on-aws-custom-resources-$TIMESTAMP.zip $build_dist_dir
 
 # zip up all the lambdas and copy them over to the build_dist_dir
+echo Lambda Functions
 cd $source_dir/core-api/lambda_functions
 rm -rf error.txt package
 mkdir package
-pip install $pkg_dir/aws_virtual_waiting_room_common-1.0.0-py3-none-any.whl --target ./package
+pip install $pkg_dir/virtual_waiting_room_on_aws_common-1.1.0-py3-none-any.whl --target ./package 2> error.txt
+RETVAL=$?
+if [ "$RETVAL" -ne "0" ]; then
+    echo "ERROR: System package installation failed."
+    cat error.txt
+    exit $RETVAL
+fi
 cd package
 zip -r9 ../deployment.zip .
 cd ../
 zip -g deployment.zip *.py
-mv deployment.zip $build_dist_dir/aws-virtual-waiting-room-$TIMESTAMP.zip
+mv deployment.zip $build_dist_dir/virtual-waiting-room-on-aws-$TIMESTAMP.zip
 
 echo "------------------------------------------------------------------------------"
 echo "Open ID adapter"
@@ -192,19 +200,19 @@ if [ "$RETVAL" -ne "0" ]; then
     exit $RETVAL
 fi
 cd package
-zip -r9 ../tmp/aws-virtual-waiting-room-openid-custom-resources.zip .
+zip -r9 ../tmp/virtual-waiting-room-on-aws-openid-custom-resources.zip .
 cd ..
-zip -g tmp/aws-virtual-waiting-room-openid-custom-resources.zip generate_client_secret.py generate_redirect_uris_secret.py
+zip -g tmp/virtual-waiting-room-on-aws-openid-custom-resources.zip generate_client_secret.py generate_redirect_uris_secret.py
 # add shared custom resources
 cd $source_dir/shared/custom_resources
-zip -g $source_dir/openid-waitingroom/custom_resources/tmp/aws-virtual-waiting-room-openid-custom-resources.zip cfn_bucket_loader.py
+zip -g $source_dir/openid-waitingroom/custom_resources/tmp/virtual-waiting-room-on-aws-openid-custom-resources.zip cfn_bucket_loader.py
 # add Open ID web content to custom resource zip
 cd $source_dir/openid-waitingroom
-zip -g $source_dir/openid-waitingroom/custom_resources/tmp/aws-virtual-waiting-room-openid-custom-resources.zip www/*
+zip -g $source_dir/openid-waitingroom/custom_resources/tmp/virtual-waiting-room-on-aws-openid-custom-resources.zip www/*
 
 cd $source_dir/openid-waitingroom/custom_resources
 # copy the zip file to the build directory
-cp tmp/aws-virtual-waiting-room-openid-custom-resources.zip $build_dist_dir/aws-virtual-waiting-room-openid-custom-resources-$TIMESTAMP.zip
+cp tmp/virtual-waiting-room-on-aws-openid-custom-resources.zip $build_dist_dir/virtual-waiting-room-on-aws-openid-custom-resources-$TIMESTAMP.zip
 
 # build chalice resources
 cd $source_dir/openid-waitingroom/chalice
@@ -213,7 +221,7 @@ mkdir -p tmp
 # install the common package into vendor
 rm -rf vendor
 mkdir -p vendor
-pip install $pkg_dir/aws_virtual_waiting_room_common-1.0.0-py3-none-any.whl --target vendor
+pip install $pkg_dir/virtual_waiting_room_on_aws_common-1.1.0-py3-none-any.whl --target vendor
 # generate the template and zip
 chalice package --merge-template merge_template.json tmp/
 RETVAL=$?
@@ -223,8 +231,8 @@ if [ "$RETVAL" != "0" ]; then
 fi
 
 # move build artifacts
-mv -f tmp/sam.json $template_dir/aws-virtual-waiting-room-openid.json
-mv -f tmp/deployment.zip $build_dist_dir/aws-virtual-waiting-room-openid-$TIMESTAMP.zip
+mv -f tmp/sam.json $template_dir/virtual-waiting-room-on-aws-openid.json
+mv -f tmp/deployment.zip $build_dist_dir/virtual-waiting-room-on-aws-openid-$TIMESTAMP.zip
 
 
 echo "------------------------------------------------------------------------------"
@@ -238,7 +246,7 @@ mkdir -p tmp/
 # install the common package into vendor
 rm -rf vendor
 mkdir -p vendor
-pip install $pkg_dir/aws_virtual_waiting_room_common-1.0.0-py3-none-any.whl --target vendor
+pip install $pkg_dir/virtual_waiting_room_on_aws_common-1.1.0-py3-none-any.whl --target vendor
 # generate the template and zip
 chalice package --merge-template merge_template.json tmp/
 RETVAL=$?
@@ -248,8 +256,8 @@ if [ "$RETVAL" != "0" ]; then
 fi
 
 # move build artifacts
-mv -f tmp/sam.json $template_dir/aws-virtual-waiting-room-authorizers.json
-mv -f tmp/deployment.zip $build_dist_dir/aws-virtual-waiting-room-authorizers-$TIMESTAMP.zip
+mv -f tmp/sam.json $template_dir/virtual-waiting-room-on-aws-authorizers.json
+mv -f tmp/deployment.zip $build_dist_dir/virtual-waiting-room-on-aws-authorizers-$TIMESTAMP.zip
 
 
 echo "------------------------------------------------------------------------------"
@@ -269,13 +277,13 @@ if [ "$RETVAL" -ne "0" ]; then
     exit $RETVAL
 fi
 cd package
-zip -r9 ../tmp/aws-virtual-waiting-room-sample-custom-resources.zip .
+zip -r9 ../tmp/virtual-waiting-room-on-aws-sample-custom-resources.zip .
 # add shared custom resources
 cd $source_dir/shared/custom_resources
-zip -g $source_dir/core-api-authorizers-sample/custom_resources/tmp/aws-virtual-waiting-room-sample-custom-resources.zip cfn_bucket_loader.py
+zip -g $source_dir/core-api-authorizers-sample/custom_resources/tmp/virtual-waiting-room-on-aws-sample-custom-resources.zip cfn_bucket_loader.py
 # add sample web content to custom resource zip
 # cd $source_dir/core-api-authorizers-sample
-# zip -r -g $source_dir/core-api-authorizers-sample/custom_resources/tmp/aws-virtual-waiting-room-sample-custom-resources.zip www/*
+# zip -r -g $source_dir/core-api-authorizers-sample/custom_resources/tmp/virtual-waiting-room-on-aws-sample-custom-resources.zip www/*
 
 # build vue control panel and package into dist
 cd $source_dir/control-panel
@@ -284,7 +292,7 @@ npm install
 npm run build
 # add dist files to the custom resources zip 
 cd dist/
-zip -r -g $source_dir/core-api-authorizers-sample/custom_resources/tmp/aws-virtual-waiting-room-sample-custom-resources.zip www/*
+zip -r -g $source_dir/core-api-authorizers-sample/custom_resources/tmp/virtual-waiting-room-on-aws-sample-custom-resources.zip www/*
 
 # build vue sample site and package into dist
 cd $source_dir/sample-waiting-room-site
@@ -293,11 +301,11 @@ npm install
 npm run build
 # add dist files to the custom resources zip 
 cd dist/
-zip -r -g $source_dir/core-api-authorizers-sample/custom_resources/tmp/aws-virtual-waiting-room-sample-custom-resources.zip www/*
+zip -r -g $source_dir/core-api-authorizers-sample/custom_resources/tmp/virtual-waiting-room-on-aws-sample-custom-resources.zip www/*
 
 cd $source_dir/core-api-authorizers-sample/custom_resources/tmp
 # copy the zip file to the build directory
-cp aws-virtual-waiting-room-sample-custom-resources.zip $build_dist_dir/aws-virtual-waiting-room-sample-custom-resources-$TIMESTAMP.zip
+cp virtual-waiting-room-on-aws-sample-custom-resources.zip $build_dist_dir/virtual-waiting-room-on-aws-sample-custom-resources-$TIMESTAMP.zip
 
 
 # create SAM package
@@ -313,8 +321,8 @@ fi
 
 # move build artifacts
 cd $source_dir/core-api-authorizers-sample/chalice
-mv -f tmp/sam.json $template_dir/aws-virtual-waiting-room-sample.json
-mv -f tmp/deployment.zip $build_dist_dir/aws-virtual-waiting-room-sample-$TIMESTAMP.zip
+mv -f tmp/sam.json $template_dir/virtual-waiting-room-on-aws-sample.json
+mv -f tmp/deployment.zip $build_dist_dir/virtual-waiting-room-on-aws-sample-$TIMESTAMP.zip
 
 
 echo "------------------------------------------------------------------------------"
@@ -331,10 +339,10 @@ if [ "$RETVAL" -ne "0" ]; then
     exit $RETVAL
 fi
 cd package
-zip -r9 ../aws-virtual-waiting-room-sample-inlet-strategies.zip .
+zip -r9 ../virtual-waiting-room-on-aws-sample-inlet-strategies.zip .
 cd ..
-zip -g aws-virtual-waiting-room-sample-inlet-strategies.zip periodic_inlet.py max_size_inlet.py
-mv aws-virtual-waiting-room-sample-inlet-strategies.zip $build_dist_dir/aws-virtual-waiting-room-sample-inlet-strategies-$TIMESTAMP.zip
+zip -g virtual-waiting-room-on-aws-sample-inlet-strategies.zip periodic_inlet.py max_size_inlet.py
+mv virtual-waiting-room-on-aws-sample-inlet-strategies.zip $build_dist_dir/virtual-waiting-room-on-aws-sample-inlet-strategies-$TIMESTAMP.zip
 
 
 echo "------------------------------------------------------------------------------"
@@ -343,13 +351,13 @@ echo "--------------------------------------------------------------------------
 
 cd $template_dir
 # copy templates
-for f in *aws-virtual-waiting-room*.json; do
+for f in *virtual-waiting-room-on-aws*.json; do
     cp -- "$f" "$template_dist_dir/${f%.json}.template"
     cp -- "$f" "$build_dist_dir/${f%.json}.template"
 done
 
 # cp swagger files to regional assets
-cp aws-virtual-waiting-room-swagger-*.json $build_dist_dir
+cp virtual-waiting-room-on-aws-swagger-*.json $build_dist_dir
 
 # update symbols in $template_dist_dir
 echo "updating template symbols"
@@ -361,6 +369,6 @@ cd $build_dist_dir
 symbol_update
 
 # clean up
-rm -f $template_dist_dir/aws-virtual-waiting-room-swagger-*.template
-rm -f $build_dist_dir/aws-virtual-waiting-room-swagger-*.template
+rm -f $template_dist_dir/virtual-waiting-room-on-aws-swagger-*.template
+rm -f $build_dist_dir/virtual-waiting-room-on-aws-swagger-*.template
 find $template_dir -name '*-e' -type f | xargs rm -f

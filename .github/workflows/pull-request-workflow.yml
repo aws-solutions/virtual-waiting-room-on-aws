@@ -2,13 +2,15 @@ name: Pull Request Workflow
 
 # global environment variables to all jobs
 env:
-  REGION: us-west-2
-  SOLUTION_NAME: aws-virtual-waiting-room
-  DIST_OUTPUT_BUCKET: swr
+  REGION: us-east-1
+  DIST_OUTPUT_BUCKET: sb-poc-solutions-features
 
 on: 
   pull_request:
     types: [opened, edited, reopened, synchronize]
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
 
 jobs:
   clamav-scan-job:
@@ -50,7 +52,6 @@ jobs:
     runs-on: ubuntu-latest
     name: Check source code with Pylint
     steps:
-      # check out repo
       - name: Checkout
         uses: actions/checkout@v2
       # check it with Pylint
@@ -67,12 +68,55 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Install JShint
-        run: npm install jshint
-      - name: Check with JShint
+        run: npm install -g jshint
+      - name: Check control panel with JShint
         run: |
-          cd source
+          cd source/control-panel/src
           find . -name '*.js' -type f -print | \
-          xargs ../node_modules/jshint/bin/jshint
+            grep --invert-match "/node_modules/" | \
+            xargs jshint
+      - name: Check sample waiting site with JShint
+        run: |
+          cd source/sample-waiting-room-site/src
+          find . -name '*.js' -type f -print | \
+            grep --invert-match "/node_modules/" | \
+            xargs jshint
+
+  eslint-check-job:
+    runs-on: ubuntu-latest
+    name: Check source code with eslint
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install eslint
+        run: npm install eslint --save-dev
+      - name: Install eslint vue plugin
+        run: npm install eslint-plugin-vue@latest --save-dev
+      - name: Check control panel with eslint
+        run: npx eslint source/control-panel/src
+      - name: Check sample waiting site with eslint
+        run: npx eslint source/sample-waiting-room-site/src
+
+  codeql-check-job:
+    runs-on: ubuntu-latest
+    name: Check source code with CodeQL
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'javascript', 'python' ]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v1
+        with:
+          languages: ${{ matrix.language }}
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v1
 
   build-job:
     runs-on: ubuntu-latest
@@ -82,7 +126,9 @@ jobs:
         trufflehog-scan-job,
         bandit-check-job,
         pylint-check-job,
-        jshint-check-job
+        jshint-check-job,
+        eslint-check-job,
+        codeql-check-job
       ]
     steps:
       - name: Check out repo
@@ -104,7 +150,7 @@ jobs:
           safety check -r deployment/requirements.txt
       - name: Install required system packages
         run: |
-          pip install --upgrade --force-reinstall -r deployment/requirements.txt 2> error.txt
+          pip install -r deployment/requirements.txt 2> error.txt
           if [ -s error.txt ]; then
             echo "ERROR: System package installation failed."
             cat error.txt
@@ -119,13 +165,34 @@ jobs:
       - name: Run build script
         run: |
           cd deployment
-          ./build-s3-dist.sh $DIST_OUTPUT_BUCKET $SOLUTION_NAME $VERSION
+          ./build-s3-dist.sh $DIST_OUTPUT_BUCKET ${{ github.event.repository.name }} $VERSION
       - name: Run unit tests
         run: |
           cd deployment
-          pip install pkg/aws_virtual_waiting_room_common-1.0.0-py3-none-any.whl
+          pip install pkg/virtual_waiting_room_on_aws_common-1.1.0-py3-none-any.whl
           ./run-unit-tests.sh
-
+  
+  pa11y-check-job:
+    runs-on: ubuntu-latest
+    needs:
+      [
+        build-job
+      ]
+    name: Check HTML code with Pa11y for accessibility
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Pa11y
+        run: npm install -g pa11y
+      - name: Check control panel with Pa11y
+        run: |
+          cd source/control-panel/src
+          find . -iname '*.html' | xargs -I '{}' pa11y {}
+      - name: Check sample waiting site with Pa11y
+        run: |
+          cd source/sample-waiting-room-site/src
+          find . -iname '*.html' | xargs -I '{}' pa11y {}
+            
   cfn-lint-job:
     name: Run cfn-lint on templates
     runs-on: ubuntu-latest

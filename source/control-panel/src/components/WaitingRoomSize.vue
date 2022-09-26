@@ -12,9 +12,7 @@ the number of clients in waiting for tokens -->
     <p class="lead">
       Waiting Room Size
       <span v-if="updateSuccess" class="badge bg-success mx-2">connected</span>
-      <span v-if="updateError" class="badge bg-danger mx-2"
-        >check configuration</span
-      >
+      <span v-if="updateError" class="badge bg-danger mx-2">check configuration</span>
     </p>
     <!-- show the last size counter from the model -->
     <p class="h2 m-2">{{ waitingRoomSize }}</p>
@@ -23,7 +21,6 @@ the number of clients in waiting for tokens -->
 
 <script>
 import { mixin as VueTimers } from "vue-timers";
-import axios from "axios";
 // fixed update interval of 5 seconds
 const UPDATE_INTERVAL_MS = 5000;
 export default {
@@ -55,27 +52,27 @@ export default {
         this.configuration.endpoints.valid &&
         this.configuration.eventData.valid
       ) {
-        const client = axios.create();
-        // add the event ID and make a GET request to the public API
-        client
-          .get(
-            `${this.configuration.endpoints.publicApiUrl}/waiting_num?event_id=${this.configuration.eventData.id}`
-          )
-          .then((res) => {
-            // update the counter from the API call
-            this.waitingRoomSize = res.data.waiting_num;
-            this.updateSuccess = true;
-            this.updateError = false;
-          })
-          .catch(() => {
-            this.updateSuccess = false;
-            this.updateError = true;
-          });
+        const url = `${this.configuration.endpoints.publicApiUrl}/waiting_num?event_id=${this.configuration.eventData.id}`;
+        const local_this = this;
+        fetch(url, {
+          method: "GET"
+        }).then(function (response) {
+          return response.json();
+        }).then(function (json) {
+          // update the token value on success
+          local_this.waitingRoomSize = json.waiting_num;
+          local_this.updateSuccess = true;
+          local_this.updateError = false;
+        }).catch((error) => {
+          console.error(error);
+          local_this.updateSuccess = false;
+          local_this.updateError = true;
+        });
       } else {
         this.updateSuccess = false;
         this.updateError = false;
       }
-    },
-  },
+    }
+  }
 };
 </script>

@@ -225,25 +225,25 @@ The deployment view shows the relationships between the deployment units (instal
 
 There are six CloudFormation templates available for the Virtual Waiting Room on AWS. Two templates are intended for deployment together into one account's region. The remainining four templates can be deployed into the same or different regions, or separate accounts from the two primary templates. Each template is briefly described below.
 
-#### aws-virtual-waiting-room-api-gateway-cw-logs-role.template
+#### virtual-waiting-room-on-aws-api-gateway-cw-logs-role.template
 
 This template is used to create and configure an IAM Role for API GAteway that allows it to send access logs to CloudWatch. The Role is configured at the account/region level, so it may or may not exist when the Virtual Waiting Room on AWS is installed the first time. Run this template if no existing IAM Role for API Gateway logging has been added for the region.
 
-#### aws-virtual-waiting-room.template
+#### virtual-waiting-room-on-aws.template
 
 This is the primary template for the Virtual Waiting Room on AWS. This template configured all the foundational APIs, events, Virtual Private Cloud, Elasticache and DynamoDB table. This template is always installed with a new event.
 
-#### aws-virtual-waiting-room-authorizers.template
+#### virtual-waiting-room-on-aws-authorizers.template
 
 This template installs the API Gateway authorizers that can be used by the customer with Virtual Waiting Room on AWS issued JSON Web Tokens. After installing this template, the customer can add the authorizers to one or more API Gateway REST APIs to only allow users access who have passed through the waiting room.
-#### aws-virtual-waiting-room-openid.template
+#### virtual-waiting-room-on-aws-openid.template
 
-This is an optional template that provides a set of APIs for Open ID Connect authorization and a sample page that acts as a waiting room within the authentication flow. This template is a logical layer above the primary public and private APIs configured by aws-virtual-waiting-room.template.
+This is an optional template that provides a set of APIs for Open ID Connect authorization and a sample page that acts as a waiting room within the authentication flow. This template is a logical layer above the primary public and private APIs configured by virtual-waiting-room-on-aws.template.
 
-#### aws-virtual-waiting-room-sample-inlet-strategy.template
+#### virtual-waiting-room-on-aws-sample-inlet-strategy.template
 
 This template installs two sample inlet strategies in the form of Lambda functions, CloudWatch rule, SNS topic, and gives the user the choice of activating one. The customer can use these as starting points for customizing a strategy based on their web site's infrastructure.
-#### aws-virtual-waiting-room-sample.template
+#### virtual-waiting-room-on-aws-sample.template
 
 This template installs a complete sample waiting room and protected API that uses the custom authorizers.
 
@@ -255,15 +255,15 @@ The physical view shows the deployed software with configured cloud resources an
 
 The previous diagram shows the significant subsystems installed for the Virtual Waiting Room on AWS.
 
-The stack resources for aws-virtual-waiting-room.template are shown at the right of the diagram. This stack installs a public API and private (IAM-authorized) API used for most operations of te Virtual Waiting Room on AWS. The public API is configured with a CloudFront distribution with multiple caching policies based on the API called. A DynamoDB table and EventBridge event bus is also created here. This stack installs a VPC with two availability zones, a Redis cluster in those AZs, and several Lambda functions. Lambda functions that interact with Redis are installed within the VPC and all other are installed in the shared AWS network space.
+The stack resources for virtual-waiting-room-on-aws.template are shown at the right of the diagram. This stack installs a public API and private (IAM-authorized) API used for most operations of te Virtual Waiting Room on AWS. The public API is configured with a CloudFront distribution with multiple caching policies based on the API called. A DynamoDB table and EventBridge event bus is also created here. This stack installs a VPC with two availability zones, a Redis cluster in those AZs, and several Lambda functions. Lambda functions that interact with Redis are installed within the VPC and all other are installed in the shared AWS network space.
 
-The stack resources for aws-virtual-waiting-room-authorizers.template are shown at the top-left of the diagram. This stack installs one IAM role and Lambda function. The Lambda function is a custom authorizer for API Gateway and may be used by the customer to protect APIs until a user has progressed through the waiting room and receives an access token.
+The stack resources for virtual-waiting-room-on-aws-authorizers.template are shown at the top-left of the diagram. This stack installs one IAM role and Lambda function. The Lambda function is a custom authorizer for API Gateway and may be used by the customer to protect APIs until a user has progressed through the waiting room and receives an access token.
 
-The stack resources for aws-virtual-waiting-room-sample-inlet-strategy.template are shown at the bottom-center of the diagram. These are two sample Lambda functions that are installed with either a CloudWatch schedule rule or an SNS topic used to signal the Lambda. The concept behind the inlet strategy is to determine when the serving counter of the Virtual Waiting Room on AWS should move forward to accomodate more users in the web site.
+The stack resources for virtual-waiting-room-on-aws-sample-inlet-strategy.template are shown at the bottom-center of the diagram. These are two sample Lambda functions that are installed with either a CloudWatch schedule rule or an SNS topic used to signal the Lambda. The concept behind the inlet strategy is to determine when the serving counter of the Virtual Waiting Room on AWS should move forward to accomodate more users in the web site.
 
-The stack resources for aws-virtual-waiting-room-openid.template are shown at the middle-left of the diagram. This stack acts as an adapter to the public and private APIs and provides a set of APIs that are compatible with Open ID Connect. This stack allows a customer to use the waiting room in the AuthN/AuthZ flow when using off-the-shelf web hosting software with limited integration options.
+The stack resources for virtual-waiting-room-on-aws-openid.template are shown at the middle-left of the diagram. This stack acts as an adapter to the public and private APIs and provides a set of APIs that are compatible with Open ID Connect. This stack allows a customer to use the waiting room in the AuthN/AuthZ flow when using off-the-shelf web hosting software with limited integration options.
 
-Finally, the stack resources for aws-virtual-waiting-room-sample.template are shown in this diagram at the far left showing CloudFront distributions in front of S3 bucket origins, and at the top with the custom authorizer. The sample stack integrates with the other stacks to demonstrate a minimal end-to-end waiting room solution.
+Finally, the stack resources for virtual-waiting-room-on-aws-sample.template are shown in this diagram at the far left showing CloudFront distributions in front of S3 bucket origins, and at the top with the custom authorizer. The sample stack integrates with the other stacks to demonstrate a minimal end-to-end waiting room solution.
 
 
 
@@ -289,3 +289,79 @@ The following sequence diagram shows the steps that are used with the Virtual Wa
 
 ![Use API Gateway Authorizer Sequence Diagram](use-api-gateway-authorizer.jpg)
 
+
+
+
+
+## Understanding Queue Position Expiry
+
+### Template parameters pertaining to queue position expiry 
+1. EnableQueuePositionExpiry = allowed values of true or false.  
+If set to `False`, queue position expiry period is not applicable.
+
+2. QueuePositionExpiryPeriod (*QPExP*) = value is specified in seconds.  
+It is the time interval beyond which a queue is ineligible to generate a token.
+
+3. IncrSvcOnQueuePositionExpiry (*IncSCQP*) = allowed values of true or false.  
+If set to `True`, SC is automatically advanced based on expired queue positions that were unable to generate tokens.
+
+### Some definitions  
+-   Queue position entry time (*QPET*) = time at which a particular RID enters the queue  
+-   Token request time (*TRT*) = time at which RID requests a token, approx. current time
+-   Serving Counter issue time (*SCIT*) = time at which the serving counter is incremented  
+-   Time in Queue (*TIQ*) = calculated based on eligibility to obtain a token when a particular *RID* gets in the queue  
+-   Max Queue Position Expired (*MQPE*) = marker for upper limit of queue positions that have expired (calculated metric) 
+    -   If `QP <= MQPE` then we know the corresponding queue positions has expired without the need to check it's *TIQ*
+
+### How do the related Dynamo DB tables look like?
+Queue Position EntryTime Table  
+Updated when when a request id enters a queue.  
+Example:  
+|Request Id | Queue Position | Entry time | Status | 
+---- | --- | --- | --- | 
+1a02207b-92d5-48e0-820f-59329a86230c | 1 |  166023612 | 0
+7678f7fb-6535-4a06-a3ca-acbf62120e15 | 4 |  166023620 | 0
+c5ba2727-5e3f-43a2-9705-b4cad7c4198a | 2 |  166023614 | 0
+4369451c-5070-44a6-a5c7-421ff976bedb | 5 |  166023622 | 0
+32b6d7be-fd56-4a6a-a71c-25a15fab5089 | 3 |  166023615 | 0
+
+Serving Counter IssuedAt Table (*SCIT*)  
+Updated when the serving counter is incremented.  
+The cumulative value is recorded in the Serving Counter column.  
+Queue positions served is updated when a token is successfully generated for a queue position in the serving counter range  
+Example: 
+|Event Id|Serving Counter| Issue time | Queue Positions Served| 
+---- | --- | --- | --- | 
+|Sample | 10 | 166023600 | 8
+|Sample | 25 | 166023610 | 15
+|Sample | 45 | 166023620 | 6
+|Sample | 100 | 166023690 | 49
+
+### How does *QPExP* work?  
+Scenarios when you get in the queue: 
+1. Serving Counter (SC) >= Queue position (QP)  
+In this case, the TIQ is the time till the generation of JWT token is requested  
+`TIQ =  TRT - QPET`
+2. Serving Counter < Queue Position  
+RID is eligible to obtain a token only when SC >= QP  
+In this case TIQ is calculated from the time once the SC >= QP  
+`TIQ = TRT - SCIT` 
+
+Succinctly `TIQ = Max(QPET, SCIT)`  
+If `TIQ > QPET` then the *RID is no longer eligible* to obtain a JWT token else a token is generated
+
+### Lambda: set_max_queue_position_expired
+This function is invoked periodically every minute. 
+This checks the boundary values of *SCIT* if there is an expired QP corresponding to that value.  
+If such a queue position exists then the MQPE value is set to that particular SC.  
+We obtain values from *SCIT* with the condition `SC > MQPT` 
+
+### Lambda: get_queue_position_expiry_time
+This is invoked by calling the public_api?eventId=EvtId&requestId=reqId  
+If `TIQ > QPET` then the remaining time is returned in seconds else an error message is returned 
+
+### Automatic Serving Counter increment based on expired queue positions. How does IncSCQP work ?  
+In set_max_queue_position lambda, if `IncSCQP == True` then the serving counter is advanced using the following logic  
+Increment the serving counter by taking the difference of counter item entries and subtract positions served in that range  
+`Increment by = [(Current counter - Previous counter) - (Queue positions served in that range)]`  
+This is done to recover *SC* values that were not used due to *QPExp*

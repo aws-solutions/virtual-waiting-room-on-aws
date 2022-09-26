@@ -14,6 +14,8 @@ from urllib.parse import urlparse
 API_REGION = os.environ.get('AWS_DEFAULT_REGION')
 NOTIFICATION_ENDPOINT = os.environ.get('NOTIFICATION_ENDPOINT')
 
+SOLUTION_NAME = 'virtual-waiting-room-on-aws'
+
 PAYLOAD = {}
 PAYLOAD['solution_org'] = os.environ.get('GITHUB_REPOSITORY').split('/')[0]
 PAYLOAD['solution_name'] = os.environ.get('GITHUB_REPOSITORY').split('/')[1]

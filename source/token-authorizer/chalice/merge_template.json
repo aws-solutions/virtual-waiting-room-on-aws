@@ -1,5 +1,5 @@
 {
-    "Description": "AWS Virtual Waiting Room API Gateway Authorizers %%VERSION%%",
+    "Description": "Virtual Waiting Room on AWS API Gateway Authorizers %%VERSION%%",
     "Parameters": {
         "PublicAPIEndpoint": {
             "Description": "Public endpoint for the virtual waiting room APIs",
@@ -54,7 +54,7 @@
                                         "KeyPrefix"
                                     ]
                                 },
-                                "aws-virtual-waiting-room-jwcrypto-layer-%%TIMESTAMP%%.zip"
+                                "virtual-waiting-room-on-aws-jwcrypto-layer-%%TIMESTAMP%%.zip"
                             ]
                         ]
                     }
@@ -89,7 +89,7 @@
                                         "KeyPrefix"
                                     ]
                                 },
-                                "aws-virtual-waiting-room-authorizers-%%TIMESTAMP%%.zip"
+                                "virtual-waiting-room-on-aws-authorizers-%%TIMESTAMP%%.zip"
                             ]
                         ]
                     }

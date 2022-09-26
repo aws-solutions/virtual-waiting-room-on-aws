@@ -1,4 +1,4 @@
-**[🚀 Solution Landing Page](https://aws.amazon.com/solutions/implementations/aws-virtual-waiting-room/)** | **[📜 Solution Implementation Guide](https://docs.aws.amazon.com/solutions/latest/aws-virtual-waiting-room/welcome.html)** | **[🚧 Feature request](https://github.com/aws-solutions/aws-virtual-waiting-room/issues/new?assignees=&labels=feature-request%2C+enhancement&template=feature_request.md&title=)** | **[🐛 Bug Report](https://github.com/aws-solutions/aws-virtual-waiting-room/issues/new?assignees=&labels=bug%2C+triage&template=bug_report.md&title=)**
+**[🚀 Solution Landing Page](https://aws.amazon.com/solutions/implementations/virtual-waiting-room-on-aws/)** | **[📜 Solution Implementation Guide](https://docs.aws.amazon.com/solutions/latest/virtual-waiting-room-on-aws/welcome.html)** | **[🚧 Feature request](https://github.com/aws-solutions/virtual-waiting-room-on-aws/issues/new?assignees=&labels=feature-request%2C+enhancement&template=feature_request.md&title=)** | **[🐛 Bug Report](https://github.com/aws-solutions/virtual-waiting-room-on-aws/issues/new?assignees=&labels=bug%2C+triage&template=bug_report.md&title=)**
 
 Note: If you want to use the solution without building from source, navigate to Solution Landing Page
 
@@ -46,7 +46,7 @@ aws s3 sync regional-s3-assets/ s3://<MY-BUCKET-NAME>-<AWS-REGION>/$SOLUTION_NAM
 * Install the common package into the virtual envronment before running
 ```
 cd ./deployment
-pip install ./pkg/aws_virtual_waiting_room_common-1.0.0-py3-none-any.whl
+pip install ./pkg/virtual_waiting_room_on_aws_common-1.1.0-py3-none-any.whl
 chmod +x ./run-unit-tests.sh  
 ./run-unit-tests.sh 
 ```
@@ -58,15 +58,15 @@ chmod +x ./run-unit-tests.sh
 ```
 ├── deployment
 │   ├── Dockerfile [ Used by docker_build script for building jwcrypto library ]
-│   ├── aws-virtual-waiting-room-api-gateway-cw-logs-role.json   [ Base template for CloudWatch Logs role ] 
-│   ├── aws-virtual-waiting-room-authorizers.json [ Base template for authorizers ]
-│   ├── aws-virtual-waiting-room-getting-started.json [ Nested template for new users ]
-│   ├── aws-virtual-waiting-room-openid.json    [ Base template for Open ID ]
-│   ├── aws-virtual-waiting-room-sample-inlet-strategy.json   [ Base template for sample inlet strategy]
-│   ├── aws-virtual-waiting-room-sample.json    [ Base template for sample site ]
-│   ├── aws-virtual-waiting-room-swagger-private-api.json   [ Swagger file for private API ]
-│   ├── aws-virtual-waiting-room-swagger-public-api.json    [ Swagger file for public API ]
-│   ├── aws-virtual-waiting-room.json   [ Base template for core API ]
+│   ├── virtual-waiting-room-on-aws-api-gateway-cw-logs-role.json   [ Base template for CloudWatch Logs role ] 
+│   ├── virtual-waiting-room-on-aws-authorizers.json [ Base template for authorizers ]
+│   ├── virtual-waiting-room-on-aws-getting-started.json [ Nested template for new users ]
+│   ├── virtual-waiting-room-on-aws-openid.json    [ Base template for Open ID ]
+│   ├── virtual-waiting-room-on-aws-sample-inlet-strategy.json   [ Base template for sample inlet strategy]
+│   ├── virtual-waiting-room-on-aws-sample.json    [ Base template for sample site ]
+│   ├── virtual-waiting-room-on-aws-swagger-private-api.json   [ Swagger file for private API ]
+│   ├── virtual-waiting-room-on-aws-swagger-public-api.json    [ Swagger file for public API ]
+│   ├── virtual-waiting-room-on-aws.json   [ Base template for core API ]
 │   ├── build-s3-dist.sh    [ Script for building distributables and preparing the CloudFormation templates ]
 │   ├── deploy.sh   [ Script for building distributables and preparing the CloudFormation templates ]
 │   ├── docker_build.sh   [ Script for building jwcrypto library ]
@@ -103,3 +103,4 @@ Licensed under the Apache License Version 2.0 (the "License"). You may not use t
     http://www.apache.org/licenses/
 
 or in the "license" file accompanying this file. This file is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or implied. See the License for the specific language governing permissions and limitations under the License.
+

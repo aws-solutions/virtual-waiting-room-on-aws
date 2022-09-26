@@ -2,12 +2,12 @@ name: Push Workflow
 
 # global environment variables to all jobs
 env:
-  REGION: us-west-2
-  SOLUTION_ORG: aws-solutions
-  SOLUTION_NAME: aws-virtual-waiting-room
-  DIST_OUTPUT_BUCKET: swr
-  REGIONS_TO_DEPLOY: "us-west-2 us-east-1"
-  RELEASE_BRANCH: refs/heads/main
+  REGION: us-east-1
+  DIST_OUTPUT_BUCKET: sb-poc-solutions-features
+  REGIONS_TO_DEPLOY: "us-west-2 us-east-1 eu-west-1"
+  RELEASE_OUTPUT_BUCKET: sb-poc-solutions
+  VERSION: ${{ secrets.VERSION }}
+  RELEASE_BRANCH: main 
 
 on:
   push:
@@ -16,18 +16,6 @@ on:
       - "**/*.md"
 
 jobs:
-  # clamav-scan-job:
-  #   runs-on: ubuntu-latest
-  #   name: Check source code with ClamAV Scan
-  #   steps:
-  #     - name: Check out repo
-  #       uses: actions/checkout@v2
-  #     # scan for any malware in the commit
-  #     - name: ClamAV Scan
-  #       uses: djdefi/gitavscan@main
-  #       with:
-  #         full: "--full"
-
   trufflehog-scan-job:
     runs-on: ubuntu-latest
     name: Check source code with Trufflehog Scan
@@ -65,19 +53,6 @@ jobs:
           cd source
           ./tools/pylint.sh
 
-  pa11y-check-job:
-    runs-on: ubuntu-latest
-    name: Check HTML code with Pa11y for accessibility
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Install Pa11y
-        run: npm install pa11y
-      - name: Check with Pa11y
-        run: |
-          cd source
-          find . -iname '*.html' -exec ../node_modules/pa11y/bin/pa11y.js {} \;
-
   jshint-check-job:
     runs-on: ubuntu-latest
     name: Check source code with JShint
@@ -85,31 +60,73 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Install JShint
-        run: npm install jshint
-      - name: Check with JShint
+        run: npm install -g jshint
+      - name: Check control panel with JShint
         run: |
-          cd source
+          cd source/control-panel/src
           find . -name '*.js' -type f -print | \
-          xargs ../node_modules/jshint/bin/jshint
+            grep --invert-match "/node_modules/" | \
+            xargs jshint
+      - name: Check sample waiting site with JShint
+        run: |
+          cd source/sample-waiting-room-site/src
+          find . -name '*.js' -type f -print | \
+            grep --invert-match "/node_modules/" | \
+            xargs jshint
+
+  eslint-check-job:
+      runs-on: ubuntu-latest
+      name: Check source code with eslint
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v2
+        - name: Install eslint
+          run: npm install eslint --save-dev
+        - name: Install eslint vue plugin
+          run: npm install eslint-plugin-vue@latest --save-dev
+        - name: Check control panel with eslint
+          run: npx eslint source/control-panel/src
+        - name: Check sample waiting site with eslint
+          run: npx eslint source/sample-waiting-room-site/src
+
+  codeql-check-job:
+    runs-on: ubuntu-latest
+    name: Check source code with CodeQL
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'javascript', 'python' ]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v1
+        with:
+          languages: ${{ matrix.language }}
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v1
 
   build-job:
     name: Run build script
     runs-on: ubuntu-latest
     needs:
       [
-        #clamav-scan-job,
         trufflehog-scan-job,
         bandit-check-job,
         pylint-check-job,
-        jshint-check-job
+        jshint-check-job,
+        eslint-check-job,
+        codeql-check-job
       ]
     # use a specific environment for this build that has secrets defined 
     # and protection rules in place, if needed
     steps:
       - name: Check out repo
         uses: actions/checkout@v2
-      - name: Set up Push variables
-        run: echo "VERSION=`git rev-parse --short HEAD`" >> $GITHUB_ENV
       - name: Update system path
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
       - name: Set up AWS environment 
@@ -126,7 +143,7 @@ jobs:
           safety check -r deployment/requirements.txt
       - name: Install required system packages
         run: |
-          pip install --upgrade --force-reinstall -r deployment/requirements.txt 2> error.txt
+          pip install -r deployment/requirements.txt 2> error.txt
           if [ -s error.txt ]; then
             echo "ERROR: System package installation failed."
             cat error.txt
@@ -141,13 +158,38 @@ jobs:
       - name: Run build script
         run: |
           cd deployment
-          ./build-s3-dist.sh $DIST_OUTPUT_BUCKET $SOLUTION_NAME $VERSION
+          if [ $GITHUB_REF_NAME == $RELEASE_BRANCH ]; then
+            ./build-s3-dist.sh $RELEASE_OUTPUT_BUCKET ${{ github.event.repository.name }} $VERSION
+          else
+            ./build-s3-dist.sh $DIST_OUTPUT_BUCKET ${{ github.event.repository.name }} $VERSION
+          fi
       - name: Run unit tests
         run: |
           cd deployment
-          pip install pkg/aws_virtual_waiting_room_common-1.0.0-py3-none-any.whl
+          pip install pkg/virtual_waiting_room_on_aws_common-1.1.0-py3-none-any.whl
           ./run-unit-tests.sh
-      
+
+  pa11y-check-job:
+    runs-on: ubuntu-latest
+    needs:
+      [
+        build-job
+      ]
+    name: Check HTML code with Pa11y for accessibility
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Pa11y
+        run: npm install -g pa11y
+      - name: Check control panel with Pa11y
+        run: |
+          cd source/control-panel/src
+          find . -iname '*.html' | xargs -I '{}' pa11y {}
+      - name: Check sample waiting site with Pa11y
+        run: |
+          cd source/sample-waiting-room-site/src
+          find . -iname '*.html' | xargs -I '{}' pa11y {}
+
   cfn-lint-job:
     name: Run cfn-lint on templates
     runs-on: ubuntu-latest
@@ -193,7 +235,8 @@ jobs:
     needs:
       [
         cfn-lint-job,
-        cfn-nag-job        
+        cfn-nag-job,
+        pa11y-check-job        
       ]
     runs-on: ubuntu-latest
     environment: push_env
@@ -204,11 +247,10 @@ jobs:
     steps:
       - name: Check out repo
         uses: actions/checkout@v2
-      - name: Set up Push variables
-        run: echo "VERSION=`git rev-parse --short HEAD`" >> $GITHUB_ENV
       - name: Install required system packages
         run: |
-          pip install --upgrade --force-reinstall -r deployment/requirements.txt 2> error.txt
+          # pip install -r deployment/requirements.txt 2> error.txt
+          pip install awscli 2> error.txt
           if [ -s error.txt ]; then
             echo "ERROR: System package installation failed."
             cat error.txt
@@ -227,9 +269,11 @@ jobs:
           path: deployment/
           key: ${{ github.sha }}
       - name: Upload to S3
+        # deploy to our test bucket if not doing a release
+        if: ${{github.ref_name != env.RELEASE_BRANCH}}
         run: |
           cd deployment
-          ./deploy.sh -b $DIST_OUTPUT_BUCKET -s $SOLUTION_NAME -v $VERSION -r "$REGIONS_TO_DEPLOY" -a none -t dev
+          ./deploy.sh -b $DIST_OUTPUT_BUCKET -s ${{ github.event.repository.name }} -v $VERSION -r "$REGIONS_TO_DEPLOY" -a none
       - name: Zip up regional and global assets
         run: |
           cd deployment
@@ -239,5 +283,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: zipped-regional-global-assets
-          path: deployment/*.zip  
-  
+          path: deployment/*.zip
