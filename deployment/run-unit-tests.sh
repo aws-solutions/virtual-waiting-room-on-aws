@@ -27,7 +27,6 @@ coverage run custom_resource_tests.py
 coverage xml
 sed -i -- 's/filename\=\"/filename\=\"source\/core-api\/custom_resources\//g' coverage.xml
 
-
 echo "------------------------------------------------------------------------------"
 echo " Test shared resources functions"
 echo "------------------------------------------------------------------------------"
@@ -35,7 +34,6 @@ cd $source_dir/shared/
 coverage run shared_resources_tests.py
 coverage xml
 sed -i -- 's/filename\=\"/filename\=\"source\/shared\//g' coverage.xml
-
 
 echo "------------------------------------------------------------------------------"
 echo " Test open-id waitingroom custom resources functions"
