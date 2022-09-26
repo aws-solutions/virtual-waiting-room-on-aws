@@ -2,7 +2,7 @@
 This module is provides unit tests for the inlet strategies module.
 """
 
-# pylint: disable=C0415,W0201
+# pylint: disable=C0415,W0201,E1101
 
 import json
 import unittest
@@ -50,6 +50,9 @@ def get_public_key():
 
 
 def chalice_mock(app_name=None):
+    """
+    This function handles the mock for the Chalice object
+    """
     mock = MagicMock()
     mock.current_request = MagicMock()
     mock.current_request.query_params = MagicMock()
