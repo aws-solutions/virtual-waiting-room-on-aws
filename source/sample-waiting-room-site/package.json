@@ -1,5 +1,8 @@
 {
   "name": "waiting-room-site",
+  "description": "This project is a sample waiting room page to be used as a reference or starting-point for custom pages",
+  "author": "Amazon Web Services (https://aws.amazon.com/solutions)",
+  "license": "Apache-2.0",
   "version": "0.1.0",
   "private": true,
   "scripts": {

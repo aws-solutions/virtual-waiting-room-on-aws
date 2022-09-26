@@ -28,6 +28,7 @@ coverage xml
 sed -i -- 's/filename\=\"/filename\=\"source\/core-api\/custom_resources\//g' coverage.xml
 
 echo "------------------------------------------------------------------------------"
+
 echo " Test shared resources functions"
 echo "------------------------------------------------------------------------------"
 cd $source_dir/shared/
@@ -42,3 +43,18 @@ cd $source_dir/openid-waitingroom/custom_resources
 coverage run custom_resources_tests.py
 coverage xml
 sed -i -- 's/filename\=\"/filename\=\"source\/openid-waitingroom\/custom_resources\//g' coverage.xml
+
+echo " Test inlet strategy Lambda functions"
+echo "------------------------------------------------------------------------------"
+cd $source_dir/sample-inlet-strategies
+coverage run inlet_strategy_tests.py
+coverage xml
+sed -i -- 's/filename\=\"/filename\=\"source\/sample-inlet-strategies\//g' coverage.xml
+
+echo "------------------------------------------------------------------------------"
+echo " Test token authorizer Lambda functions"
+echo "------------------------------------------------------------------------------"
+cd $source_dir/token-authorizer/chalice
+coverage run token_authorizer_tests.py
+coverage xml
+sed -i -- 's/filename\=\"/filename\=\"source\/token-authorizer\/chalice\//g' coverage.xml
