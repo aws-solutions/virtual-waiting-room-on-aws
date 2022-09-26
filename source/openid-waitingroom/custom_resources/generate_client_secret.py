@@ -35,7 +35,8 @@ def create(event, _):
     secrets_manager.create_secret(
         Name=secret_id,
         Description="Open ID client secret used for token requests",
-        SecretString=secret_value)
+        SecretString=secret_value
+    )
 
 
 @helper.delete
@@ -47,8 +48,10 @@ def delete(event, _):
     # delete the secret value
     secrets_manager = boto3.client('secretsmanager', config=user_config)
     secret_id = f'{event["ResourceProperties"]["SecretPrefix"]}/client_secret'
-    secrets_manager.delete_secret(SecretId=secret_id,
-                                  ForceDeleteWithoutRecovery=True)
+    secrets_manager.delete_secret(
+        SecretId=secret_id,
+        ForceDeleteWithoutRecovery=True                                  
+    )
 
 
 def handler(event, context):
