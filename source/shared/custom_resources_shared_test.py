@@ -16,7 +16,7 @@ from vwr.common import jwt
 from vwr.common import validate
 from custom_resources import cfn_bucket_loader
 
-class SharedResourcesTests(unittest.TestCase):
+class CustomResourcesSharedTest(unittest.TestCase):
     """
     This class is reponsible for tests against the waiting room core custom resources functions
     """
@@ -37,7 +37,6 @@ class SharedResourcesTests(unittest.TestCase):
         """
         Tests valid rid 
         """
-        
         request_id = "26a07142-098a-4bea-b67d-1fe5a098bf29"
         self.assertTrue(validate.is_valid_rid(request_id))
 
@@ -52,7 +51,6 @@ class SharedResourcesTests(unittest.TestCase):
         """
         Function to test JWT payload 
         """
-
         text = 'A.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.B'
 
         payload = jwt.claim_dict(text)
