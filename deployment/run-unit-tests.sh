@@ -38,6 +38,14 @@ coverage xml
 sed -i -- 's/filename\=\"/filename\=\"source\/shared\//g' coverage.xml
 
 echo "------------------------------------------------------------------------------"
+echo " Test open-id API functions"
+echo "------------------------------------------------------------------------------"
+cd $source_dir/openid-waitingroom/chalice
+coverage run openid_waitingroom_tests.py
+coverage xml
+sed -i -- 's/filename\=\"/filename\=\"source\/openid-waitingroom\/chalice\//g' coverage.xml
+
+echo "------------------------------------------------------------------------------"
 echo " Test open-id waitingroom custom resources functions"
 echo "------------------------------------------------------------------------------"
 cd $source_dir/openid-waitingroom/custom_resources
