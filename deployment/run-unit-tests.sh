@@ -30,7 +30,6 @@ coverage xml
 sed -i -- 's/filename\=\"/filename\=\"source\/core-api\/custom_resources\//g' coverage.xml
 
 echo "------------------------------------------------------------------------------"
-
 echo " Test shared resources functions"
 echo "------------------------------------------------------------------------------"
 cd $source_dir/shared/
