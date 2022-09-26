@@ -9,8 +9,9 @@
 
 # Get reference for all important folders
 template_dir="$PWD"
-echo $template_dir
-source_dir="$template_dir/source"
+echo "template_dir" $template_dir
+source_dir="$template_dir/../source"
+echo "source_dir" $source_dir
 
 echo "------------------------------------------------------------------------------"
 echo " Test core API functions"
