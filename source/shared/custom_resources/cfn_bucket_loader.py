@@ -76,9 +76,10 @@ def put_web_contents(bucket_name):
                 content_type = "binary/octet-stream"
             with open(local, 'rb') as data:
                 client.put_object(Bucket=bucket_name,
-                                  Key=remote,
-                                  Body=data,
-                                  ContentType=content_type)
+                    Key=remote,
+                    Body=data,
+                    ContentType=content_type
+                )
 
 
 def put_api_endpoints_js(bucket_name, apis):
@@ -91,11 +92,12 @@ def put_api_endpoints_js(bucket_name, apis):
     content_type = "application/javascript"
     contents = ""
     for name, url in apis.items():
-        contents = contents + f"const {name} = \"{url}\";\n"
-    client.put_object(Bucket=bucket_name,
-                      Key=key,
-                      Body=contents,
-                      ContentType=content_type)
+        contents = f'{contents}const {name} = \"{url}\";\n'
+    client.put_object(Bucket=bucket_name, 
+        Key=key, 
+        Body=contents, 
+        ContentType=content_type
+    )
 
 
 def delete_bucket_contents(bucket_name):
