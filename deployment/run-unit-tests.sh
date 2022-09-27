@@ -30,12 +30,20 @@ coverage xml
 sed -i -- 's/filename\=\"/filename\=\"source\/core-api\/custom_resources\//g' coverage.xml
 
 echo "------------------------------------------------------------------------------"
-echo " Test shared resources functions"
+echo " Test shared custom resources functions"
 echo "------------------------------------------------------------------------------"
 cd $source_dir/shared/
 coverage run shared_resources_tests.py
 coverage xml
 sed -i -- 's/filename\=\"/filename\=\"source\/shared\//g' coverage.xml
+
+echo "------------------------------------------------------------------------------"
+echo " Test shared common functions"
+echo "------------------------------------------------------------------------------"
+cd $source_dir/shared/virtual-waiting-room-on-aws-common
+coverage run common_tests.py
+coverage xml
+sed -i -- 's/filename\=\"/filename\=\"source\/shared\/virtual-waiting-room-on-aws-common\//g' coverage.xml
 
 echo "------------------------------------------------------------------------------"
 echo " Test open-id API functions"
