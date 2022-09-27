@@ -75,3 +75,11 @@ cd $source_dir/token-authorizer/chalice
 coverage run token_authorizer_tests.py
 coverage xml
 sed -i -- 's/filename\=\"/filename\=\"source\/token-authorizer\/chalice\//g' coverage.xml
+
+echo "------------------------------------------------------------------------------"
+echo " Test sample API functions"
+echo "------------------------------------------------------------------------------"
+cd $source_dir/core-api-authorizers-sample/chalice
+coverage run sample_api_tests.py
+coverage xml
+sed -i -- 's/filename\=\"/filename\=\"source\/core-api-authorizers-sample\/chalice\//g' coverage.xml
