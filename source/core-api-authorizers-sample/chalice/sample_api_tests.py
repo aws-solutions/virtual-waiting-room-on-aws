@@ -34,7 +34,7 @@ def chalice_mock(app_name=None):
 @patch('requests.post')
 @patch('requests.get')
 @patch('chalice.Chalice', new=chalice_mock)
-class TestOpenIDWaitingRoom(unittest.TestCase):
+class TestSampleAPI(unittest.TestCase):
     """
     This class extends TestCase with testing functions
     """
