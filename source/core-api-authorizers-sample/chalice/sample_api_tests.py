@@ -4,7 +4,6 @@ This module is provides unit tests for the inlet strategies module.
 
 # pylint: disable=C0415,W0201,E1101
 
-import json
 import unittest
 from unittest.mock import patch, MagicMock
 
