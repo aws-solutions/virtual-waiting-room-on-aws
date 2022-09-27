@@ -7,8 +7,6 @@ This module is the unit test for the shared functions.
 
 import os
 import unittest
-from unittest.mock import patch
-from unittest.mock import MagicMock
 
 os.environ["SOLUTION_ID"] = "SO12345"
 
