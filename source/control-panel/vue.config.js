@@ -6,5 +6,14 @@
 module.exports = {
   publicPath: (process.env.NODE_ENV === 'production' ? '/control-panel/' : '/'),
   outputDir: 'dist/www/control-panel',
-  transpileDependencies: true
+  transpileDependencies: true,
+  devServer:{
+    proxy:{
+        '^/api':{
+            target: 'http://localhost:5000',
+            ws: true,
+            secure: false                
+        }
+    }
+  },
 };

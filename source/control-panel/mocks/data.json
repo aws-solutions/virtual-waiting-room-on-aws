@@ -1,0 +1,22 @@
+{
+  "num_active_tokens_1": {
+    "active_tokens": 101
+  },
+  "waiting_num_1": {
+    "waiting_num": 11
+  },
+  "serving_num_1": {
+    "serving_counter": 201
+  },
+  "expired_tokens_1": ["abc", "def", "ghi", "jkl", "mno", "pqr", "stu", "vwx", "yz", "123"],
+  "num_active_tokens_abc": {
+    "active_tokens": 102
+  },
+  "waiting_num_abc": {
+    "waiting_num": 12
+  },
+  "serving_num_abc": {
+    "serving_counter": 202
+  },
+  "expired_tokens_abc": ["abc","def"]
+}
