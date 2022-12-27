@@ -118,7 +118,7 @@ export default {
     },
     restore() {
       // return the stored or an empty configuration object
-      let data = window.sessionStorage.getItem(sessionKey);
+      let data = window.localStorage.getItem(sessionKey);
       let configuration = {
         changed: false,
       };
@@ -169,7 +169,7 @@ export default {
         eventData: _.cloneDeep(this.eventData),
       };
       // store the data on the browser session
-      window.sessionStorage.setItem(sessionKey, JSON.stringify(data));
+      window.localStorage.setItem(sessionKey, JSON.stringify(data));
       // no longer changed
       this.changed = false;
       // emit the event upstream
