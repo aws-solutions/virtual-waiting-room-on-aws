@@ -16,7 +16,8 @@
     "core-js": "^3.8.3",
     "lodash": "^4.17.21",
     "vue": "^3.0.0",
-    "vue-timers": "^2.0.4"
+    "vue-timers": "^2.0.4",
+    "vuex": "^4.1.0"
   },
   "devDependencies": {
     "@vue/babel-preset-app": "^5.0.8",

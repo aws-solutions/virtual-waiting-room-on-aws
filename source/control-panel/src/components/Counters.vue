@@ -12,6 +12,7 @@ SPDX-License-Identifier: Apache-2.0
     <WaitingRoomSize :configuration="configuration" />
     <ActiveTokens :configuration="configuration" />
     <ExpiredTokens :configuration="configuration" />
+    <RemainingCounter :configuration="configuration" />
   </div>
 </template>
 
@@ -20,9 +21,10 @@ import ActiveTokens from "./ActiveTokens.vue";
 import ExpiredTokens from "./ExpiredTokens.vue";
 import ServingCounter from "./ServingCounter.vue";
 import WaitingRoomSize from "./WaitingRoomSize.vue";
+import RemainingCounter from "./RemainingCounter.vue";
 export default {
   name: "Counters",
-  components: { ActiveTokens, ExpiredTokens, ServingCounter, WaitingRoomSize },
+  components: { ActiveTokens, ExpiredTokens, ServingCounter, WaitingRoomSize, RemainingCounter },
   props: ["configuration"],
 };
 </script>
