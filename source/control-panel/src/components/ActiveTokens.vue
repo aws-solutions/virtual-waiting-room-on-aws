@@ -20,7 +20,10 @@ is an object containing the endpoints and credentials for the API.
       <span v-if="updateSuccess" class="badge bg-success mx-2">connected</span>
       <span v-if="updateError" class="badge bg-danger mx-2">check configuration</span>
     </p>
-    <p class="h2 m-2">{{ activeTokens }}</p>
+    <div class="d-flex flex-row justify-content-between">
+      <p class="h2 m-2">{{ activeTokens }}</p>
+      <button type="button" class="btn btn-sm btn-secondary rounded m-1 p-3" v-on:click="updateActiveTokenCount">Update</button>
+    </div>
   </div>
 </template>
 
@@ -29,7 +32,7 @@ is an object containing the endpoints and credentials for the API.
 import { mixin as VueTimers } from "vue-timers";
 import { AwsClient } from 'aws4fetch';
 // update interval for the API call
-const UPDATE_INTERVAL_MS = 5000;
+const UPDATE_INTERVAL_MS = 60000;
 export default {
   name: "ActiveTokens",
   mixins: [VueTimers],
@@ -75,6 +78,7 @@ export default {
         }).then(function (json) {
           // update the token value on success
           local_this.activeTokens = json.active_tokens;
+          local_this.$store.commit('setActiveTokens', json.active_tokens);
           local_this.updateSuccess = true;
           local_this.updateError = false;
         }).catch((error) => {

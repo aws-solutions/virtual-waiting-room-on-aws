@@ -15,7 +15,10 @@ SPDX-License-Identifier: Apache-2.0
       <span v-if="updateError" class="badge bg-danger mx-2">check configuration</span>
     </p>
     <!-- show the last expired tokens count retrieved -->
-    <p class="h2 m-2">{{ expiredTokens }}</p>
+    <div class="d-flex flex-row justify-content-between">
+      <p class="h2 m-2">{{ expiredTokens }}</p>
+      <button type="button" class="btn btn-sm btn-secondary rounded m-1 p-3" v-on:click="updateWaitingRoomSize">Update</button>
+    </div>
   </div>
 </template>
 
@@ -23,7 +26,7 @@ SPDX-License-Identifier: Apache-2.0
 import { mixin as VueTimers } from "vue-timers";
 import { AwsClient } from 'aws4fetch';
 // longer update interval since this call is more expensive
-const UPDATE_INTERVAL_MS = 30000;
+const UPDATE_INTERVAL_MS = 60000;
 export default {
   name: "ExpiredTokens",
   mixins: [VueTimers],
@@ -73,6 +76,7 @@ export default {
             0
           );
           local_this.expiredTokens = expiredTokens;
+          local_this.$store.commit("setExpiredTokens", expiredTokens);
           local_this.updateSuccess = true;
           local_this.updateError = false;
         }).catch((error) => {

@@ -62,6 +62,7 @@ export default {
         }).then(function (json) {
           // update the token value on success
           local_this.servingCounter = json.serving_counter;
+          local_this.$store.commit("setServingCounter", json.serving_counter);
           local_this.updateSuccess = true;
           local_this.updateError = false;
         }).catch((error) => {
