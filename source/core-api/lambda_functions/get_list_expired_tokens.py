@@ -50,7 +50,7 @@ def lambda_handler(event, _):
                     ProjectionExpression="request_id",
                     KeyConditionExpression=Key('event_id').eq(EVENT_ID) & Key('expires').lt(current_time),
                     ExclusiveStartKey=response["LastEvaluatedKey"])
-                items.append([item['request_id'] for item in response['Items']])
+                items.extend([item['request_id'] for item in response['Items']])
             response = {
                 "statusCode": 200,
                 "headers": headers,
