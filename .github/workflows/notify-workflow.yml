@@ -3,10 +3,10 @@ env:
   REGION: us-east-1
   VERSION: ${{ secrets.VERSION }}
   RELEASE_BRANCH: main
-on: 
-  workflow_run:
-    workflows: ["Push Workflow"]
-    types: [completed]
+# on: 
+#   workflow_run:
+#     workflows: ["Push Workflow"]
+#     types: [completed]
 jobs:
   notify-job:
     runs-on: ubuntu-latest

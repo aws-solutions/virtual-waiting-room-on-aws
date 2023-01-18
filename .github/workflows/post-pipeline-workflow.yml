@@ -1,20 +1,20 @@
 name: Post Pipeline Workflow
-on: 
-  workflow_dispatch:
-    inputs:
-      pipeline_status:
-        description: "Status of the AWS pipeline"
-        required: true
-        default: Unknown
-        type: choice
-        options:
-          - Succeeded
-          - Failed
-          - Unknown
-      pipeline_message:
-        description: "Pipeline status details"
-        default: "No detailed message"
-        required: true
+# on: 
+#   workflow_dispatch:
+#     inputs:
+#       pipeline_status:
+#         description: "Status of the AWS pipeline"
+#         required: true
+#         default: Unknown
+#         type: choice
+#         options:
+#           - Succeeded
+#           - Failed
+#           - Unknown
+#       pipeline_message:
+#         description: "Pipeline status details"
+#         default: "No detailed message"
+#         required: true
 env:
   VERSION: ${{ secrets.VERSION }}
   REGION: us-east-1

@@ -9,11 +9,11 @@ env:
   VERSION: ${{ secrets.VERSION }}
   RELEASE_BRANCH: main 
 
-on:
-  push:
-    paths-ignore:
-      - "docs/**"
-      - "**/*.md"
+# on:
+#   push:
+#     paths-ignore:
+#       - "docs/**"
+#       - "**/*.md"
 
 jobs:
   trufflehog-scan-job:
