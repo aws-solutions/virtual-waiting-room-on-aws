@@ -19,7 +19,7 @@ increment the serving counter of the waiting room -->
       <!-- add a label and slider for the increment value -->
       <label class="form-label"></label>
       <!-- connect the slider to the data model and input handler -->
-      <input type="range" class="form-range" min="-1000" max="1000" step="1" v-model="increment" @input="newValue = true" />
+      <input type="range" class="form-range" min="1" max="1000" step="1" v-model="increment" @input="newValue = true" />
     </p>
     <div class="d-flex flex-row-reverse">
       <!-- enable change the button if the configuration is valid -->
@@ -34,7 +34,7 @@ increment the serving counter of the waiting room -->
       </button>
       <!-- display the slider value -->
       <div class="m-2 mx-5">
-        Increment by: <input type="number" v-model="increment" class="form-control form-control-lg w-50" />
+        Increment by: <input type="number" v-model="increment" class="form-control form-control-lg w-50" min="1" />
       </div>
     </div>
   </div>
