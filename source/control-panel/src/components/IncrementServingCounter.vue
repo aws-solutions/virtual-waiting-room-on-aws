@@ -34,7 +34,7 @@ increment the serving counter of the waiting room -->
       </button>
       <!-- display the slider value -->
       <div class="m-2 mx-5">
-        Increment by: <span class="mx-2 h3">{{ increment }}</span>
+        Increment by: <input type="number" v-model="increment" class="form-control form-control-lg w-50" min="1" />
       </div>
     </div>
   </div>
