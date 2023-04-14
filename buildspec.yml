@@ -37,6 +37,9 @@ artifacts:
     - sonar-project.properties
     - buildspec.yml
     - CHANGELOG.md
+    - CODE_OF_CONDUCT.md
+    - CONTRIBUTING.md
+    - README.md
     - NOTICE.txt
     - LICENSE.txt
     - .cfnnag_*
