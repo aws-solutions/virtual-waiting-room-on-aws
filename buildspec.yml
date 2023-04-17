@@ -3,8 +3,8 @@ version: 0.2
 phases:
   install:
     runtime-versions:
-      nodejs: 14
-      python: 3.8
+      nodejs: 16
+      python: 3.10
     commands:
       - echo "nothing to do in install"
   pre_build:
@@ -37,6 +37,9 @@ artifacts:
     - sonar-project.properties
     - buildspec.yml
     - CHANGELOG.md
+    - CODE_OF_CONDUCT.md
+    - CONTRIBUTING.md
+    - README.md
     - NOTICE.txt
     - LICENSE.txt
     - .cfnnag_*
