@@ -32,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Consolidate generate token methods with a base implementation  
     - generate_token_base
 
-## [1.1.1] - 2023-04-17
+## [1.1.1] - 2023-04-18
 
 ### Updated 
 
