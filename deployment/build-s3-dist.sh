@@ -170,7 +170,7 @@ echo Lambda Functions
 cd $source_dir/core-api/lambda_functions
 rm -rf error.txt package
 mkdir package
-pip install $pkg_dir/virtual_waiting_room_on_aws_common-1.1.0-py3-none-any.whl --target ./package 2> error.txt
+pip install $pkg_dir/virtual_waiting_room_on_aws_common-1.1.1-py3-none-any.whl --target ./package 2> error.txt
 RETVAL=$?
 if [ "$RETVAL" -ne "0" ]; then
     echo "ERROR: System package installation failed."
@@ -221,7 +221,7 @@ mkdir -p tmp
 # install the common package into vendor
 rm -rf vendor
 mkdir -p vendor
-pip install $pkg_dir/virtual_waiting_room_on_aws_common-1.1.0-py3-none-any.whl --target vendor
+pip install $pkg_dir/virtual_waiting_room_on_aws_common-1.1.1-py3-none-any.whl --target vendor
 # generate the template and zip
 chalice package --merge-template merge_template.json tmp/
 RETVAL=$?
@@ -246,7 +246,7 @@ mkdir -p tmp/
 # install the common package into vendor
 rm -rf vendor
 mkdir -p vendor
-pip install $pkg_dir/virtual_waiting_room_on_aws_common-1.1.0-py3-none-any.whl --target vendor
+pip install $pkg_dir/virtual_waiting_room_on_aws_common-1.1.1-py3-none-any.whl --target vendor
 # generate the template and zip
 chalice package --merge-template merge_template.json tmp/
 RETVAL=$?
