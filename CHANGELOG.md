@@ -37,3 +37,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Updated 
 
 - Explicitly set ACL permissions for logging bucket
+- Update runtime versions for pipeline files
+- Update GitHub workflows used for push/PR
+- Dependency updates
