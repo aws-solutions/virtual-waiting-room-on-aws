@@ -64,6 +64,7 @@
         },
         "ApiGatewayAuthorizer": {
             "Properties": {
+                "Runtime": "python3.8",
                 "CodeUri": {
                     "Bucket": {
                         "Fn::Join": [

@@ -1,4 +1,4 @@
-FROM public.ecr.aws/amazonlinux/amazonlinux:latest
+FROM public.ecr.aws/amazonlinux/amazonlinux:2
 CMD bash
 RUN mkdir -p site-packages/
 RUN amazon-linux-extras enable python3.8
