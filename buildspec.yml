@@ -3,8 +3,8 @@ version: 0.2
 phases:
   install:
     runtime-versions:
-      nodejs: 16
-      python: 3.10
+      nodejs: 18
+      python: 3.11
     commands:
       - echo "nothing to do in install"
   pre_build:
@@ -13,14 +13,16 @@ phases:
   build:
     commands:
       - echo "Starting build `date` in `pwd`"
-      - pip install --upgrade --force-reinstall -r deployment/requirements.txt
+      - python3 -m venv .venv && . .venv/bin/activate
+      # https://github.com/yaml/pyyaml/issues/601
+      - python3 -m pip install wheel && pip install "Cython<3.0" "pyyaml<6" --no-build-isolation && pip install --upgrade --force-reinstall -r deployment/requirements.txt
       - cd deployment && chmod +x ./build-s3-dist.sh && ./build-s3-dist.sh $DIST_OUTPUT_BUCKET $SOLUTION_NAME $VERSION
       - echo "Build completed `date`"
       - echo "Starting open-source-dist `date` in `pwd`"
       - chmod +x ./build-open-source-dist.sh && ./build-open-source-dist.sh $SOLUTION_NAME
       - echo "Open Source Dist completed `date`"
       - echo "Installing dependencies and executing unit tests - `pwd`"
-      - pip install ./pkg/virtual_waiting_room_on_aws_common-1.1.1-py3-none-any.whl && chmod +x ./run-unit-tests.sh && ./run-unit-tests.sh
+      - chmod +x ./run-unit-tests.sh && ./run-unit-tests.sh
       - echo "Installing dependencies and executing unit tests completed `date`"
   post_build:
     commands:

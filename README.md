@@ -46,8 +46,7 @@ aws s3 sync regional-s3-assets/ s3://<MY-BUCKET-NAME>-<AWS-REGION>/$SOLUTION_NAM
 * Install the common package into the virtual envronment before running
 ```
 cd ./deployment
-pip install ./pkg/virtual_waiting_room_on_aws_common-1.1.1-py3-none-any.whl
-chmod +x ./run-unit-tests.sh  
+chmod +x ./run-unit-tests.sh 
 ./run-unit-tests.sh 
 ```
 
