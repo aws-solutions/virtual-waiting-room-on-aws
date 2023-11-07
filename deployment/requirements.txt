@@ -7,11 +7,11 @@ cfn-lint
 chalice
 coverage
 crhelper
-cryptography
+cryptography>=41.0.5
 docker
 jwcrypto
 python-dateutil
 redis
 requests
 testresources
-coverage
+urllib3>=1.26.18

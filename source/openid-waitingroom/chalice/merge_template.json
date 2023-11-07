@@ -420,7 +420,7 @@
         "GenerateClientSecretFunction": {
             "Type": "AWS::Serverless::Function",
             "Properties": {
-                "Runtime": "python3.8",
+                "Runtime": "python3.11",
                 "Handler": "generate_client_secret.handler",
                 "CodeUri": {
                     "Bucket": {
@@ -509,7 +509,7 @@
         "GenerateRedirectURIsSecretFunction": {
             "Type": "AWS::Serverless::Function",
             "Properties": {
-                "Runtime": "python3.8",
+                "Runtime": "python3.11",
                 "Handler": "generate_redirect_uris_secret.handler",
                 "CodeUri": {
                     "Bucket": {
@@ -598,7 +598,7 @@
         "BucketLoaderFunction": {
             "Type": "AWS::Serverless::Function",
             "Properties": {
-                "Runtime": "python3.8",
+                "Runtime": "python3.11",
                 "Handler": "cfn_bucket_loader.handler",
                 "CodeUri": {
                     "Bucket": {

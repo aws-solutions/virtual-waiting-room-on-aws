@@ -1,7 +1,11 @@
 {
   "name": "control-panel",
   "description": "This project is a sample control panel for managing an instance of Virtual Waiting Room on AWS",
-  "author": "Amazon Web Services (https://aws.amazon.com/solutions)",
+  "author": {
+    "name": "Amazon Web Services",
+    "url": "https://aws.amazon.com/solutions",
+    "organization": true
+  },
   "version": "0.1.0",
   "private": true,
   "license": "Apache-2.0",
@@ -11,6 +15,7 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
+    "@babel/core": "^7.23.2",
     "aws4fetch": "^1.0.13",
     "bootstrap": "^5.1.1",
     "core-js": "^3.8.3",
@@ -20,7 +25,7 @@
   },
   "devDependencies": {
     "@vue/babel-preset-app": "^5.0.8",
-    "@vue/cli-plugin-babel": "~5.0.0",
+    "@vue/cli-plugin-babel": "~5.0.8",
     "@vue/cli-plugin-eslint": "^5.0.8",
     "@vue/cli-service": "^5.0.8",
     "@vue/compiler-sfc": "^3.2.37",
@@ -40,6 +45,16 @@
     ],
     "parserOptions": {},
     "rules": {}
+  },
+  "overrides": {
+    "postcss": "^8.4.31",
+    "semver": "^7.5.2",
+    "word-wrap": "^1.2.4"
+  },
+  "resolutions": {
+    "postcss": "^8.4.31",
+    "semver": "^7.5.2",
+    "word-wrap": "^1.2.4"
   },
   "browserslist": [
     "> 1%",

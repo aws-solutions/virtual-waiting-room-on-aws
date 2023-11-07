@@ -45,7 +45,7 @@ while getopts ':h' OPTION; do
       echo "If no arguments are passed in, the following default values are used:"
       echo "DIST_OUTPUT_BUCKET=rodeolabz"
       echo "SOLUTION_NAME=virtual-waiting-room-on-aws"
-      echo "VERSION=v1.1.0"
+      echo "VERSION=v1.1.2"
       echo
       echo "You may export export these variables in your environment and call the script using those variables:"
       echo "./$(basename $0) \$DIST_OUTPUT_BUCKET \$SOLUTION_NAME \$VERSION"
@@ -79,8 +79,8 @@ fi
 
 if [ -z "$3" ]
   then
-    echo "Setting default version to v1.1.0"
-    VERSION='v1.1.0'
+    echo "Setting default version to v1.1.2"
+    VERSION='v1.1.2'
 fi
 
 template_dir="$PWD" # /deployment
@@ -110,14 +110,14 @@ echo "--------------------------------------------------------------------------
 echo "virtual-waiting-room-on-aws-common package"
 echo "------------------------------------------------------------------------------"
 cd $source_dir/shared/virtual-waiting-room-on-aws-common
-python -m build -o $pkg_dir
+python3 -m build -o $pkg_dir
 
 
 echo "------------------------------------------------------------------------------"
 echo "Redis layer"
 echo "------------------------------------------------------------------------------"
 # build the redis layer Zip file
-layer_dir=$source_dir/python/lib/python3.8/site-packages/
+layer_dir=$source_dir/python/lib/python3.11/site-packages/
 mkdir -p $layer_dir
 cd $source_dir
 rm -rf error.txt
@@ -170,7 +170,7 @@ echo Lambda Functions
 cd $source_dir/core-api/lambda_functions
 rm -rf error.txt package
 mkdir package
-pip install $pkg_dir/virtual_waiting_room_on_aws_common-1.1.1-py3-none-any.whl --target ./package 2> error.txt
+pip install $pkg_dir/virtual_waiting_room_on_aws_common-1.1.2-py3-none-any.whl --target ./package 2> error.txt
 RETVAL=$?
 if [ "$RETVAL" -ne "0" ]; then
     echo "ERROR: System package installation failed."
@@ -221,7 +221,7 @@ mkdir -p tmp
 # install the common package into vendor
 rm -rf vendor
 mkdir -p vendor
-pip install $pkg_dir/virtual_waiting_room_on_aws_common-1.1.1-py3-none-any.whl --target vendor
+pip install $pkg_dir/virtual_waiting_room_on_aws_common-1.1.2-py3-none-any.whl --target vendor
 # generate the template and zip
 chalice package --merge-template merge_template.json tmp/
 RETVAL=$?
@@ -246,7 +246,7 @@ mkdir -p tmp/
 # install the common package into vendor
 rm -rf vendor
 mkdir -p vendor
-pip install $pkg_dir/virtual_waiting_room_on_aws_common-1.1.1-py3-none-any.whl --target vendor
+pip install $pkg_dir/virtual_waiting_room_on_aws_common-1.1.2-py3-none-any.whl --target vendor
 # generate the template and zip
 chalice package --merge-template merge_template.json tmp/
 RETVAL=$?

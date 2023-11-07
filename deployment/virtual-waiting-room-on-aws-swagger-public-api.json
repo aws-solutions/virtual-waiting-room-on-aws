@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "description": "Waiting Room Public REST API",
+    "description": "(SO0166) - Waiting Room Public REST API",
     "version": "2021-04-14T17:35:24Z",
     "title": {
       "Fn::Sub": "${AWS::StackName}-public-waiting-room-api"

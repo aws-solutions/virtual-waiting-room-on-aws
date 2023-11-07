@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
-    "Description": "Virtual Waiting Room on AWS Inlet Strategies %%VERSION%%",
+    "Description": "(SO0166) - Virtual Waiting Room on AWS Inlet Strategies %%VERSION%%",
     "Mappings": {
         "SourceCode": {
             "General": {
@@ -81,7 +81,7 @@
                         "Arn"
                     ]
                 },
-                "Runtime": "python3.8",
+                "Runtime": "python3.11",
                 "Timeout": 30
             },
             "Metadata": {
@@ -263,7 +263,7 @@
                         "Arn"
                     ]
                 },
-                "Runtime": "python3.8",
+                "Runtime": "python3.11",
                 "Timeout": 30
             },
             "Metadata": {

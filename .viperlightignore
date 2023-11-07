@@ -1,6 +1,0 @@
-CODE_OF_CONDUCT.md:4
-CONTRIBUTING.md:50
-
-^dist/
-
-source/shared/virtual-waiting-room-on-aws-common/setup.py:14
