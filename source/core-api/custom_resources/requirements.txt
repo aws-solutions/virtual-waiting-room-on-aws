@@ -1,3 +1,4 @@
 crhelper
 requests
 aws-requests-auth
+urllib3>=1.26.18
