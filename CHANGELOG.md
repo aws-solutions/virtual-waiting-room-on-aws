@@ -40,3 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update runtime versions for pipeline files
 - Update GitHub workflows used for push/PR
 - Dependency updates
+
+## [1.1.2] - 2023-11-01
+
+### Updated
+
+- Resolve dependabot alerts and fix critical vulnerabilities.
+- Dependency updates.

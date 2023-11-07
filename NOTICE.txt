@@ -17,7 +17,9 @@ This software includes third party software subject to the following copyrights:
 @vue/cli-plugin-router the MIT License (MIT)
 @vue/cli-service under the MIT License (MIT)
 @vue/compiler-sfc under the MIT License (MIT)
+@babel/core under the MIT License (MIT)
 async-timeout under the Apache License Version 2.0
+annotated-types under the MIT License (MIT)
 attrs under the MIT License (MIT)
 AWS SDK under the Apache License Version 2.0
 aws-requests-auth under the BSD License
@@ -56,6 +58,7 @@ inquirer under the MIT License (MIT)
 jmespath under the MIT License (MIT)
 jquery under the MIT License (MIT)
 jschema-to-python under the MIT License (MIT)
+jsonschema-specifications under the MIT License (MIT)
 jsonpatch under the BSD License
 jsonpickle under the BSD License
 jsonpointer under the BSD License
@@ -64,6 +67,7 @@ junit-xml under the MIT License (MIT)
 jwcrypto under the GNU Lesser General Public License v3.0
 lodash under the MIT License (MIT)
 moment under the MIT License (MIT)
+mpmath under the BSD License
 naive-ui under the MIT License (MIT)
 networkx under the MIT License (MIT)
 packaging under the BSD License
@@ -72,13 +76,19 @@ pep517 under the MIT License (MIT)
 piprot under the MIT License (MIT)
 pyasn1 under the MIT License (MIT)
 pycparser under the BSD License
+pydantic under the MIT License (MIT)
+pydantic_core under the MIT License (MIT)
+pyproject_hooks under the MIT License (MIT)
 pyparsing under the MIT License (MIT)
 pyrsistent under the MIT License (MIT)
 python-dateutil under the Apache License Version 2.0
 python-editor under the Apache License Version 2.0
 PyYAML under the MIT License (MIT)
+rpds-py under the MIT License (MIT)
 readchar under the MIT License (MIT)
 redis under the MIT License (MIT)
+referencing under the MIT License (MIT)
+regex under the Apache License Version 2.0
 requests under the Apache License Version 2.0
 requests-futures under the Apache License Version 2.0
 rsa under the Apache License Version 2.0
@@ -90,11 +100,13 @@ sarif-om under the MIT License (MIT)
 simple-statistics under the ISC License
 six under the MIT License (MIT)
 smmap under the BSD License
+sympy under the BSD License
 stevedore under the Apache License Version 2.0
 testresources under the BSD License
 toml under the MIT License (MIT)
 tomli under the MIT License (MIT)
 typing-extensions under the Python Software Foundation License
+typing_extensions under the Python Software Foundation License
 urllib3 under the MIT License (MIT)
 vfonts under the MIT License (MIT)
 vue under the MIT License (MIT)

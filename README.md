@@ -46,8 +46,7 @@ aws s3 sync regional-s3-assets/ s3://<MY-BUCKET-NAME>-<AWS-REGION>/$SOLUTION_NAM
 * Install the common package into the virtual envronment before running
 ```
 cd ./deployment
-pip install ./pkg/virtual_waiting_room_on_aws_common-1.1.1-py3-none-any.whl
-chmod +x ./run-unit-tests.sh  
+chmod +x ./run-unit-tests.sh 
 ./run-unit-tests.sh 
 ```
 
@@ -94,6 +93,12 @@ chmod +x ./run-unit-tests.sh
 ```
 
 ***
+
+## Collection of operational metrics
+
+This solution collects anonymized operational metrics to help AWS improve the
+quality of features of the solution. For more information, including how to disable
+this capability, please see the [implementation guide](https://docs.aws.amazon.com/solutions/latest/virtual-waiting-room-on-aws/collection-of-operational-metrics.html).
 
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
