@@ -3285,7 +3285,6 @@
                     ]
                 },
                 "Roles": [
-                    {"Ref": "UpdateDistributionRole"},
                     {"Ref": "SecretsManagerReadRole"},
                     {"Ref": "InitializeStateRole"}
                 ]
@@ -4109,180 +4108,6 @@
                 }
             }
         },
-        "UpdateDistribution": {
-            "Type": "AWS::Lambda::Function",
-            "Properties": {
-                "Code": {
-                    "S3Bucket": {
-                        "Fn::Join": [
-                            "-",
-                            [
-                                {
-                                    "Fn::FindInMap": [
-                                        "SourceCode",
-                                        "General",
-                                        "S3Bucket"
-                                    ]
-                                },
-                                {
-                                    "Ref": "AWS::Region"
-                                }
-                            ]
-                        ]
-                    },
-                    "S3Key": {
-                        "Fn::Join": [
-                            "/",
-                            [
-                                {
-                                    "Fn::FindInMap": [
-                                        "SourceCode",
-                                        "General",
-                                        "KeyPrefix"
-                                    ]
-                                },
-                                "virtual-waiting-room-on-aws-custom-resources-%%TIMESTAMP%%.zip"
-                            ]
-                        ]
-                    }
-                },
-                "Environment": {
-                    "Variables": {
-                        "DISTRIBUTION_ID": {
-                            "Ref": "PublicApiCloudFront"
-                        },
-                        "API_KEY_ID": {
-                            "Ref": "ApiKey"
-                        },
-                        "SOLUTION_ID": {
-                            "Fn::FindInMap": [
-                                "SolutionId",
-                                "UserAgent",
-                                "Extra"
-                            ]
-                        },
-                        "STACK_NAME": {
-                            "Ref": "AWS::StackName"
-                        },
-                        "REPLICATION_GROUP": {"Ref": "RedisReplicationGroup"}
-                    }
-                },
-                "Handler": "update_distribution.handler",
-                "MemorySize": 1024,
-                "Role": {
-                    "Fn::GetAtt": [
-                        "UpdateDistributionRole",
-                        "Arn"
-                    ]
-                },
-                "Runtime": "python3.11",
-                "Timeout": 30
-            },
-            "Metadata": {
-                "cfn_nag": {
-                    "rules_to_suppress": [
-                        {
-                            "id": "W89",
-                            "reason": "Lambda does not need to be in the Waiting Room VPC."
-                        },
-                        {
-                            "id": "W92",
-                            "reason": "Lambda does not require ReservedConcurrentExecutions."
-                        },
-                        {
-                            "id": "W58",
-                            "reason": "Permission to write CloudWatch logs has been associated with IAM policy instead."
-                        }
-                    ]
-                }
-            }
-        },
-        "UpdateDistributionCustomResource": {
-            "Type": "AWS::CloudFormation::CustomResource",
-            "DependsOn": [
-                "PublicApiCloudFront",
-                "ApiKey",
-                "GenerateKeysCustomResource",
-                "RedisReplicationGroup"
-            ],
-            "Properties": {
-                "ServiceToken": {
-                    "Fn::GetAtt": [
-                        "UpdateDistribution",
-                        "Arn"
-                    ]
-                },
-                "Timestamp": "%%TIMESTAMP%%"
-            }
-        },
-        "UpdateDistributionRole": {
-            "Type": "AWS::IAM::Role",
-            "Properties": {
-                "Policies": [
-                    {
-                        "PolicyName": "UpdateDistributionRolePolicy",
-                        "PolicyDocument": {
-                            "Version": "2012-10-17",
-                            "Statement": [
-                                {
-                                    "Action": [
-                                        "secretsmanager:GetSecretValue"
-                                    ],
-                                    "Effect": "Allow",
-                                    "Resource": {
-                                        "Fn::Sub": "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AWS::StackName}/redis-auth*"
-                                    }
-                                },
-                                {
-                                    "Action": [
-                                        "elasticache:ModifyReplicationGroup"
-                                    ],
-                                    "Effect": "Allow",
-                                    "Resource": {
-                                        "Fn::Sub": "arn:aws:elasticache:${AWS::Region}:${AWS::AccountId}:replicationgroup:${RedisReplicationGroup}"
-                                    }
-                                },
-                                {
-                                    "Effect": "Allow",
-                                    "Action": [
-                                        "cloudfront:UpdateDistribution",
-                                        "cloudfront:GetDistributionConfig"
-                                    ],
-                                    "Resource": {
-                                        "Fn::Sub": "arn:aws:cloudfront::${AWS::AccountId}:distribution/${PublicApiCloudFront}"
-                                    }
-                                },
-                                {
-                                    "Effect": "Allow",
-                                    "Action": [
-                                        "apigateway:GET"
-                                    ],
-                                    "Resource": {
-                                        "Fn::Sub": "arn:aws:apigateway:${AWS::Region}::/apikeys/${ApiKey}"
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                ],
-                "AssumeRolePolicyDocument": {
-                    "Version": "2012-10-17",
-                    "Statement": [
-                        {
-                            "Effect": "Allow",
-                            "Principal": {
-                                "Service": [
-                                    "lambda.amazonaws.com"
-                                ]
-                            },
-                            "Action": [
-                                "sts:AssumeRole"
-                            ]
-                        }
-                    ]
-                }
-            }
-        },
         "WaitingRoomEventBus": {
             "Type": "AWS::Events::EventBus",
             "Properties": {
@@ -4377,7 +4202,7 @@
         },
         "InitializeStateCustomResource": {
             "Type": "AWS::CloudFormation::CustomResource",
-            "DependsOn": ["GenerateKeysCustomResource", "UpdateDistributionCustomResource"],
+            "DependsOn": ["GenerateKeysCustomResource"],
             "Properties": {
                 "ServiceToken": {
                     "Fn::GetAtt": [
