@@ -4377,180 +4377,6 @@
                 ]
             }
         },
-        "PublicApiCloudFront": {
-            "Type": "AWS::CloudFront::Distribution",
-            "Properties": {
-                "DistributionConfig": {
-                    "Comment": "CDN for Waiting Room Public API",
-                    "CacheBehaviors": [
-                        {
-                            "TargetOriginId": "waiting-room-public-api",
-                            "ViewerProtocolPolicy": "https-only",
-                            "CachePolicyId": {
-                                "Ref": "EventRequestMaxCachePolicy"
-                            },
-                            "OriginRequestPolicyId": {
-                                "Ref": "OriginRequestPolicy"
-                            },
-                            "PathPattern": "/queue_num",
-                            "AllowedMethods": [
-                                "HEAD",
-                                "GET",
-                                "OPTIONS",
-                                "PUT",
-                                "PATCH",
-                                "POST",
-                                "DELETE"
-                            ],
-                            "CachedMethods": [
-                                "HEAD",
-                                "GET",
-                                "OPTIONS"
-                            ],
-                            "Compress": true
-                        },
-                        {
-                            "TargetOriginId": "waiting-room-public-api",
-                            "ViewerProtocolPolicy": "https-only",
-                            "CachePolicyId": {
-                                "Ref": "QueuePositionExpiryCachePolicy"
-                            },
-                            "OriginRequestPolicyId": {
-                                "Ref": "OriginRequestPolicy"
-                            },
-                            "PathPattern": "/queue_pos_expiry",
-                            "AllowedMethods": [
-                                "HEAD",
-                                "GET",
-                                "OPTIONS",
-                                "PUT",
-                                "PATCH",
-                                "POST",
-                                "DELETE"
-                            ],
-                            "CachedMethods": [
-                                "HEAD",
-                                "GET",
-                                "OPTIONS"
-                            ],
-                            "Compress": true
-                        },
-                        {
-                            "TargetOriginId": "waiting-room-public-api",
-                            "ViewerProtocolPolicy": "https-only",
-                            "CachePolicyId": {
-                                "Ref": "EventMaxCachePolicy"
-                            },
-                            "OriginRequestPolicyId": {
-                                "Ref": "OriginRequestPolicy"
-                            },
-                            "PathPattern": "/public_key",
-                            "AllowedMethods": [
-                                "HEAD",
-                                "GET",
-                                "OPTIONS",
-                                "PUT",
-                                "PATCH",
-                                "POST",
-                                "DELETE"
-                            ],
-                            "CachedMethods": [
-                                "HEAD",
-                                "GET",
-                                "OPTIONS"
-                            ],
-                            "Compress": true
-                        }
-                    ],
-                    "DefaultCacheBehavior": {
-                        "TargetOriginId": "waiting-room-public-api",
-                        "ViewerProtocolPolicy": "https-only",
-                        "CachePolicyId": {
-                            "Ref": "CachePolicy"
-                        },
-                        "OriginRequestPolicyId": {
-                            "Ref": "OriginRequestPolicy"
-                        },
-                        "AllowedMethods": [
-                            "HEAD",
-                            "GET",
-                            "OPTIONS",
-                            "PUT",
-                            "PATCH",
-                            "POST",
-                            "DELETE"
-                        ],
-                        "CachedMethods": [
-                            "HEAD",
-                            "GET",
-                            "OPTIONS"
-                        ],
-                        "Compress": true
-                    },
-                    "Enabled": true,
-                    "Origins": [
-                        {
-                            "CustomOriginConfig": {
-                                "OriginProtocolPolicy": "https-only",
-                                "OriginSSLProtocols": [
-                                    "TLSv1.2"
-                                ]
-                            },
-                            "OriginCustomHeaders": [
-                                {
-                                    "HeaderName": "x-api-key",
-                                    "HeaderValue": {
-                                        "Ref": "ApiKey"
-                                    }
-                                }
-                            ],
-                            "DomainName": {
-                                "Fn::Sub": "${PublicWaitingRoomApi}.execute-api.${AWS::Region}.amazonaws.com"
-                            },
-                            "Id": "waiting-room-public-api",
-                            "OriginPath": {
-                                "Fn::Sub": [
-                                    "/${ApiStageName}",
-                                    {
-                                        "ApiStageName": {
-                                            "Fn::FindInMap": [
-                                                "CoreApi",
-                                                "Stage",
-                                                "Name"
-                                            ]
-                                        }
-                                    }
-                                ]
-                            }
-                        }
-                    ],
-                    "Logging": {
-                        "Bucket": {
-                            "Fn::Join": [
-                                "",
-                                [
-                                    {
-                                        "Ref": "LoggingBucket"
-                                    },
-                                    ".s3.amazonaws.com"
-                                ]
-                            ]
-                        },
-                        "Prefix": "cf/"
-                    }
-                }
-            },
-            "Metadata": {
-                "cfn_nag": {
-                    "rules_to_suppress": [
-                        {
-                            "id": "W70",
-                            "reason": "Protocol version TLS 1.2 is already defined in the origin config"
-                        }
-                    ]
-                }
-            }
-        },
         "LoggingBucket": {
             "Type": "AWS::S3::Bucket",
             "DeletionPolicy": "Retain",
@@ -5749,12 +5575,13 @@
         "PublicApiInvokeURL": {
             "Value": {
                 "Fn::Sub": [
-                    "https://${CloudFrontDomainName}",
+                    "https://${PublicWaitingRoomApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}",
                     {
-                        "CloudFrontDomainName": {
-                            "Fn::GetAtt": [
-                                "PublicApiCloudFront",
-                                "DomainName"
+                        "ApiStageName": {
+                            "Fn::FindInMap": [
+                                "CoreApi",
+                                "Stage",
+                                "Name"
                             ]
                         }
                     }
