@@ -47,3 +47,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Resolve dependabot alerts and fix critical vulnerabilities.
 - Dependency updates.
+
+## [1.1.3] - 2024-03-07
+
+### Added 
+
+- Available Servings info to Control Panel UI [#232](https://github.com/aws-solutions/virtual-waiting-room-on-aws/pull/232).
+
+### Fixed
+
+- Expired queue positions persist in the Virtual Waiting Room size [#208](https://github.com/aws-solutions/virtual-waiting-room-on-aws/issues/208).
+- /queue_num endpoint returns outdated results even after a reset [#214](https://github.com/aws-solutions/virtual-waiting-room-on-aws/issues/214).
+- Intermittent failures in OpenID adapter's /userInfo endpoint [#231](https://github.com/aws-solutions/virtual-waiting-room-on-aws/issues/231).
+- /expired_tokens endpoint bug when LastEvaluatedKey is present in query response [#235](https://github.com/aws-solutions/virtual-waiting-room-on-aws/pull/235).

@@ -202,12 +202,12 @@ def userinfo():
         if response.status_code == 200:
             clean_tokens = json.loads(response.text)
             clean_access_token = clean_tokens.get("access_token")
-            if clean_access_token == dirty_access_token:
-                app.log.info('tokens match')
-                clean_claims = claim_dict(clean_access_token)
+            clean_claims = claim_dict(clean_access_token)
+            if clean_claims == dirty_claims:
+                app.log.info('token claims match')
                 app.log.info(clean_claims)
                 return clean_claims
-            app.log.info("tokens don't match")
+            app.log.info("tokens claims don't match")
     except (KeyError, IndexError, TypeError):
         app.log.error('validation failed')
     return bad_request()

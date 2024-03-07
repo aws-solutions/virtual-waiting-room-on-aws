@@ -9,8 +9,8 @@ SPDX-License-Identifier: Apache-2.0
   <div class="d-flex flex-column w-50 mx-auto border border-2 rounded mt-2">
     <div class="text-center lead mb-2">Waiting Room</div>
     <div class="text-center mb-2">
-      You will wait here until the serving position advances past your position
-      in the line.
+      You will wait here until the serving counter advances past your assigned
+      counter number.
     </div>
     <div class="d-flex flex-row">
       <MyPosition class="w-50 m-2" />

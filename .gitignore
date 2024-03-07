@@ -21,3 +21,5 @@ node_modules/
 coverage.lcov
 coverage.xml*
 .coverage
+.idea
+build

@@ -61,6 +61,7 @@ export default {
         }).then(function (json) {
           // update the token value on success
           local_this.waitingRoomSize = json.waiting_num;
+          local_this.$store.commit("setWaitingRoomSize", json.waiting_num);
           local_this.updateSuccess = true;
           local_this.updateError = false;
         }).catch((error) => {

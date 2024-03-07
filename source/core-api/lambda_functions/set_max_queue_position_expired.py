@@ -13,7 +13,7 @@ import json
 from botocore import config
 from time import time
 from boto3.dynamodb.conditions import Key
-from counters import MAX_QUEUE_POSITION_EXPIRED, QUEUE_COUNTER, RESET_IN_PROGRESS, SERVING_COUNTER
+from counters import MAX_QUEUE_POSITION_EXPIRED, QUEUE_COUNTER, RESET_IN_PROGRESS, SERVING_COUNTER, EXPIRED_QUEUE_COUNTER
 
 SECRET_NAME_PREFIX = os.environ["STACK_NAME"]
 SOLUTION_ID = os.environ['SOLUTION_ID']
@@ -118,6 +118,8 @@ def incr_serving_counter(rc, queue_positions_served, serving_counter_item_positi
         print(f'Increment value calculated as {increment_by}, incrementing serving counter skipped')
         return
 
+    rc.incrby(EXPIRED_QUEUE_COUNTER, int(increment_by))
+    
     cur_serving = int(rc.incrby(SERVING_COUNTER, int(increment_by)))
     item = {
         'event_id': EVENT_ID,

@@ -53,7 +53,7 @@ def lambda_handler(event, _):
                     KeyConditionExpression=Key('event_id').eq(EVENT_ID) & Key('expires').gte(current_time),
                     FilterExpression=Attr('session_status').eq(0),
                     ExclusiveStartKey=response["LastEvaluatedKey"])
-                items = items + response.get("Items", [])
+                items.extend(response.get("Items", []))
             response = { 
                         "statusCode": 200,
                         "headers": headers,

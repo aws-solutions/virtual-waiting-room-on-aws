@@ -15,7 +15,12 @@ the current serving counter of the waiting room -->
       <span v-if="updateError" class="badge bg-danger mx-2">check configuration</span>
     </p>
     <!-- display the serving counter value from the model -->
-    <p class="h2 m-2">{{ servingCounter }}</p>
+    <p class="h2 m-2">
+      {{ servingCounter }}
+      <span class="h5" v-if="availableCounter === 0">(No servings are currently available)</span>
+      <span class="h5" v-if="availableCounter < 0">(There are {{-1 * availableCounter}} waiting with no available serving capacity)</span>
+      <span class="h5" v-if="availableCounter > 0">(There are currently {{availableCounter}} servings available)</span>
+    </p>
   </div>
 </template>
 
@@ -41,6 +46,7 @@ export default {
     // default data model before first update attempt
     return {
       servingCounter: 0,
+      availableCounter: 0,
       updateSuccess: false,
       updateError: false,
     };
@@ -62,6 +68,8 @@ export default {
         }).then(function (json) {
           // update the token value on success
           local_this.servingCounter = json.serving_counter;
+          local_this.$store.commit("setServingCounter", json.serving_counter);
+          local_this.availableCounter = local_this.$store.getters.getAvailableCounter
           local_this.updateSuccess = true;
           local_this.updateError = false;
         }).catch((error) => {

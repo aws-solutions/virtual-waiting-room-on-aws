@@ -672,12 +672,20 @@
                 }
             }
         },
+        "NATRouteTable": {
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "WaitingRoomVpc"
+                }
+            }
+        },
         "PublicRoute": {
             "Type": "AWS::EC2::Route",
             "DependsOn": "VpcGatewayAttachment",
             "Properties": {
                 "RouteTableId": {
-                    "Ref": "RouteTable"
+                    "Ref": "NATRouteTable"
                 },
                 "DestinationCidrBlock": "0.0.0.0/0",
                 "GatewayId": {
@@ -722,6 +730,64 @@
                             ]
                         }
                     ]
+                }
+            }
+        },
+        "NATSubnet": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "WaitingRoomVpc"
+                },
+                "CidrBlock": "10.0.0.0/28",
+                "AvailabilityZone": {
+                    "Fn::Select": [
+                        "0",
+                        {
+                            "Fn::GetAtt": [
+                                "IntersectAZCustomResource",
+                                "intersect_az"
+                            ]
+                        }
+                    ]
+                }
+            }
+
+        },
+        "NATGateway" : {
+           "Type" : "AWS::EC2::NatGateway",
+           "Properties" : {
+              "AllocationId" : {
+                  "Fn::GetAtt" : ["NATGatewayEIP", "AllocationId"]
+              },
+              "SubnetId" : {
+                  "Ref" : "NATSubnet"
+              }
+             }
+        },
+        "NATGatewayEIP" : {
+           "Type" : "AWS::EC2::EIP",
+           "Properties" : {
+              "Domain" : "vpc"
+           }
+        },
+        "NATGatewayRoute" : {
+           "DependsOn": [ "NATGateway" ],
+           "Type" : "AWS::EC2::Route",
+           "Properties" : {
+              "RouteTableId" : { "Ref" : "RouteTable" },
+              "DestinationCidrBlock" : "0.0.0.0/0",
+              "NatGatewayId" : { "Ref" : "NATGateway" }
+           }
+        },
+        "NATRouteTableAssociation": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": {
+                    "Ref": "NATSubnet"
+                },
+                "RouteTableId": {
+                    "Ref": "NATRouteTable"
                 }
             }
         },
@@ -2872,6 +2938,9 @@
                         },
                         "STACK_NAME" : {
                             "Ref": "AWS::StackName"
+                        },
+                        "CLOUDFRONT_DISTRIBUTION_ID" : {
+                            "Ref": "PublicApiCloudFront"
                         }
                     }
                 },
@@ -3288,6 +3357,30 @@
                     {"Ref": "UpdateDistributionRole"},
                     {"Ref": "SecretsManagerReadRole"},
                     {"Ref": "InitializeStateRole"}
+                ]
+            }
+        },
+        "CfnInvalidationPolicy": {
+            "Type": "AWS::IAM::Policy",
+            "Properties": {
+                "PolicyName": "CfnInvalidationPolicy",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Sid": "CfnInvalidationPolicy",
+                            "Effect": "Allow",
+                            "Action": [
+                                "cloudfront:CreateInvalidation"
+                            ],
+                            "Resource": {
+                                "Fn::Sub": "arn:aws:cloudfront::${AWS::AccountId}:distribution/${PublicApiCloudFront}"
+                            }
+                        }
+                    ]
+                },
+                "Roles": [
+                    {"Ref": "GetTokenRole"}
                 ]
             }
         },
