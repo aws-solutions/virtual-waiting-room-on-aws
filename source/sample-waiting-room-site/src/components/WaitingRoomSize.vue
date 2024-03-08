@@ -10,7 +10,7 @@ the number of users currently in the waiting room -->
   <div class="d-flex flex-column border border-2 rounded p-2">
     <div class="text-center lead mb-2">Waiting Room Size</div>
     <div class="mb-2">
-      This compartment shows the number of people including you waiting in line
+      This compartment shows the number of people including you waiting
       to check out.
     </div>
     <div>

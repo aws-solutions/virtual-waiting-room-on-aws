@@ -9,10 +9,10 @@ room queue and displaying their position from the request -->
 <template>
   <div class="d-flex flex-column border border-2 rounded p-2">
     <!-- display a header with the last connection status -->
-    <div class="text-center lead mb-2">My Position</div>
+    <div class="text-center lead mb-2">My Counter Number</div>
     <div class="mb-2">
-      This compartment shows your position in the line while you wait to reserve
-      your widget and check out.
+      This compartment shows your assigned counter number while you wait to fetch
+      your token and check out.
     </div>
     <div>
       <!-- display an alert based on the state -->
@@ -28,7 +28,7 @@ room queue and displaying their position from the request -->
         class="alert alert-success"
         role="alert"
       >
-        You are number {{ myPosition }} in line
+        Your counter number is {{ myPosition }}
       </div>
       <div v-if="entryFailed" class="alert alert-danger" role="alert">
         An error occurred while entering the line

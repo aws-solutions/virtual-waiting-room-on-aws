@@ -12,7 +12,7 @@ import json
 import os
 import boto3
 from botocore import config
-from counters import QUEUE_COUNTER, TOKEN_COUNTER
+from counters import QUEUE_COUNTER, TOKEN_COUNTER, EXPIRED_QUEUE_COUNTER
 from vwr.common.sanitize import deep_clean
 
 # connection info and other globals
@@ -53,7 +53,8 @@ def lambda_handler(event, _):
 
     queue_count = int(rc.get(QUEUE_COUNTER))
     token_count = int(rc.get(TOKEN_COUNTER))
-    waiting_num = queue_count - token_count
+    expired_queue_count = int(rc.get(EXPIRED_QUEUE_COUNTER)) if rc.get(EXPIRED_QUEUE_COUNTER) else 0
+    waiting_num = queue_count - token_count - expired_queue_count
 
     return {
         "statusCode": 200,

@@ -10,8 +10,9 @@ import json
 import os
 import boto3
 from botocore import config
-from counters import QUEUE_COUNTER, SERVING_COUNTER, TOKEN_COUNTER, ABANDONED_SESSION_COUNTER, COMPLETED_SESSION_COUNTER, MAX_QUEUE_POSITION_EXPIRED, RESET_IN_PROGRESS
+from counters import QUEUE_COUNTER, SERVING_COUNTER, TOKEN_COUNTER, EXPIRED_QUEUE_COUNTER, ABANDONED_SESSION_COUNTER, COMPLETED_SESSION_COUNTER, MAX_QUEUE_POSITION_EXPIRED, RESET_IN_PROGRESS
 from vwr.common.sanitize import deep_clean
+from datetime import datetime
 
 TOKEN_TABLE = os.environ["TOKEN_TABLE"]
 EVENT_ID = os.environ["EVENT_ID"]
@@ -21,6 +22,7 @@ SOLUTION_ID = os.environ['SOLUTION_ID']
 SECRET_NAME_PREFIX = os.environ["STACK_NAME"]
 QUEUE_POSITION_ENTRYTIME_TABLE = os.environ["QUEUE_POSITION_ENTRYTIME_TABLE"]
 SERVING_COUNTER_ISSUEDAT_TABLE = os.environ["SERVING_COUNTER_ISSUEDAT_TABLE"]
+CLOUDFRONT_DISTRIBUTION_ID = os.environ["CLOUDFRONT_DISTRIBUTION_ID"]
 
 user_agent_extra = {"user_agent_extra": SOLUTION_ID}
 user_config = config.Config(**user_agent_extra)
@@ -31,6 +33,8 @@ secrets_client = boto3.client('secretsmanager', config=user_config, endpoint_url
 response = secrets_client.get_secret_value(SecretId=f"{SECRET_NAME_PREFIX}/redis-auth")
 redis_auth = response.get("SecretString")
 rc = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, ssl=True, decode_responses=True, password=redis_auth)
+cloudfront_client = boto3.client('cloudfront', config=user_config)
+
 
 def lambda_handler(event, _):
     """
@@ -53,12 +57,15 @@ def lambda_handler(event, _):
         rc.getset(SERVING_COUNTER, 0)
         rc.getset(QUEUE_COUNTER, 0)
         rc.getset(TOKEN_COUNTER, 0)
+        rc.getset(EXPIRED_QUEUE_COUNTER, 0)
         rc.getset(COMPLETED_SESSION_COUNTER, 0)
         rc.getset(ABANDONED_SESSION_COUNTER, 0)
         rc.getset(MAX_QUEUE_POSITION_EXPIRED, 0)
         print("Counters reset")
 
         try:                       
+            create_cloudfront_invalidation(paths=['/*'])
+
             response = ddb_client.delete_table(TableName=TOKEN_TABLE)
             waiter = ddb_client.get_waiter('table_not_exists')
             # wait for table to get deleted
@@ -264,4 +271,20 @@ def create_servingcounter_issuedat_table():
             "Enabled": True
         }
     )
-    
+
+
+def create_cloudfront_invalidation(paths):
+    """
+    Create cloudfront cache invalidation
+    """
+    cloudfront_client.create_invalidation(
+        DistributionId=CLOUDFRONT_DISTRIBUTION_ID,
+        InvalidationBatch={
+            "Paths": {
+                "Quantity": len(paths),
+                "Items": paths,
+            },
+            'CallerReference': datetime.now().isoformat(timespec='milliseconds')  # unique id using timestamp
+        }
+    )
+    print("Cloudfront cache invalidation submitted")

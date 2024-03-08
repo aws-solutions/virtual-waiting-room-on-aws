@@ -75,6 +75,7 @@ export default {
         }).then(function (json) {
           // update the token value on success
           local_this.activeTokens = json.active_tokens;
+          local_this.$store.commit('setActiveTokens', json.active_tokens);
           local_this.updateSuccess = true;
           local_this.updateError = false;
         }).catch((error) => {

@@ -32,6 +32,7 @@ os.environ["SERVING_COUNTER_ISSUEDAT_TABLE"] = "serving_counter_issuedat_table"
 os.environ["QUEUE_POSITION_EXPIRY_PERIOD"] = "100"
 os.environ["ENABLE_QUEUE_POSITION_EXPIRY"] = "true"
 os.environ["INCR_SVC_ON_QUEUE_POS_EXPIRY"] = "true"
+os.environ["CLOUDFRONT_DISTRIBUTION_ID"] = "my_cloudfront_distribution_id"
 
 # patch the boto3 client calls before importing all the functions we need to test
 patcher = patch('botocore.client.BaseClient._make_api_call')
@@ -358,6 +359,60 @@ class CoreApiTestCase(unittest.TestCase):
             with self.assertRaises(Exception):
                 get_list_expired_tokens.lambda_handler(mock_event_200, None)
 
+        # last_evaluated_key exists 
+        mock_query.side_effect = [
+            {
+                "Items": [
+                    {"request_id": "id1"},
+                    {"request_id": "id2"},
+                ],
+                "LastEvaluatedKey": {"request_id": "id2"}
+            },
+            {
+                "Items": [{"request_id": "id3"}]
+            }
+        ]
+        mock_event = {'queryStringParameters': {'event_id': self.event_id}}
+        response = get_list_expired_tokens.lambda_handler(mock_event, None)
+        self.assertEqual(
+            response['body'], 
+            json.dumps(["id1", "id2", "id3"])
+        )
+
+        # empty last_evaluated_key 
+        mock_query.side_effect = [
+            {
+                "Items": [
+                    {"request_id": "id1"},
+                ],
+                "LastEvaluatedKey": {"request_id": "id1"}
+            },
+            {
+                "Items": []
+            }
+        ]
+        mock_event = {'queryStringParameters': {'event_id': self.event_id}}
+        response = get_list_expired_tokens.lambda_handler(mock_event, None)
+        self.assertEqual(
+            response['body'], 
+            json.dumps(["id1"])
+        )
+
+        # no last_evaluated_key 
+        mock_query.side_effect = [
+            {
+                "Items": [
+                    {"request_id": "id1"},
+                ]
+            }
+        ]
+        mock_event = {'queryStringParameters': {'event_id': self.event_id}}
+        response = get_list_expired_tokens.lambda_handler(mock_event, None)
+        self.assertEqual(
+            response['body'], 
+            json.dumps(["id1"])
+        )
+
     @patch.object(get_num_active_tokens.ddb_table, 'query',return_value={"Items": [{"request_id": "fe7a5f04-6ff0-4bd6-9c31-52088cc4e73a"}]})
     def test_get_num_active_tokens(self, mock_query):
         """
@@ -383,6 +438,60 @@ class CoreApiTestCase(unittest.TestCase):
         with patch.object(get_num_active_tokens.ddb_table, 'query', side_effect=Exception):
             with self.assertRaises(Exception):
                 get_num_active_tokens.lambda_handler(mock_event_200, None)
+
+        # last_evaluated_key exists 
+        mock_query.side_effect = [
+            {
+                "Items": [
+                    {"request_id": "id1"},
+                    {"request_id": "id2"},
+                ],
+                "LastEvaluatedKey": {"request_id": "id2"}
+            },
+            {
+                "Items": [{"request_id": "id3"}]
+            }
+        ]
+        mock_event = {'queryStringParameters': {'event_id': self.event_id}}
+        response = get_num_active_tokens.lambda_handler(mock_event, None)
+        self.assertEqual(
+            response['body'], 
+            json.dumps({"active_tokens": 3})
+        )
+
+        # empty last_evaluated_key 
+        mock_query.side_effect = [
+            {
+                "Items": [
+                    {"request_id": "id1"},
+                ],
+                "LastEvaluatedKey": {"request_id": "id1"}
+            },
+            {
+                "Items": []
+            }
+        ]
+        mock_event = {'queryStringParameters': {'event_id': self.event_id}}
+        response = get_num_active_tokens.lambda_handler(mock_event, None)
+        self.assertEqual(
+            response['body'], 
+            json.dumps({"active_tokens": 1})
+        )
+
+        # no last_evaluated_key 
+        mock_query.side_effect = [
+            {
+                "Items": [
+                    {"request_id": "id1"},
+                ]
+            }
+        ]
+        mock_event = {'queryStringParameters': {'event_id': self.event_id}}
+        response = get_num_active_tokens.lambda_handler(mock_event, None)
+        self.assertEqual(
+            response['body'], 
+            json.dumps({"active_tokens": 1})
+        )
 
     def test_get_public_key(self):
         """
@@ -444,9 +553,7 @@ class CoreApiTestCase(unittest.TestCase):
         body = json.loads(response['body'])
         self.assertEqual(body['serving_counter'], 1)
 
-    @patch.object(get_waiting_num.rc, 'get', return_value=1)
-    @patch.object(get_waiting_num.rc, 'exists', return_value=1)
-    def test_get_waiting_num(self, mock_get, mock_exists):
+    def test_get_waiting_num(self):
         """
         This function tests the get_waiting_num lambda function
         """
@@ -460,9 +567,16 @@ class CoreApiTestCase(unittest.TestCase):
         # request_id exists
         mock_event_200 = {'queryStringParameters': {
             'event_id': self.event_id, 'request_id': self.request_id}}
+        
+        redis_cache = {'queue_counter': '2', 'token_counter': '1', 'expired_queue_counter': '1'}
+        def get(key):
+            return redis_cache[key]
+        get_waiting_num.rc = MagicMock()
+        get_waiting_num.rc.get = Mock(side_effect=get)
+
         response = get_waiting_num.lambda_handler(mock_event_200, None)
         self.assertEqual(response["statusCode"], 200)
-        # waiting num = queue_count - token_count
+        # waiting num = queue_count - token_count - expired_queue_count
         body = json.loads(response['body'])
         self.assertEqual(int(body['waiting_num']), 0)
 
@@ -488,24 +602,41 @@ class CoreApiTestCase(unittest.TestCase):
         self.assertEqual(body["error"], self.invalid_event_id_msg)
 
     @patch.object(reset_initial_state.rc, 'getset', return_value=0)
-    @patch.object(reset_initial_state.ddb_client, 'describe_table', return_value={})
-    @patch.object(reset_initial_state.ddb_client, 'delete_table', return_value={})
     @patch.object(reset_initial_state.ddb_client, 'get_waiter', return_value=MagicMock().wait)
-    @patch.object(reset_initial_state.ddb_client, 'create_table', return_value={})
     @patch.object(reset_initial_state.rc, 'set', return_value=0)
-    def test_reset_initial_state(self, mock_rc_getset, mock_describe, mock_delete, mock_waiter, mock_create, mock_rc_set):
+    @patch.object(reset_initial_state, 'create_cloudfront_invalidation')
+    def test_reset_initial_state(self, mock_cfn_invalidation, mock_rc_set, mock_waiter, mock_rc_getset):
         """
         This function tests the reset_initial_state lambda function
         """
         # event_id is valid
         mock_event_200 = {"event_id": self.event_id}
         response = reset_initial_state.lambda_handler(mock_event_200, None)
+
+        # Assert invalidation for all paths
+        mock_cfn_invalidation.assert_called_once_with(paths=["/*"])
         self.assertEqual(response["statusCode"], 200)
 
         # invalid event_id
         mock_event_400 = {"event_id": self.invalid_id}
         response = reset_initial_state.lambda_handler(mock_event_400, None)
         self.assertEqual(response["statusCode"], 400)
+
+    def test_reset_initial_state_create_cloudfront_invalidation(self):
+        # Arrange
+        invalidation_paths = ["/*"]
+
+        # Act
+        with patch("reset_initial_state.cloudfront_client") as mock_client:
+            reset_initial_state.create_cloudfront_invalidation(invalidation_paths)
+
+            # Assert
+            mock_client.create_invalidation.assert_called_once()
+            assert mock_client.create_invalidation.call_args.kwargs["DistributionId"] == os.environ["CLOUDFRONT_DISTRIBUTION_ID"]
+            assert mock_client.create_invalidation.call_args.kwargs["InvalidationBatch"]["Paths"] == {
+                'Quantity': len(invalidation_paths), 'Items': invalidation_paths
+            }
+            assert mock_client.create_invalidation.call_args.kwargs['InvalidationBatch']['CallerReference'] is not None
 
     @patch.object(update_session.rc, 'incr', return_value=1)
     @patch.object(update_session.ddb_table, 'update_item',
@@ -619,7 +750,7 @@ class CoreApiTestCase(unittest.TestCase):
         """
         This function tests the get_queue_position_expiry_time lambda function
         """
-        mock_redis_cache = {'max_queue_position_expired': '0', 'serving_counter': '0' }
+        mock_redis_cache = {'max_queue_position_expired': '0', 'serving_counter': '0', 'expired_queue_counter': '0' }
         def mock_get(key):
             return mock_redis_cache[key]
 

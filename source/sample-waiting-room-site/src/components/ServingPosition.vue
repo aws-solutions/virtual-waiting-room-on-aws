@@ -9,9 +9,9 @@ the current serving counter of the waiting room -->
 <template>
   <div class="d-flex flex-column border border-2 rounded p-2">
     <!-- display a header with the last connection status -->
-    <div class="text-center lead mb-2">Serving Position</div>
+    <div class="text-center lead mb-2">Serving Counter Number</div>
     <div class="mb-2">
-      This compartment shows the current serving position of the line.
+      This compartment shows the current serving counter number.
     </div>
     <div>
       <!-- show an alert based on the state -->
@@ -20,14 +20,14 @@ the current serving counter of the waiting room -->
         class="alert alert-secondary"
         role="alert"
       >
-        Positions {{ queuePosition }} and lower are being served
+        Counter {{ queuePosition }} and lower are being served
       </div>
       <div
         v-if="!apiFailed && queuePosition >= myPosition"
         class="alert alert-warning"
         role="alert"
       >
-        Positions {{ queuePosition }} and lower are being served
+        Counter {{ queuePosition }} and lower are being served
       </div>
       <div v-if="apiFailed" class="alert alert-danger" role="alert">
         An error occurred while updating
