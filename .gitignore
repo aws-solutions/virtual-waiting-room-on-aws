@@ -23,3 +23,5 @@ coverage.xml*
 .coverage
 .idea
 build
+docs/behavioral-views.drawio
+docs/deployment-view.drawio
