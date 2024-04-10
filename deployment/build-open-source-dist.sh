@@ -20,8 +20,10 @@ fi
 source_template_dir="$PWD"
 dist_dir="$source_template_dir/open-source"
 dist_template_dir="$dist_dir/deployment"
+dist_docs_dir="$dist_dir/docs"
 source_dir="$source_template_dir/../source"
 github_dir="$source_template_dir/../.github"
+docs_dir="$source_template_dir/../docs"
 
 echo "------------------------------------------------------------------------------"
 echo "[Init] Clean old open-source folder"
@@ -32,6 +34,8 @@ echo "mkdir -p $dist_dir"
 mkdir -p $dist_dir
 echo "mkdir -p $dist_template_dir"
 mkdir -p $dist_template_dir
+echo "mkdir -p $dist_docs_dir"
+mkdir -p $dist_docs_dir
 
 echo "------------------------------------------------------------------------------"
 echo "[Packing] Templates"
@@ -47,12 +51,36 @@ for f in *.yaml; do
 done
 
 echo "------------------------------------------------------------------------------"
-echo "[Packing] Build Script"
+echo "[Packing] Deployment Assets"
 echo "------------------------------------------------------------------------------"
 echo "cp $source_template_dir/build-s3-dist.sh $dist_template_dir"
 cp $source_template_dir/build-s3-dist.sh $dist_template_dir
 echo "cp $source_template_dir/run-unit-tests.sh $dist_template_dir"
 cp $source_template_dir/run-unit-tests.sh $dist_template_dir
+echo "cp $source_template_dir/Dockerfile $dist_template_dir"
+cp $source_template_dir/Dockerfile $dist_template_dir
+echo "cp $source_template_dir/build-open-source-dist.sh $dist_template_dir"
+cp $source_template_dir/build-open-source-dist.sh $dist_template_dir
+echo "cp $source_template_dir/deploy.sh $dist_template_dir"
+cp $source_template_dir/deploy.sh $dist_template_dir
+echo "cp $source_template_dir/docker_build.sh $dist_template_dir"
+cp $source_template_dir/docker_build.sh $dist_template_dir
+echo "cp $source_template_dir/end-workflow-notification.py $dist_template_dir"
+cp $source_template_dir/end-workflow-notification.py $dist_template_dir
+echo "cp $source_template_dir/requirements.txt $dist_template_dir"
+cp $source_template_dir/requirements.txt $dist_template_dir
+echo "cp $source_template_dir/virtual-waiting-room-on-aws*.json $dist_template_dir"
+cp $source_template_dir/virtual-waiting-room-on-aws*.json $dist_template_dir
+
+echo "------------------------------------------------------------------------------"
+echo "[Packing] Docs"
+echo "------------------------------------------------------------------------------"
+echo "cp $docs_dir/*.md $dist_docs_dir"
+cp $docs_dir/*.md $dist_docs_dir
+echo "cp $docs_dir/*.drawio $dist_docs_dir"
+cp $docs_dir/*.drawio $dist_docs_dir
+echo "cp $docs_dir/*.jpg $dist_docs_dir"
+cp $docs_dir/*.jpg $dist_docs_dir
 
 echo "------------------------------------------------------------------------------"
 echo "[Packing] GitHub templates"
@@ -95,8 +123,12 @@ echo "find $dist_dir -iname "dist" -type d -exec rm -r "{}" \; 2> /dev/null"
 find $dist_dir -iname "dist" -type d -exec rm -r "{}" \; 2> /dev/null
 echo "find $dist_dir -iname "bower_components" -type d -exec rm -r "{}" \; 2> /dev/null"
 find $dist_dir -iname "bower_components" -type d -exec rm -r "{}" \; 2> /dev/null
-echo "find ../ -type f -name 'package-lock.json' -delete"
-find $dist_dir -type f -name 'package-lock.json' -delete
+echo "find $dist_dir -iname "__pycache__" -type d -exec rm -r "{}" \; 2> /dev/null"
+find $dist_dir -iname "__pycache__" -type d -exec rm -r "{}" \; 2> /dev/null
+echo "find ../ -type f -name 'error.txt' -delete"
+find $dist_dir -type f -name 'error.txt' -delete
+echo "find ../ -type f -name '*.zip' -delete"
+find $dist_dir -type f -name '*.zip' -delete
 
 echo "------------------------------------------------------------------------------"
 echo "[Packing] Create GitHub (open-source) zip file"

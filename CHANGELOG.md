@@ -60,3 +60,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - /queue_num endpoint returns outdated results even after a reset [#214](https://github.com/aws-solutions/virtual-waiting-room-on-aws/issues/214).
 - Intermittent failures in OpenID adapter's /userInfo endpoint [#231](https://github.com/aws-solutions/virtual-waiting-room-on-aws/issues/231).
 - /expired_tokens endpoint bug when LastEvaluatedKey is present in query response [#235](https://github.com/aws-solutions/virtual-waiting-room-on-aws/pull/235).
+
+## [1.1.4] - 2024-04-09
+
+### Fixed
+- Updated webpack-dev-middleware from 5.3.3 to 5.3.4 to resolve security vulnerability [CVE-2024-29180]
+- Updated express from 4.18.1 to 4.19.2 to resolve security vulnerability [CVE-2024-29041]
+- Updated follow-redirects from 1.15.4 to 1.15.6 to resolve security vulnerability [CVE-2024-28849]
