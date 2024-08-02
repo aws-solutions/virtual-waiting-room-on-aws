@@ -81,7 +81,7 @@
                         "Arn"
                     ]
                 },
-                "Runtime": "python3.11",
+                "Runtime": "python3.12",
                 "Timeout": 30
             },
             "Metadata": {
@@ -263,7 +263,7 @@
                         "Arn"
                     ]
                 },
-                "Runtime": "python3.11",
+                "Runtime": "python3.12",
                 "Timeout": 30
             },
             "Metadata": {

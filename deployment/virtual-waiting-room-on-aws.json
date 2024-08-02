@@ -910,7 +910,7 @@
             "Type": "AWS::Lambda::LayerVersion",
             "Properties": {
                 "CompatibleRuntimes": [
-                    "python3.11"
+                    "python3.12"
                 ],
                 "Content": {
                     "S3Bucket": {
@@ -957,7 +957,7 @@
             "Type": "AWS::Lambda::LayerVersion",
             "Properties": {
                 "CompatibleRuntimes": [
-                    "python3.11"
+                    "python3.12"
                 ],
                 "Content": {
                     "S3Bucket": {
@@ -1085,7 +1085,7 @@
                         "Arn"
                     ]
                 },
-                "Runtime": "python3.11",
+                "Runtime": "python3.12",
                 "Timeout": 30,
                 "VpcConfig": {
                     "SecurityGroupIds": [
@@ -1220,7 +1220,7 @@
                         "Arn"
                     ]
                 },
-                "Runtime": "python3.11",
+                "Runtime": "python3.12",
                 "Timeout": 30,
                 "VpcConfig": {
                     "SecurityGroupIds": [
@@ -1341,7 +1341,7 @@
                         "Arn"
                     ]
                 },
-                "Runtime": "python3.11",
+                "Runtime": "python3.12",
                 "Timeout": 30
             },
             "Metadata": {
@@ -1448,7 +1448,7 @@
                         "Arn"
                     ]
                 },
-                "Runtime": "python3.11",
+                "Runtime": "python3.12",
                 "Timeout": 30
             },
             "Metadata": {
@@ -1570,7 +1570,7 @@
                         "Arn"
                     ]
                 },
-                "Runtime": "python3.11",
+                "Runtime": "python3.12",
                 "Timeout": 30,
                 "VpcConfig": {
                     "SecurityGroupIds": [
@@ -1707,7 +1707,7 @@
                         "Arn"
                     ]
                 },
-                "Runtime": "python3.11",
+                "Runtime": "python3.12",
                 "Timeout": 30,
                 "VpcConfig": {
                     "SecurityGroupIds": [
@@ -1860,7 +1860,7 @@
                         "Arn"
                     ]
                 },
-                "Runtime": "python3.11",
+                "Runtime": "python3.12",
                 "Timeout": 30,
                 "VpcConfig": {
                     "SecurityGroupIds": [
@@ -1990,7 +1990,7 @@
                         "Arn"
                     ]
                 },
-                "Runtime": "python3.11",
+                "Runtime": "python3.12",
                 "Timeout": 30,
                 "VpcConfig": {
                     "SecurityGroupIds": [
@@ -2129,7 +2129,7 @@
                         "Arn"
                     ]
                 },
-                "Runtime": "python3.11",
+                "Runtime": "python3.12",
                 "Timeout": 30,
                 "VpcConfig": {
                     "SecurityGroupIds": [
@@ -2268,7 +2268,7 @@
                         "Arn"
                     ]
                 },
-                "Runtime": "python3.11",
+                "Runtime": "python3.12",
                 "Timeout": 30,
                 "VpcConfig": {
                     "SecurityGroupIds": [
@@ -2416,7 +2416,7 @@
                         "Arn"
                     ]
                 },
-                "Runtime": "python3.11",
+                "Runtime": "python3.12",
                 "Timeout": 30,
                 "VpcConfig": {
                     "SecurityGroupIds": [
@@ -2537,7 +2537,7 @@
                         "Arn"
                     ]
                 },
-                "Runtime": "python3.11",
+                "Runtime": "python3.12",
                 "Timeout": 30
             },
             "Metadata": {
@@ -2665,7 +2665,7 @@
                         "Arn"
                     ]
                 },
-                "Runtime": "python3.11",
+                "Runtime": "python3.12",
                 "Timeout": 30,
                 "VpcConfig": {
                     "SecurityGroupIds": [
@@ -2807,7 +2807,7 @@
                         "Arn"
                     ]
                 },
-                "Runtime": "python3.11",
+                "Runtime": "python3.12",
                 "Timeout": 30,
                 "VpcConfig": {
                     "SecurityGroupIds": [
@@ -2957,7 +2957,7 @@
                         "Arn"
                     ]
                 },
-                "Runtime": "python3.11",
+                "Runtime": "python3.12",
                 "Timeout": 300,
                 "VpcConfig": {
                     "SecurityGroupIds": [
@@ -3866,7 +3866,7 @@
                         "Arn"
                     ]
                 },
-                "Runtime": "python3.11",
+                "Runtime": "python3.12",
                 "Timeout": 30
             },
             "Metadata": {
@@ -4016,7 +4016,7 @@
                         "Arn"
                     ]
                 },
-                "Runtime": "python3.11",
+                "Runtime": "python3.12",
                 "Timeout": 30
             },
             "Metadata": {
@@ -4041,7 +4041,7 @@
         "StringClipLambdaCustomResource": {
             "Type": "AWS::Lambda::Function",
             "Properties": {
-                "Runtime": "python3.11",
+                "Runtime": "python3.12",
                 "Role": {
                     "Fn::GetAtt": ["StringClipLambdaRole", "Arn"]
                 },
@@ -4268,7 +4268,7 @@
                         "Arn"
                     ]
                 },
-                "Runtime": "python3.11",
+                "Runtime": "python3.12",
                 "Timeout": 30
             },
             "Metadata": {
@@ -4573,7 +4573,7 @@
                         "Arn"
                     ]
                 },
-                "Runtime": "python3.11",
+                "Runtime": "python3.12",
                 "Timeout": 30
             },
             "Metadata": {
