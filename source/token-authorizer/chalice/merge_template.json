@@ -27,7 +27,7 @@
             "Type": "AWS::Serverless::LayerVersion",
             "Properties": {
                 "CompatibleRuntimes": [
-                    "python3.11"
+                    "python3.12"
                 ],
                 "ContentUri": {
                     "Bucket": {
@@ -64,7 +64,7 @@
         },
         "ApiGatewayAuthorizer": {
             "Properties": {
-                "Runtime": "python3.11",
+                "Runtime": "python3.12",
                 "CodeUri": {
                     "Bucket": {
                         "Fn::Join": [

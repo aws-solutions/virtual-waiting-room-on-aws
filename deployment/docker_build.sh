@@ -1,6 +1,6 @@
 #!/bin/sh
 
-target_dir="../source/python/lib/python3.11/"
+target_dir="../source/python/lib/python3.12/"
 
 if [ ! -f Dockerfile ]; then
     echo "*** Dockerfile is not here, are you in the right place? ***"

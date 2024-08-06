@@ -1,5 +1,5 @@
-FROM public.ecr.aws/lambda/python:3.11
+FROM public.ecr.aws/lambda/python:3.12
 CMD bash
 WORKDIR /site-packages
-RUN pip3.11 install --upgrade pip
-RUN pip3.11 install -t . jwcrypto==1.5.6
+RUN pip install --upgrade pip
+RUN pip install -t . jwcrypto==1.5.6
