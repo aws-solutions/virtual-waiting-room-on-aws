@@ -50,7 +50,8 @@
   "overrides": {
     "postcss": "^8.4.31",
     "semver": "^7.5.2",
-    "word-wrap": "^1.2.4"
+    "word-wrap": "^1.2.4",
+    "send": "0.19.0"
   },
   "resolutions": {
     "postcss": "^8.4.31",
