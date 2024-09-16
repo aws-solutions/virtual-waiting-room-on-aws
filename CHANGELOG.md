@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.8] - 2024-09-16
+
+### Security
+- `micromatch` to mitigate [CVE-2024-4067]
+- `webpack` to mitigate [CVE-2024-43788]
+- `express` to mitigate [CVE-2024-43796]
+- `send` to mitigate [CVE-2024-43799]
+- `serve-static` to mitigate [CVE-2024-43800]
+- `body-parser` to mitigate [CVE-2024-45590]
+
+
 ## [1.1.7] - 2024-08-16
 
 ### Security
