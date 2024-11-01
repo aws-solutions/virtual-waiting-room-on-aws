@@ -1,0 +1,21 @@
+{
+    "name": "openid-waitingroom",
+    "version": "1.1.9",
+    "description": "A Virtual Waiting Room on AWS OpenID Adaptor",
+    "author": {
+        "name": "Amazon Web Services",
+        "url": "https://aws.amazon.com/solutions",
+        "organization": true
+    },
+    "license": "Apache-2.0",
+    "private": true,
+    "scripts": {
+        "clean": "rm -rf node_modules/ dist/ coverage/",
+        "postinstall": "mkdir -p dist && cp -f node_modules/bootstrap/dist/css/bootstrap.min.css node_modules/jquery/dist/jquery.min.js node_modules/bootstrap/dist/js/bootstrap.bundle.min.js node_modules/axios/dist/axios.min.js dist/"
+    },
+    "dependencies": {
+        "axios": "^1.7.7",
+        "bootstrap": "^5.0.0-beta3",
+        "jquery": "^3.6.0"
+    }
+}

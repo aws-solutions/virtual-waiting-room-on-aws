@@ -40,12 +40,12 @@ while getopts ':h' OPTION; do
     h)
       echo
       echo "script usage: $(basename $0) DIST_OUTPUT_BUCKET SOLUTION_NAME VERSION"
-      echo "example usage: ./$(basename $0) mybucket virtual-waiting-room-on-aws v1.1.8"
+      echo "example usage: ./$(basename $0) mybucket virtual-waiting-room-on-aws v1.1.9"
       echo
       echo "If no arguments are passed in, the following default values are used:"
       echo "DIST_OUTPUT_BUCKET=rodeolabz"
       echo "SOLUTION_NAME=virtual-waiting-room-on-aws"
-      echo "VERSION=v1.1.8"
+      echo "VERSION=v1.1.9"
       echo
       echo "You may export export these variables in your environment and call the script using those variables:"
       echo "./$(basename $0) \$DIST_OUTPUT_BUCKET \$SOLUTION_NAME \$VERSION"
@@ -79,8 +79,8 @@ fi
 
 if [ -z "$3" ]
   then
-    echo "Setting default version to v1.1.8"
-    VERSION='v1.1.8'
+    echo "Setting default version to v1.1.9"
+    VERSION='v1.1.9'
 fi
 
 template_dir="$PWD" # /deployment
@@ -88,7 +88,7 @@ template_dist_dir="$template_dir/global-s3-assets"
 build_dist_dir="$template_dir/regional-s3-assets"
 pkg_dir="$template_dir/pkg"
 source_dir="$template_dir/../source"
-common_version=1.1.8
+common_version=1.1.9
 
 echo "------------------------------------------------------------------------------"
 echo "[Init] Clean old dist, node_modules and bower_components folders"
@@ -208,8 +208,10 @@ zip -g tmp/virtual-waiting-room-on-aws-openid-custom-resources.zip generate_clie
 cd $source_dir/shared/custom_resources
 zip -g $source_dir/openid-waitingroom/custom_resources/tmp/virtual-waiting-room-on-aws-openid-custom-resources.zip cfn_bucket_loader.py
 # add Open ID web content to custom resource zip
-cd $source_dir/openid-waitingroom
-zip -g $source_dir/openid-waitingroom/custom_resources/tmp/virtual-waiting-room-on-aws-openid-custom-resources.zip www/*
+cd $source_dir/openid-waitingroom/www
+npm install
+cd .. 
+zip -gr $source_dir/openid-waitingroom/custom_resources/tmp/virtual-waiting-room-on-aws-openid-custom-resources.zip www/* -x "www/node_modules/*"
 
 cd $source_dir/openid-waitingroom/custom_resources
 # copy the zip file to the build directory
