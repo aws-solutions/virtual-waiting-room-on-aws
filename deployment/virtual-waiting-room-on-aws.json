@@ -881,6 +881,7 @@
         },
         "RedisReplicationGroup": {
             "Type": "AWS::ElastiCache::ReplicationGroup",
+            "DependsOn": "RedisAuth",
             "Properties": {
                 "AtRestEncryptionEnabled": true,
                 "AuthToken": {"Fn::Sub": "{{resolve:secretsmanager:${AWS::StackName}/redis-auth:SecretString}}"},

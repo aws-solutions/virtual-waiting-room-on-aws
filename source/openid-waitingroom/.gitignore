@@ -1,3 +1,5 @@
 chalice/.chalice/deployments/
 chalice/.chalice/venv/
 chalice/vendor/
+node_modules/
+dist/
