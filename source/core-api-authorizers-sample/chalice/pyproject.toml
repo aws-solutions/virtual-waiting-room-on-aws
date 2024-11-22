@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "chalice"
+version = "1.1.10"
+description = "Chalice Code"
+authors = ["Amazon Web Services"]
+package-mode = false
+
+
+[tool.poetry.dependencies]
+python = ">3.9"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

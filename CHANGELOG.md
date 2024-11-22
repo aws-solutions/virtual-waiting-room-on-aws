@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.10] - 2024-11-22
+
+### Security
+- `cross-spawn` to mitigate [CVE-2024-21538]
+
+### Updated
+- Migrate Python dependency manager from pip to Poetry.
+ 
+
 ## [1.1.9] - 2024-11-01
 
 ### Security
