@@ -13,13 +13,9 @@ VENV=$(mktemp -d) && echo "$VENV"
 python3 -m venv "$VENV"
 source "$VENV"/bin/activate
 
-# Install the common package into the virtual envronment before running
-pip install ./pkg/virtual_waiting_room_on_aws_common-1.1.9-py3-none-any.whl || pip install -e ./../source/shared/virtual-waiting-room-on-aws-common
 cd ./../deployment
 
-# install dependencies
-pip install -r requirements.txt
-
+poetry install
 # Get reference for all important folders
 template_dir="$PWD"
 echo "template_dir" $template_dir

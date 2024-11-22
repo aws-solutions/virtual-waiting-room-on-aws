@@ -40,12 +40,12 @@ while getopts ':h' OPTION; do
     h)
       echo
       echo "script usage: $(basename $0) DIST_OUTPUT_BUCKET SOLUTION_NAME VERSION"
-      echo "example usage: ./$(basename $0) mybucket virtual-waiting-room-on-aws v1.1.9"
+      echo "example usage: ./$(basename $0) mybucket virtual-waiting-room-on-aws v1.1.10"
       echo
       echo "If no arguments are passed in, the following default values are used:"
       echo "DIST_OUTPUT_BUCKET=rodeolabz"
       echo "SOLUTION_NAME=virtual-waiting-room-on-aws"
-      echo "VERSION=v1.1.9"
+      echo "VERSION=v1.1.10"
       echo
       echo "You may export export these variables in your environment and call the script using those variables:"
       echo "./$(basename $0) \$DIST_OUTPUT_BUCKET \$SOLUTION_NAME \$VERSION"
@@ -79,8 +79,8 @@ fi
 
 if [ -z "$3" ]
   then
-    echo "Setting default version to v1.1.9"
-    VERSION='v1.1.9'
+    echo "Setting default version to v1.1.10"
+    VERSION='v1.1.10'
 fi
 
 template_dir="$PWD" # /deployment
@@ -88,7 +88,7 @@ template_dist_dir="$template_dir/global-s3-assets"
 build_dist_dir="$template_dir/regional-s3-assets"
 pkg_dir="$template_dir/pkg"
 source_dir="$template_dir/../source"
-common_version=1.1.9
+common_version=1.1.10
 
 echo "------------------------------------------------------------------------------"
 echo "[Init] Clean old dist, node_modules and bower_components folders"
@@ -153,6 +153,7 @@ echo Custom Resources
 cd $source_dir/core-api/custom_resources
 rm -rf error.txt package
 mkdir package
+poetry export -f requirements.txt --output requirements.txt --without-hashes
 pip install --upgrade --force-reinstall --target ./package -r requirements.txt 2> error.txt
 RETVAL=$?
 if [ "$RETVAL" -ne "0" ]; then
@@ -193,6 +194,7 @@ cd $source_dir/openid-waitingroom/custom_resources
 rm -rf error.txt package tmp
 mkdir -p package
 mkdir -p tmp
+poetry export  -f requirements.txt --output requirements.txt --without-hashes
 pip install --upgrade --force-reinstall --target ./package -r requirements.txt 2> error.txt
 RETVAL=$?
 if [ "$RETVAL" -ne "0" ]; then
@@ -224,6 +226,8 @@ mkdir -p tmp
 # install the common package into vendor
 rm -rf vendor
 mkdir -p vendor
+poetry export  -f requirements.txt --output requirements.txt --without-hashes
+pip install --upgrade --force-reinstall --target ./vendor -r requirements.txt 2> error.txt
 pip install $pkg_dir/virtual_waiting_room_on_aws_common-$common_version-py3-none-any.whl --target vendor
 # generate the template and zip
 chalice package --merge-template merge_template.json tmp/
@@ -249,6 +253,8 @@ mkdir -p tmp/
 # install the common package into vendor
 rm -rf vendor
 mkdir -p vendor
+poetry export  -f requirements.txt --output requirements.txt --without-hashes
+pip install --upgrade --force-reinstall --target ./vendor -r requirements.txt 2> error.txt
 pip install $pkg_dir/virtual_waiting_room_on_aws_common-$common_version-py3-none-any.whl --target vendor
 # generate the template and zip
 chalice package --merge-template merge_template.json tmp/
@@ -272,6 +278,7 @@ cd $source_dir/core-api-authorizers-sample/custom_resources
 rm -rf error.txt package tmp
 mkdir -p package
 mkdir -p tmp
+poetry export  -f requirements.txt --output requirements.txt --without-hashes
 pip install --upgrade --force-reinstall --target ./package -r requirements.txt 2> error.txt
 RETVAL=$?
 if [ "$RETVAL" -ne "0" ]; then
@@ -315,6 +322,8 @@ cp virtual-waiting-room-on-aws-sample-custom-resources.zip $build_dist_dir/virtu
 cd $source_dir/core-api-authorizers-sample/chalice
 rm -rf tmp
 mkdir -p tmp/
+poetry export  -f requirements.txt --output requirements.txt --without-hashes
+pip install --upgrade --force-reinstall --target ./tmp -r requirements.txt 2> error.txt
 chalice package --merge-template merge_template.json tmp/
 RETVAL=$?
 if [ "$RETVAL" != "0" ]; then
@@ -334,6 +343,7 @@ echo "--------------------------------------------------------------------------
 cd $source_dir/sample-inlet-strategies
 rm -rf error.txt package
 mkdir -p package
+poetry export  -f requirements.txt --output requirements.txt --without-hashes
 pip install --upgrade --force-reinstall --target ./package -r requirements.txt 2> error.txt
 RETVAL=$?
 if [ "$RETVAL" -ne "0" ]; then

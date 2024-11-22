@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "custom-resources"
+version = "1.1.10"
+description = "Virtual Waitin Room on AWS"
+authors = ["Amazon Web Services"]
+
+[tool.poetry.dependencies]
+python = ">3.9"
+requests = "2.32.3"
+aws-requests-auth = "0.4.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
