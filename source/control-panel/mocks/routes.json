@@ -1,0 +1,7 @@
+{
+  "/api/*": "/$1",
+  "/num_active_tokens?event_id=:event_id": "/num_active_tokens_:event_id",
+  "/waiting_num?event_id=:event_id": "/waiting_num_:event_id",
+  "/serving_num?event_id=:event_id": "/serving_num_:event_id",
+  "/expired_tokens?event_id=:event_id": "/expired_tokens_:event_id"
+}
