@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "custom-resources"
-version = "1.1.10"
+version = "1.1.11"
 description = "Custom resources for open Id waiting room of Virtual Waitin Room on AWS"
 authors = ["Amazon Web Services"]
 

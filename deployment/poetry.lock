@@ -1506,7 +1506,7 @@ zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
 name = "virtual-waiting-room-on-aws-common"
-version = "1.1.10"
+version = "1.1.11"
 description = "Common Python modules for Virtual Waiting Room on AWS"
 optional = false
 python-versions = ">=3.10"

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "custom-resources"
-version = "1.1.10"
+version = "1.1.11"
 description = "Open Id waiting room template of Virtual Waitin Room on AWS"
 authors = ["Amazon Web Services"]
 package-mode = false
