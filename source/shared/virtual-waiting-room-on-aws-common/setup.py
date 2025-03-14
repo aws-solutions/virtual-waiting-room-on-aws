@@ -9,7 +9,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="virtual-waiting-room-on-aws-common",
-    version="1.1.11",
+    version="1.1.12",
     author="AWS Solutions PDX",
     author_email="aws-solutions-pdx@amazon.com",
     description="Common Python modules for Virtual Waiting Room on AWS",

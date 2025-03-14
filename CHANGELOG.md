@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.12] - 2025-03-14
+
+### Security
+- Bump axios to `1.8.2` to mitigate [CVE-2025-27152](https://github.com/axios/axios/security/advisories/GHSA-jr5f-v2jv-69x6)
+- Bump serialize-javascript to `6.0.2` to mitigate [CVE-2024-11831](https://avd.aquasec.com/nvd/2024/cve-2024-11831/)
+- Bump @babel/runtime and @babel/helpers to `7.26.10` to mitigate [CVE-2025-27789](https://avd.aquasec.com/nvd/cve-2025-27789)
+
 ## [1.1.11] - 2025-02-06
 
 ### Security
