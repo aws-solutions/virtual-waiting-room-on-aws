@@ -1,3 +1,5 @@
+⚠️🚨⚠️ __Important: This solution will retire in November 2025. Until then, deployments (via CloudFormation or GitHub) will remain operational, but customers will assume responsibility for maintenance and API-related updates after support ends.__ ⚠️🚨⚠️
+
 **[🚀 Solution Landing Page](https://aws.amazon.com/solutions/implementations/virtual-waiting-room-on-aws/)** | **[📜 Solution Implementation Guide](https://docs.aws.amazon.com/solutions/latest/virtual-waiting-room-on-aws/welcome.html)** | **[🚧 Feature request](https://github.com/aws-solutions/virtual-waiting-room-on-aws/issues/new?assignees=&labels=feature-request%2C+enhancement&template=feature_request.md&title=)** | **[🐛 Bug Report](https://github.com/aws-solutions/virtual-waiting-room-on-aws/issues/new?assignees=&labels=bug%2C+triage&template=bug_report.md&title=)**
 
 Note: If you want to use the solution without building from source, navigate to Solution Landing Page
