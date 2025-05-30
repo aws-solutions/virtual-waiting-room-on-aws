@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "custom-resources"
-version = "1.1.12"
+version = "1.1.13"
 description = "Custom resources for core APIs of Virtual Waitin Room on AWS"
 authors = ["Amazon Web Services"]
 package-mode = false

@@ -6,7 +6,8 @@ if [ ! -f Dockerfile ]; then
     echo "*** Dockerfile is not here, are you in the right place? ***"
 else
     docker build -t jwcrypto .
-    docker run --name jwc --rm -dit jwcrypto
+    docker run --name jwc -dit jwcrypto
     docker cp jwc:site-packages/ $target_dir
     docker container stop jwc
+    docker container rm jwc
 fi
