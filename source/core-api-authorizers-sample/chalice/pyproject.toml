@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "chalice"
-version = "1.1.12"
+version = "1.1.13"
 description = "Chalice Code"
 authors = ["Amazon Web Services"]
 package-mode = false

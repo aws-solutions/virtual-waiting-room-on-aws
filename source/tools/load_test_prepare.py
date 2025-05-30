@@ -1,3 +1,6 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
 """
 This module is responsible for preparing the waiting room for a load test.
 1. Reset the waiting room via API

@@ -1,5 +1,5 @@
 {
-    "Description": "Virtual Waiting Room on AWS OpenID Adapter %%VERSION%%",
+    "Description": "(SO0166) Virtual Waiting Room on AWS OpenID Adapter %%VERSION%%",
     "Parameters": {
         "PublicAPIEndpoint": {
             "Description": "Public endpoint URL for the virtual waiting room APIs",
