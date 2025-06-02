@@ -1,5 +1,5 @@
 {
-    "Description": "Virtual Waiting Room on AWS API Sample %%VERSION%%",
+    "Description": "(SO0166) Virtual Waiting Room on AWS API Sample %%VERSION%%",
     "Parameters": {
         "AuthorizerARN": {
             "Description": "ARN of the API Gateway Lambda Authorizer",
