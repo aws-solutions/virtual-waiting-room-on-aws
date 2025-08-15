@@ -7,7 +7,7 @@
     "organization": true
   },
   "license": "Apache-2.0",
-  "version": "1.1.13",
+  "version": "1.1.14",
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
@@ -15,7 +15,6 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
-    "@babel/core": "^7.23.2",
     "axios": "^1.7.4",
     "axios-retry": "^3.3.1",
     "bootstrap": "^5.1.1",
@@ -24,22 +23,23 @@
     "moment": "^2.29.1",
     "simple-statistics": "^7.7.0",
     "vue": "^3.3.7",
-    "vue-router": "^4.0.0-0",
+    "vue-router": "^4.2.5",
     "vue-timers": "^2.0.4",
-    "vuex": "^4.0.2"
+    "vuex": "^4.1.0"
   },
   "devDependencies": {
-    "postcss": "^8.4.31",
-    "@vue/component-compiler-utils": "^3.3.0",
+    "@babel/core": "^7.23.2",
     "@vue/babel-preset-app": "^5.0.8",
-    "@vue/cli-plugin-babel": "~5.0.8",
+    "@vue/cli-plugin-babel": "^5.0.8",
     "@vue/cli-plugin-eslint": "^5.0.8",
     "@vue/cli-plugin-router": "^5.0.8",
     "@vue/cli-service": "^5.0.8",
-    "@vue/compiler-sfc": "^3.0.0",
+    "@vue/compiler-sfc": "^3.3.7",
+    "@vue/component-compiler-utils": "^3.3.0",
     "eslint": "^8.20.0",
     "eslint-plugin-vue": "^9.3.0",
     "naive-ui": "^2.19.3",
+    "postcss": "^8.4.31",
     "vfonts": "^0.1.0"
   },
   "eslintConfig": {
@@ -55,18 +55,11 @@
     "rules": {}
   },
   "overrides": {
+    "cross-spawn": "^7.0.6",
     "postcss": "^8.4.31",
+    "webpack-dev-server": "^5.2.1",
     "semver": "^7.5.2",
-    "word-wrap": "^1.2.4",
-    "send": "0.19.0",
-    "cross-spawn": "7.0.6"
-  },
-  "resolutions": {
-    "postcss": "^8.4.31",
-    "semver": "^7.5.2",
-    "word-wrap": "^1.2.4",
-    "send": "0.19.0",
-    "cross-spawn": "7.0.6"
+    "word-wrap": "^1.2.4"
   },
   "browserslist": [
     "> 1%",

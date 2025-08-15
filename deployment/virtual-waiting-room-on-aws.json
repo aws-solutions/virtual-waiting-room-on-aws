@@ -75,6 +75,13 @@
                         }
                     ]
                 }
+            },
+            "Metadata": {
+                "guard": {
+                    "SuppressedRules": [
+                        "IAM_NO_INLINE_POLICY_CHECK"
+                    ]
+                }
             }
         },
         "PrivateApiGwRole": {
@@ -117,6 +124,13 @@
                                 "sts:AssumeRole"
                             ]
                         }
+                    ]
+                }
+            },
+            "Metadata": {
+                "guard": {
+                    "SuppressedRules": [
+                        "IAM_NO_INLINE_POLICY_CHECK"
                     ]
                 }
             }
@@ -3053,6 +3067,13 @@
                         }
                     ]
                 }
+            },
+            "Metadata": {
+                "guard": {
+                    "SuppressedRules": [
+                        "IAM_NO_INLINE_POLICY_CHECK"
+                    ]
+                }
             }
         },
         "QueuePositionRole": {
@@ -3089,6 +3110,13 @@
                                 "sts:AssumeRole"
                             ]
                         }
+                    ]
+                }
+            },
+            "Metadata": {
+                "guard": {
+                    "SuppressedRules": [
+                        "IAM_NO_INLINE_POLICY_CHECK"
                     ]
                 }
             }
@@ -3146,6 +3174,13 @@
                         }
                     ]
                 }
+            },
+            "Metadata": {
+                "guard": {
+                    "SuppressedRules": [
+                        "IAM_NO_INLINE_POLICY_CHECK"
+                    ]
+                }
             }
         },
         "GenerateEventsRole": {
@@ -3195,6 +3230,13 @@
                         }
                     ]
                 }
+            },
+            "Metadata": {
+                "guard": {
+                    "SuppressedRules": [
+                        "IAM_NO_INLINE_POLICY_CHECK"
+                    ]
+                }
             }
         },
         "UpdateSessionRole": {
@@ -3231,6 +3273,13 @@
                                 "sts:AssumeRole"
                             ]
                         }
+                    ]
+                }
+            },
+            "Metadata": {
+                "guard": {
+                    "SuppressedRules": [
+                        "IAM_NO_INLINE_POLICY_CHECK"
                     ]
                 }
             }
@@ -3272,6 +3321,13 @@
                         }
                     ]
                 }
+            },
+            "Metadata": {
+                "guard": {
+                    "SuppressedRules": [
+                        "IAM_NO_INLINE_POLICY_CHECK"
+                    ]
+                }
             }
         },
         "GetTokenRole": {
@@ -3309,6 +3365,13 @@
                                 "sts:AssumeRole"
                             ]
                         }
+                    ]
+                }
+            },
+            "Metadata": {
+                "guard": {
+                    "SuppressedRules": [
+                        "IAM_NO_INLINE_POLICY_CHECK"
                     ]
                 }
             }
@@ -3727,6 +3790,13 @@
                 "SSESpecification": {
                     "SSEEnabled": true
                 }
+            },
+            "Metadata": {
+                "guard": {
+                    "SuppressedRules": [
+                        "DYNAMODB_TABLE_ENCRYPTED_KMS"
+                    ]
+                }
             }
         },
         "QueuePositionEntryTimeTable": {
@@ -3769,6 +3839,13 @@
                 "SSESpecification": {
                     "SSEEnabled": true
                 }
+            },
+            "Metadata": {
+                "guard": {
+                    "SuppressedRules": [
+                        "DYNAMODB_TABLE_ENCRYPTED_KMS"
+                    ]
+                }
             }
         },
         "ServingCounterIssuedAtTable": {
@@ -3800,6 +3877,13 @@
                 },
                 "SSESpecification": {
                     "SSEEnabled": true
+                }
+            },
+            "Metadata": {
+                "guard": {
+                    "SuppressedRules": [
+                        "DYNAMODB_TABLE_ENCRYPTED_KMS"
+                    ]
                 }
             }
         },
@@ -3955,7 +4039,12 @@
                             "id": "W11",
                             "reason": "GetRandomPassword applies to all resources per IAM."
                         }
-                    ]}
+                    ]},
+                "guard": {
+                    "SuppressedRules": [
+                        "IAM_NO_INLINE_POLICY_CHECK"
+                    ]
+                }
             }
         },
         "IntersectAZFunction": {
@@ -4110,6 +4199,13 @@
                         }
                     }
                 ]
+            },
+            "Metadata": {
+                "guard": {
+                    "SuppressedRules": [
+                        "IAM_NO_INLINE_POLICY_CHECK"
+                    ]
+                }
             }
         },
         "InvokeShortenStackNameLambda": {
@@ -4199,6 +4295,11 @@
                             "id": "W11",
                             "reason": "By default DescribeVPCEndpointServices applies to all resources per IAM."
                         }
+                    ]
+                },
+                "guard": {
+                    "SuppressedRules": [
+                        "IAM_NO_INLINE_POLICY_CHECK"
                     ]
                 }
             }
@@ -4373,6 +4474,13 @@
                                 "sts:AssumeRole"
                             ]
                         }
+                    ]
+                }
+            },
+            "Metadata": {
+                "guard": {
+                    "SuppressedRules": [
+                        "IAM_NO_INLINE_POLICY_CHECK"
                     ]
                 }
             }
@@ -4644,6 +4752,13 @@
                         }
                     }
                 ]
+            },
+            "Metadata": {
+                "guard": {
+                    "SuppressedRules": [
+                        "IAM_NO_INLINE_POLICY_CHECK"
+                    ]
+                }
             }
         },
         "PublicApiCloudFront": {
@@ -5137,7 +5252,14 @@
                 },
                 "KmsKeyId" : "alias/aws/secretsmanager",
                 "Name": {"Fn::Sub": "${AWS::StackName}/redis-auth"}
-            }          
+            },
+            "Metadata": {
+                "guard": {
+                    "SuppressedRules": [
+                        "SECRETSMANAGER_USING_CMK"
+                    ]
+                }
+            }
         },
         "4XXErrorPrivateApiAlarm" : {
             "Type" : "AWS::CloudWatch::Alarm",

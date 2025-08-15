@@ -1,12 +1,12 @@
 [tool.poetry]
 name = "custom-resources"
-version = "1.1.13"
-description = "Virtual Waitin Room on AWS"
+version = "1.1.14"
+description = "Virtual Waiting Room on AWS"
 authors = ["Amazon Web Services"]
 
 [tool.poetry.dependencies]
 python = ">3.9"
-requests = "2.32.3"
+requests = "2.32.4"
 aws-requests-auth = "0.4.3"
 
 

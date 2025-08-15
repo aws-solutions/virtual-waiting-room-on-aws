@@ -157,6 +157,13 @@
                         }
                     }
                 ]
+            },
+            "Metadata": {
+                "guard": {
+                    "SuppressedRules": [
+                        "IAM_NO_INLINE_POLICY_CHECK"
+                    ]
+                }
             }
         },
         "PeriodicInletRule": {

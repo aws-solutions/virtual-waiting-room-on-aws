@@ -116,7 +116,7 @@ vuex under the MIT License
 wcwidth under the MIT License
 websocket-client under the Apache License Version 2.0
 wrapt under the BSD License
-lambda/python under th Apache-2.0 license
+lambda/python under the Apache-2.0 license
 jquery under the MIT license.
 bootstrap under the MIT license.
 axios under the MIT license.
@@ -952,6 +952,85 @@ tomli under the MIT license.
 webencodings under the 0BSD license.
 wheel under the MIT license.
 zipp under the MIT license.
+es-set-tostringtag under the MIT license.
+call-bind-apply-helpers under the MIT license.
+es-object-atoms under the MIT license.
+get-proto under the MIT license.
+dunder-proto under the MIT license.
+math-intrinsics under the MIT license.
+has-tostringtag under the MIT license.
+@babel/helper-globals under the MIT license.
+@babel/plugin-bugfix-firefox-class-in-computed-class-key under the MIT license.
+@babel/plugin-bugfix-safari-class-field-initializer-scope under the MIT license.
+@babel/plugin-transform-optional-chaining under the MIT license.
+@babel/plugin-bugfix-v8-static-class-fields-redefine-readonly under the MIT license.
+@babel/plugin-syntax-import-attributes under the MIT license.
+@babel/plugin-syntax-unicode-sets-regex under the MIT license.
+@babel/plugin-transform-async-generator-functions under the MIT license.
+@babel/plugin-transform-class-properties under the MIT license.
+@babel/plugin-transform-class-static-block under the MIT license.
+@babel/plugin-transform-duplicate-named-capturing-groups-regex under the MIT license.
+@babel/plugin-transform-dynamic-import under the MIT license.
+@babel/plugin-transform-explicit-resource-management under the MIT license.
+@babel/plugin-transform-export-namespace-from under the MIT license.
+@babel/plugin-transform-json-strings under the MIT license.
+@babel/plugin-transform-logical-assignment-operators under the MIT license.
+@babel/plugin-transform-nullish-coalescing-operator under the MIT license.
+@babel/plugin-transform-numeric-separator under the MIT license.
+@babel/plugin-transform-object-rest-spread under the MIT license.
+@babel/plugin-transform-optional-catch-binding under the MIT license.
+@babel/plugin-transform-private-methods under the MIT license.
+@babel/plugin-transform-private-property-in-object under the MIT license.
+@babel/plugin-transform-regexp-modifiers under the MIT license.
+@babel/plugin-transform-unicode-property-regex under the MIT license.
+@babel/plugin-transform-unicode-sets-regex under the MIT license.
+@vue/babel-plugin-resolve-type under the MIT license.
+call-bound under the MIT license.
+fast-uri under the BSD-3-Clause license.
+@types/eslint-scope under the MIT license.
+acorn-import-phases under the MIT license.
+undici-types under the MIT license.
+@discoveryjs/json-ext under the MIT license.
+debounce under the MIT license.
+html-escaper under the MIT license.
+@types/send under the MIT license.
+default-browser under the MIT license.
+bundle-name under the MIT license.
+run-applescript under the MIT license.
+default-browser-id under the MIT license.
+is-inside-container under the MIT license.
+wsl-utils under the MIT license.
+@types/http-errors under the MIT license.
+side-channel-list under the MIT license.
+side-channel-map under the MIT license.
+side-channel-weakmap under the MIT license.
+is-network-error under the MIT license.
+@types/node-forge under the MIT license.
+@jsonjoy.com/json-pack under the Apache-2.0 license.
+@jsonjoy.com/base64 under the Apache-2.0 license.
+@jsonjoy.com/util under the Apache-2.0 license.
+hyperdyperid under the MIT license.
+thingies under the Unlicense license.
+tree-dump under the Apache-2.0 license.
+flat under the BSD-3-Clause license.
+@eslint-community/eslint-utils under the MIT license.
+@eslint-community/regexpp under the MIT license.
+@eslint/js under the MIT license.
+@ungap/structured-clone under the ISC license.
+keyv under the MIT license.
+json-buffer under the MIT license.
+graphemer under the MIT license.
+is-path-inside under the MIT license.
+@types/katex under the MIT license.
+urllib3
+attrs
+cfn-lint
+click
+jsonschema-specifications
+referencing
+typing-extensions
+typing-inspection
+virtual-waiting-room-on-aws-common
 
 ********************
 OPEN SOURCE LICENSES
