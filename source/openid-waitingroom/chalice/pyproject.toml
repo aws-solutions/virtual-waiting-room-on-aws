@@ -1,15 +1,15 @@
 [tool.poetry]
 name = "custom-resources"
-version = "1.1.13"
-description = "Open Id waiting room template of Virtual Waitin Room on AWS"
+version = "1.1.14"
+description = "Open Id waiting room template of Virtual Waiting Room on AWS"
 authors = ["Amazon Web Services"]
 package-mode = false
 
 [tool.poetry.dependencies]
 python = ">3.9"
-requests = "2.32.3"
+requests = "2.32.4"
 aws-requests-auth = "0.4.3"
-urllib3 = "2.2.3"
+urllib3 = "2.5.0"
 
 
 [build-system]

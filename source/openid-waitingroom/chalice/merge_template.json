@@ -320,6 +320,11 @@
                             "reason": "Resource * is required for the GetRandomPassword action."
                         }
                     ]
+                },
+                "guard": {
+                    "SuppressedRules": [
+                        "IAM_NO_INLINE_POLICY_CHECK"
+                    ]
                 }
             }
         },
