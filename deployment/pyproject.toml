@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "deployment"
-version = "1.1.14"
+version = "1.1.15"
 description = "Deployment of Virtual Waiting Room on AWS"
 authors = ["Amazon Web Services"]
 package-mode=false

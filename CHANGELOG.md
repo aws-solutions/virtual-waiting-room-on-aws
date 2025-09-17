@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.15] - 2025-09-17
+
+### Security
+
+- Updated axios from `1.7.7` to `1.12.1` to mitigate [CVE-2025-58754](https://avd.aquasec.com/nvd/cve-2025-58754), a DoS vulnerability
+
+### Changed
+
+- Updated Poetry to `2.0.1`
+- Generated requirements.txt files for Python dependencies
+- Updated .gitignore to exclude all .env files
+
+### Fixed
+
+- Added null checks in Redis operations to prevent errors
+- Fixed Docker builds for ARM64 environments
+
 ## [1.1.14] - 2025-08-18
 
 ### Security

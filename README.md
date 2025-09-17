@@ -13,7 +13,7 @@ Site wrapper to absorb and control user traffic flowing into smaller web sites.
 [//]: # (Add any prerequisites for customization steps. e.g. Prerequisite: Node.js>10)
 
 * Install/update to Python 3.x
-* Install/update to Poetry 1.8.3
+* Install/update to Poetry 2.0.1
 * Install the AWS Command Line Interface (CLI)
 * Create a Python [virtual environment](https://docs.python.org/3.8/library/venv.html) using [requirements.txt](deployment/requirements.txt) and activate it
 * Configure the bucket name of your target Amazon S3 distribution bucket
